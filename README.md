@@ -1,7 +1,7 @@
 # BlobHelper
 BLOB storage wrapper for Microsoft Azure, Amazon S3, Kvpbase, and local filesystem written in C#.
 
-[nuget]:     https://www.nuget.org/packages/Watson/
+[nuget]:     https://www.nuget.org/packages/BlobHelper/
 [nuget-img]: https://badge.fury.io/nu/Object.svg
 
 ## Help, Feedback, Contribute
