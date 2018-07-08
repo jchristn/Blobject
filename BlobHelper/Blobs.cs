@@ -4,10 +4,10 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks; 
-using KvpbaseSDK;
+using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
+using KvpbaseSDK;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Blob;
@@ -37,7 +37,7 @@ namespace BlobHelper
         private CloudBlobClient _AzureBlobClient;
         private CloudBlobContainer _AzureContainer;
 
-        private Client _Kvpbase;
+        private KvpbaseClient _Kvpbase; 
 
         #endregion
 
@@ -230,7 +230,7 @@ namespace BlobHelper
                     url = DiskGenerateUrl(id);
                     break;
                 case StorageType.Kvpbase:
-                    success = _Kvpbase.CreateObjectWithName(null, id, "application/octet-stream", byteData, out url);
+                    success = _Kvpbase.WriteObject(_KvpbaseSettings.UserGuid, _KvpbaseSettings.Container, id, "application/octet-stream", byteData);
                     break;
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
@@ -270,7 +270,7 @@ namespace BlobHelper
                     if (!Directory.Exists(_DiskSettings.Directory)) Directory.CreateDirectory(_DiskSettings.Directory);
                     break;
                 case StorageType.Kvpbase:
-                    _Kvpbase = new Client(_KvpbaseSettings.UserGuid, _KvpbaseSettings.ApiKey, _KvpbaseSettings.Endpoint);
+                    _Kvpbase = new KvpbaseClient(_KvpbaseSettings.ApiKey, _KvpbaseSettings.Endpoint);
                     break;
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
@@ -281,7 +281,7 @@ namespace BlobHelper
 
         private bool KvpbaseDelete(string id)
         {
-            if (_Kvpbase.DeleteObject(id))
+            if (_Kvpbase.DeleteObject(_KvpbaseSettings.UserGuid, _KvpbaseSettings.Container, id))
             {
                 Debug.WriteLine("KvpbaseDelete success response from kvpbase for ID " + id);
                 return true;
@@ -297,7 +297,7 @@ namespace BlobHelper
         {
             data = null;
 
-            if (_Kvpbase.GetObject(id, out data))
+            if (_Kvpbase.ReadObject(_KvpbaseSettings.UserGuid, _KvpbaseSettings.Container, id, out data))
             {
                 Debug.WriteLine("KvpbaseGet retrieved " + data.Length + " bytes for ID " + id);
                 return true;
@@ -313,7 +313,7 @@ namespace BlobHelper
         {
             writtenUrl = null;
 
-            if (_Kvpbase.CreateObjectWithName(null, id, contentType, data, out writtenUrl))
+            if (_Kvpbase.WriteObject(_KvpbaseSettings.UserGuid, _KvpbaseSettings.Container, id, contentType, data))
             {
                 Debug.WriteLine("KvpbaseWrite success response from kvpbase for ID " + id + ": " + writtenUrl);
                 return true;

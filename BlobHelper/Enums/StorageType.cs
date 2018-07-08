@@ -13,6 +13,6 @@ namespace BlobHelper
         AwsS3,
         Azure,
         Disk,
-        Kvpbase
+        Kvpbase 
     }
 }
