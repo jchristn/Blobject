@@ -247,6 +247,29 @@ namespace BlobHelper
             }
         }
 
+        public bool Exists(string id)
+        {
+            if (String.IsNullOrEmpty(id))
+            {
+                Debug.WriteLine("Exists invalid value or null supplied for ID");
+                return false;
+            }
+
+            switch (_StorageType)
+            {
+                case StorageType.AwsS3:
+                    return S3Exists(id);
+                case StorageType.Azure:
+                    return AzureExists(id);
+                case StorageType.Disk:
+                    return DiskExists(id);
+                case StorageType.Kvpbase:
+                    return KvpbaseExists(id);
+                default:
+                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+            }
+        }
+
         #endregion
 
         #region Private-Methods
@@ -309,6 +332,20 @@ namespace BlobHelper
             }
         }
 
+        private bool KvpbaseExists(string id)
+        { 
+            if (_Kvpbase.ObjectExists(_KvpbaseSettings.UserGuid, _KvpbaseSettings.Container, id))
+            {
+                Debug.WriteLine("KvpbaseExists ID " + id + " exists");
+                return true;
+            }
+            else
+            {
+                Debug.WriteLine("KvpbaseExists ID" + id + " does not exist");
+                return false;
+            }
+        }
+
         private bool KvpbaseWrite(string id, string contentType, byte[] data, out string writtenUrl)
         {
             writtenUrl = null;
@@ -359,6 +396,20 @@ namespace BlobHelper
             }
         }
 
+        private bool DiskExists(string id)
+        {
+            if (File.Exists(DiskGenerateUrl(id)))
+            {
+                Debug.WriteLine("DiskExists ID " + id + " exists");
+                return true;
+            }
+            else
+            {
+                Debug.WriteLine("DiskExists ID " + id + " does not exist");
+                return false;
+            }
+        }
+
         private bool DiskWrite(string id, byte[] data)
         {
             try
@@ -393,27 +444,24 @@ namespace BlobHelper
                 #endregion
 
                 #region Process
-                 
-                using (_S3Client = new AmazonS3Client(_S3Credentials, _S3Region))
+                  
+                DeleteObjectRequest request = new DeleteObjectRequest
                 {
-                    DeleteObjectRequest request = new DeleteObjectRequest
-                    {
-                        BucketName = _AwsSettings.Bucket,
-                        Key = id
-                    };
+                    BucketName = _AwsSettings.Bucket,
+                    Key = id
+                };
 
-                    DeleteObjectResponse response = _S3Client.DeleteObject(request);
-                    int statusCode = (int)response.HttpStatusCode;
+                DeleteObjectResponse response = _S3Client.DeleteObject(request);
+                int statusCode = (int)response.HttpStatusCode;
 
-                    if (response != null)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                if (response != null)
+                {
+                    return true;
                 }
+                else
+                {
+                    return false;
+                } 
 
                 #endregion
             }
@@ -431,36 +479,56 @@ namespace BlobHelper
             {
                 #region Process
                  
-                using (_S3Client = new AmazonS3Client(_S3Credentials, _S3Region))
+                GetObjectRequest request = new GetObjectRequest
                 {
-                    GetObjectRequest request = new GetObjectRequest
+                    BucketName = _AwsSettings.Bucket,
+                    Key = id
+                };
+
+                using (GetObjectResponse response = _S3Client.GetObject(request))
+                using (Stream responseStream = response.ResponseStream)
+                using (StreamReader reader = new StreamReader(responseStream))
+                {
+                    if (response.ContentLength > 0)
                     {
-                        BucketName = _AwsSettings.Bucket,
-                        Key = id
-                    };
+                        // first copy the stream
+                        data = new byte[response.ContentLength];
+                        byte[] temp = new byte[2];
 
-                    using (GetObjectResponse response = _S3Client.GetObject(request))
-                    using (Stream responseStream = response.ResponseStream)
-                    using (StreamReader reader = new StreamReader(responseStream))
-                    {
-                        if (response.ContentLength > 0)
-                        {
-                            // first copy the stream
-                            data = new byte[response.ContentLength];
-                            byte[] temp = new byte[2];
+                        Stream bodyStream = response.ResponseStream;
+                        data = Common.StreamToBytes(bodyStream);
 
-                            Stream bodyStream = response.ResponseStream;
-                            data = Common.StreamToBytes(bodyStream);
-
-                            int statusCode = (int)response.HttpStatusCode;
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
+                        int statusCode = (int)response.HttpStatusCode;
+                        return true;
                     }
-                }
+                    else
+                    {
+                        return false;
+                    }
+                } 
+
+                #endregion
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+         
+        private bool S3Exists(string id)
+        {
+            try
+            {
+                #region Process
+                 
+                GetObjectMetadataRequest request = new GetObjectMetadataRequest
+                {
+                    BucketName = _AwsSettings.Bucket,
+                    Key = id
+                };
+
+                GetObjectMetadataResponse response = _S3Client.GetObjectMetadata(request);
+                return true; 
 
                 #endregion
             }
@@ -475,30 +543,27 @@ namespace BlobHelper
             try
             {
                 #region Process
-                 
-                using (_S3Client = new AmazonS3Client(_S3Credentials, _S3Region))
+                  
+                Stream s = new MemoryStream(data);
+                PutObjectRequest request = new PutObjectRequest
                 {
-                    Stream s = new MemoryStream(data);
-                    PutObjectRequest request = new PutObjectRequest
-                    {
-                        BucketName = _AwsSettings.Bucket,
-                        Key = id,
-                        InputStream = s,
-                        ContentType = "application/octet-stream",
-                    };
+                    BucketName = _AwsSettings.Bucket,
+                    Key = id,
+                    InputStream = s,
+                    ContentType = "application/octet-stream",
+                };
 
-                    PutObjectResponse response = _S3Client.PutObject(request);
-                    int statusCode = (int)response.HttpStatusCode;
+                PutObjectResponse response = _S3Client.PutObject(request);
+                int statusCode = (int)response.HttpStatusCode;
 
-                    if (response != null)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                if (response != null)
+                {
+                    return true;
                 }
+                else
+                {
+                    return false;
+                } 
 
                 #endregion
             }
@@ -554,6 +619,18 @@ namespace BlobHelper
 
                 int statusCode = ctx.LastResult.HttpStatusCode;
                 return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private bool AzureExists(string id)
+        {
+            try
+            {
+                return _AzureBlobClient.GetContainerReference(_AzureSettings.Container).GetBlockBlobReference(id).Exists();
             }
             catch (Exception)
             {

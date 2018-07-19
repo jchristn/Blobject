@@ -63,7 +63,10 @@ namespace Test
                     case "del":
                         _Blobs.Delete(
                             InputString("ID:", null, false));
-                        break; 
+                        break;
+                    case "exists":
+                        Console.WriteLine(_Blobs.Exists(InputString("ID:", null, false)));
+                        break;
                 }
             }
         }
@@ -170,6 +173,7 @@ namespace Test
             Console.WriteLine("  get     get a BLOB");
             Console.WriteLine("  write   write a BLOB");
             Console.WriteLine("  del     delete a BLOB");
+            Console.WriteLine("  exists  check if a BLOB exists");
         }
     }
 }
