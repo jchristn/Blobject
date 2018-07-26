@@ -10,9 +10,8 @@ If you have any issues or feedback, please file an issue here in Github. We'd lo
 ## Overview
 This project was built to provide a simple interface over external storage to help support projects that need to work with potentially multiple storage providers.  It is by no means a comprehensive interface, rather, it supports core methods for creation, retrieval, and deletion.
 
-## New in v1.0.3
-- Added ```Exists``` method
-- Improve S3 client resource utilization
+## New in v1.0.4
+- Serialize enums as strings
 
 ## Example Project
 Refer to the ```Test``` project for exercising the library.
@@ -96,3 +95,5 @@ blobs.Delete("test");
 New capabilities and fixes starting in v1.0.0 will be shown here.
 - Initial release
 - Support for Azure, AWS S3, Kvpbase, and disk
+- Added ```Exists``` method
+- Improve S3 client resource utilization
