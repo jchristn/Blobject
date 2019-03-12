@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+ 
 namespace BlobHelper
 {
     /// <summary>
@@ -101,7 +101,9 @@ namespace BlobHelper
         }
 
         internal Amazon.RegionEndpoint GetAwsRegion()
-        { 
+        {
+            Amazon.RegionEndpoint foo = Amazon.RegionEndpoint.APNortheast1;
+
             switch (Region)
             {
                 case AwsRegion.APNortheast1:

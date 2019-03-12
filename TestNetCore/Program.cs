@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BlobHelper;
 
-namespace Test
+namespace TestNetCore
 {
     class Program
     {
@@ -25,7 +25,8 @@ namespace Test
             while (runForever)
             {
                 byte[] data = null;
-                string url = null;
+                bool success = false;
+
                 string cmd = InputString("Command [? for help]:", null, false);
                 switch (cmd)
                 {
@@ -41,31 +42,26 @@ namespace Test
                         Console.Clear();
                         break;
                     case "get":
-                        _Blobs.Get(
-                            InputString("ID:", null, false),
-                            out data);
+                        data = _Blobs.Get(InputString("ID:", null, false)).Result;
                         if (data != null && data.Length > 0)
                         {
                             Console.WriteLine(Encoding.UTF8.GetString(data));
                         }
                         break;
                     case "write":
-                        _Blobs.Write(
+                        success = _Blobs.Write(
                             InputString("ID:", null, false),
                             false,
-                            InputString("Data:", null, false),
-                            out url);
-                        if (!String.IsNullOrEmpty(url))
-                        {
-                            Console.WriteLine("URL: " + url);
-                        }
+                            InputString("Data:", null, false)).Result;
+                        Console.WriteLine("Success: " + success);
                         break;
                     case "del":
-                        _Blobs.Delete(
-                            InputString("ID:", null, false));
+                        success = _Blobs.Delete(
+                            InputString("ID:", null, false)).Result;
+                        Console.WriteLine("Success: " + success);
                         break;
                     case "exists":
-                        Console.WriteLine(_Blobs.Exists(InputString("ID:", null, false)));
+                        Console.WriteLine(_Blobs.Exists(InputString("ID:", null, false)).Result);
                         break;
                 }
             }
@@ -162,7 +158,7 @@ namespace Test
 
                 return userInput;
             }
-        } 
+        }
 
         static void Menu()
         {

@@ -51,7 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BlobHelper\BlobHelper.csproj">
-      <Project>{618cc70b-e5ba-4de7-868b-f045a3ea0b26}</Project>
+      <Project>{54248f26-3c93-4eb1-80b9-a206e7851d9a}</Project>
       <Name>BlobHelper</Name>
     </ProjectReference>
   </ItemGroup>
