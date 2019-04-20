@@ -28,6 +28,7 @@ namespace BlobHelper
         private DiskSettings _DiskSettings;
         private KvpbaseSettings _KvpbaseSettings;
 
+        private AmazonS3Config _S3Config;
         private IAmazonS3 _S3Client;
         private Amazon.Runtime.BasicAWSCredentials _S3Credentials;
         private Amazon.RegionEndpoint _S3Region;
@@ -235,7 +236,24 @@ namespace BlobHelper
                 case StorageType.AwsS3:
                     _S3Region = _AwsSettings.GetAwsRegion();
                     _S3Credentials = new Amazon.Runtime.BasicAWSCredentials(_AwsSettings.AccessKey, _AwsSettings.SecretKey);
-                    _S3Client = new AmazonS3Client(_S3Credentials, _S3Region);
+
+                    if (String.IsNullOrEmpty(_AwsSettings.Hostname))
+                    {
+                        _S3Config = null;
+                        _S3Client = new AmazonS3Client(_S3Credentials, _S3Region);
+                    }
+                    else
+                    {
+                        _S3Config = new AmazonS3Config
+                        {
+                            RegionEndpoint = _S3Region,
+                            ServiceURL = _AwsSettings.Hostname,
+                            ForcePathStyle = true,
+                            UseHttp = _AwsSettings.Ssl
+                        };
+                         
+                        _S3Client = new AmazonS3Client(_S3Credentials, _S3Config);
+                    }
                     break;
                 case StorageType.Azure:
                     _AzureCredentials = new StorageCredentials(_AzureSettings.AccountName, _AzureSettings.AccessKey);
