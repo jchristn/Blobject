@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.1.2</Version>
+    <Version>1.1.4</Version>
     <Authors>Joel Christner</Authors>
     <Description>BLOB storage wrapper for Microsoft Azure, Amazon S3, Kvpbase, and local filesystem written in C#.</Description>
     <Copyright>(c)2019 Joel Christner</Copyright>
@@ -11,7 +11,7 @@
     <RepositoryUrl>https://github.com/jchristn/BlobHelper</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageLicenseUrl>https://github.com/jchristn/BlobHelper/blob/master/LICENSE.TXT</PackageLicenseUrl>
-    <PackageReleaseNotes>Added configurable hostname and SSL flags for AWS settings to support non-AWS S3-compatible storage.</PackageReleaseNotes>
+    <PackageReleaseNotes>Added more AWS S3 regions.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

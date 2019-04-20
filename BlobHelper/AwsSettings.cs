@@ -109,20 +109,47 @@ namespace BlobHelper
                 case "APNortheast1":
                     Region = AwsRegion.APNortheast1;
                     break;
+                case "APSouth1":
+                    Region = AwsRegion.APSouth1;
+                    break;
                 case "APSoutheast1":
                     Region = AwsRegion.APSoutheast1;
                     break;
                 case "APSoutheast2":
                     Region = AwsRegion.APSoutheast2;
                     break;
+                case "CACentral1":
+                    Region = AwsRegion.CACentral1;
+                    break;
+                case "CNNorth1":
+                    Region = AwsRegion.CNNorth1;
+                    break;
+                case "EUCentral1":
+                    Region = AwsRegion.EUCentral1;
+                    break;
+                case "EUNorth1":
+                    Region = AwsRegion.EUNorth1;
+                    break;
                 case "EUWest1":
                     Region = AwsRegion.EUWest1;
+                    break;
+                case "EUWest2":
+                    Region = AwsRegion.EUWest2;
+                    break;
+                case "EUWest3":
+                    Region = AwsRegion.EUWest3;
                     break;
                 case "SAEast1":
                     Region = AwsRegion.SAEast1;
                     break;
                 case "USEast1":
                     Region = AwsRegion.USEast1;
+                    break;
+                case "USEast2":
+                    Region = AwsRegion.USEast2;
+                    break;
+                case "USGovCloudEast1":
+                    Region = AwsRegion.USGovCloudEast1;
                     break;
                 case "USGovCloudWest1":
                     Region = AwsRegion.USGovCloudWest1;
@@ -165,20 +192,47 @@ namespace BlobHelper
                 case "APNortheast1":
                     Region = AwsRegion.APNortheast1;
                     break;
+                case "APSouth1":
+                    Region = AwsRegion.APSouth1;
+                    break;
                 case "APSoutheast1":
                     Region = AwsRegion.APSoutheast1;
                     break;
                 case "APSoutheast2":
                     Region = AwsRegion.APSoutheast2;
                     break;
+                case "CACentral1":
+                    Region = AwsRegion.CACentral1;
+                    break;
+                case "CNNorth1":
+                    Region = AwsRegion.CNNorth1;
+                    break;
+                case "EUCentral1":
+                    Region = AwsRegion.EUCentral1;
+                    break;
+                case "EUNorth1":
+                    Region = AwsRegion.EUNorth1;
+                    break;
                 case "EUWest1":
                     Region = AwsRegion.EUWest1;
+                    break;
+                case "EUWest2":
+                    Region = AwsRegion.EUWest2;
+                    break;
+                case "EUWest3":
+                    Region = AwsRegion.EUWest3;
                     break;
                 case "SAEast1":
                     Region = AwsRegion.SAEast1;
                     break;
                 case "USEast1":
                     Region = AwsRegion.USEast1;
+                    break;
+                case "USEast2":
+                    Region = AwsRegion.USEast2;
+                    break;
+                case "USGovCloudEast1":
+                    Region = AwsRegion.USGovCloudEast1;
                     break;
                 case "USGovCloudWest1":
                     Region = AwsRegion.USGovCloudWest1;
@@ -198,16 +252,34 @@ namespace BlobHelper
             {
                 case AwsRegion.APNortheast1:
                     return Amazon.RegionEndpoint.APNortheast1;
+                case AwsRegion.APNortheast2:
+                    return Amazon.RegionEndpoint.APNortheast2;
+                case AwsRegion.APNortheast3:
+                    return Amazon.RegionEndpoint.APNortheast3;
+                case AwsRegion.APSouth1:
+                    return Amazon.RegionEndpoint.APSouth1;
                 case AwsRegion.APSoutheast1:
                     return Amazon.RegionEndpoint.APSoutheast1;
                 case AwsRegion.APSoutheast2:
                     return Amazon.RegionEndpoint.APSoutheast2;
+                case AwsRegion.CACentral1:
+                    return Amazon.RegionEndpoint.CACentral1;
+                case AwsRegion.CNNorth1:
+                    return Amazon.RegionEndpoint.CNNorth1;
+                case AwsRegion.EUCentral1:
+                    return Amazon.RegionEndpoint.EUCentral1;
+                case AwsRegion.EUNorth1:
+                    return Amazon.RegionEndpoint.EUNorth1;
                 case AwsRegion.EUWest1:
                     return Amazon.RegionEndpoint.EUWest1;
                 case AwsRegion.SAEast1:
                     return Amazon.RegionEndpoint.SAEast1;
                 case AwsRegion.USEast1:
                     return Amazon.RegionEndpoint.USEast1;
+                case AwsRegion.USEast2:
+                    return Amazon.RegionEndpoint.USEast2;
+                case AwsRegion.USGovCloudEast1:
+                    return Amazon.RegionEndpoint.USGovCloudEast1;
                 case AwsRegion.USGovCloudWest1:
                     return Amazon.RegionEndpoint.USGovCloudWest1;
                 case AwsRegion.USWest1:
