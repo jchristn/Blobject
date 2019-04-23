@@ -73,7 +73,7 @@ Blobs blobs = new Blobs(settings);
 
 ## Getting Started - IO
 ```
-bool success = blobs.Write("test", "This is some data").Result;
+bool success = blobs.Write("test", "text/plain", This is some data").Result;
 byte[] data = blobs.Get("test"); // throws IOException
 bool exists = blobs.Exists("test").Result;
 bool success = blobs.Delete("test").Result;
