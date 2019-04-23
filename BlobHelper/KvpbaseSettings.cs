@@ -11,25 +11,43 @@ namespace BlobHelper
     /// </summary>
     public class KvpbaseSettings
     {
+        #region Public-Members
+
         /// <summary>
         /// Kvpbase endpoint URL, of the form http://[hostname]:[port]/.
         /// </summary>
-        public string Endpoint { get; private set; }
+        public string Endpoint { get; set; }
 
         /// <summary>
         /// Kvpbase user GUID.
         /// </summary>
-        public string UserGuid { get; private set; }
+        public string UserGuid { get; set; }
 
         /// <summary>
         /// Kvpbase container.
         /// </summary>
-        public string Container { get; private set; }
+        public string Container { get; set; }
 
         /// <summary>
         /// Kvpbase API key.
         /// </summary>
-        public string ApiKey { get; private set; }
+        public string ApiKey { get; set; }
+
+        #endregion
+
+        #region Private-Members
+
+        #endregion
+
+        #region Constructors-and-Factories
+
+        /// <summary>
+        /// Initialize the object.
+        /// </summary>
+        public KvpbaseSettings()
+        {
+
+        }
 
         /// <summary>
         /// Initialize the object.
@@ -48,5 +66,15 @@ namespace BlobHelper
             Container = container;
             ApiKey = apiKey;
         }
+
+        #endregion
+
+        #region Public-Methods
+
+        #endregion
+
+        #region Private-Methods
+
+        #endregion
     }
 }

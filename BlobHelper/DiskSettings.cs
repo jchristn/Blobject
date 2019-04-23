@@ -11,10 +11,28 @@ namespace BlobHelper
     /// </summary>
     public class DiskSettings
     {
+        #region Public-Members
+
         /// <summary>
         /// The filesystem directory to use.
         /// </summary>
-        public string Directory { get; private set; }
+        public string Directory { get; set; }
+
+        #endregion
+
+        #region Private-Members
+
+        #endregion
+
+        #region Constructors-and-Factories
+
+        /// <summary>
+        /// Initialize the object.
+        /// </summary>
+        public DiskSettings()
+        {
+
+        }
 
         /// <summary>
         /// Initialize the object.
@@ -25,5 +43,15 @@ namespace BlobHelper
             if (String.IsNullOrEmpty(directory)) throw new ArgumentNullException(nameof(directory));
             Directory = directory; 
         }
+
+        #endregion
+
+        #region Public-Methods
+
+        #endregion
+
+        #region Private-Methods
+
+        #endregion
     }
 }

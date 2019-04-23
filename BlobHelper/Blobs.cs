@@ -14,6 +14,9 @@ using Amazon.S3.Model;
 
 namespace BlobHelper
 {
+    /// <summary>
+    /// BLOB storage client.
+    /// </summary>
     public class Blobs
     {
         #region Public-Members

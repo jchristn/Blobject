@@ -10,37 +10,55 @@ namespace BlobHelper
     /// Settings when using AWS S3 for storage.
     /// </summary>
     public class AwsSettings
-    {   
+    {
+        #region Public-Members
+
         /// <summary>
         /// Override the AWS S3 endpoint (if using non-Amazon storage), otherwise leave null.
         /// Use the form http://localhost:8000/
         /// </summary>
-        public string Hostname { get; private set; }
+        public string Hostname { get; set; }
 
         /// <summary>
         /// Enable or disable SSL (only if using non-Amazon storage).
         /// </summary>
-        public bool Ssl { get; private set; }
+        public bool Ssl { get; set; }
 
         /// <summary>
         /// AWS S3 access key.
         /// </summary>
-        public string AccessKey { get; private set; }
+        public string AccessKey { get; set; }
 
         /// <summary>
         /// AWS S3 secret key.
         /// </summary>
-        public string SecretKey { get; private set; }
+        public string SecretKey { get; set; }
 
         /// <summary>
         /// AWS S3 region.
         /// </summary>
-        public AwsRegion Region { get; private set; }
+        public AwsRegion Region { get; set; }
 
         /// <summary>
         /// AWS S3 bucket.
         /// </summary>
-        public string Bucket { get; private set; }
+        public string Bucket { get; set; }
+
+        #endregion
+
+        #region Private-Members
+
+        #endregion
+
+        #region Constructors-and-Factories
+
+        /// <summary>
+        /// Initialize the object.
+        /// </summary>
+        public AwsSettings()
+        {
+
+        }
 
         /// <summary>
         /// Initialize the object.
@@ -246,7 +264,11 @@ namespace BlobHelper
             }
         }
 
-        internal Amazon.RegionEndpoint GetAwsRegion()
+        #endregion
+
+        #region Public-Methods
+
+        public Amazon.RegionEndpoint GetAwsRegion()
         { 
             switch (Region)
             {
@@ -291,10 +313,14 @@ namespace BlobHelper
             throw new ArgumentException("Unknown region: " + Region.ToString());
         }
 
-        private bool ValidateRegion(string region)
+        public bool ValidateRegion(string region)
         {
             return ValidRegions().Contains(region);
         }
+         
+        #endregion
+
+        #region Private-Methods
 
         private List<String> ValidRegions()
         {
@@ -310,5 +336,7 @@ namespace BlobHelper
             ret.Add("USWest2");
             return ret;
         }
+
+        #endregion
     }
 }

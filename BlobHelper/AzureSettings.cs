@@ -11,25 +11,43 @@ namespace BlobHelper
     /// </summary>
     public class AzureSettings
     {
+        #region Public-Members
+
         /// <summary>
         /// Microsoft Azure BLOB storage account name (the name of the account in the Azure portal).
         /// </summary>
-        public string AccountName { get; private set; }
+        public string AccountName { get; set; }
 
         /// <summary>
         /// Microsoft Azure BLOB storage access key.
         /// </summary>
-        public string AccessKey { get; private set; }
+        public string AccessKey { get; set; }
 
         /// <summary>
         /// Microsoft Azure BLOB storage endpoint (primary or secondary from the Azure portal, likely of the form https://[accountname].blob.core.windows.net/.
         /// </summary>
-        public string Endpoint { get; private set; }
+        public string Endpoint { get; set; }
 
         /// <summary>
         /// Microsoft Azure BLOB storage container.
         /// </summary>
-        public string Container { get; private set; }
+        public string Container { get; set; }
+
+        #endregion
+
+        #region Private-Members
+
+        #endregion
+
+        #region Constructors-and-Factories
+
+        /// <summary>
+        /// Initialize the object.
+        /// </summary>
+        public AzureSettings()
+        {
+
+        }
 
         /// <summary>
         /// Initialize the object.
@@ -49,5 +67,15 @@ namespace BlobHelper
             Endpoint = endpoint;
             Container = container;
         }
+
+        #endregion
+
+        #region Public-Methods
+
+        #endregion
+
+        #region Private-Methods
+
+        #endregion
     }
 }
