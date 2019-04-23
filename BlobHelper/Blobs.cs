@@ -170,40 +170,22 @@ namespace BlobHelper
         /// <returns>True if successful.</returns>
         public async Task<bool> Write(
             string id,
-            bool base64,
-            object data)
+            string contentType,
+            byte[] data)
         {
             if (String.IsNullOrEmpty(id)) throw new ArgumentNullException(nameof(id));
+            if (_StorageType != StorageType.Disk && String.IsNullOrEmpty(contentType)) throw new ArgumentNullException(nameof(contentType));
 
-            byte[] byteData;
-
-            if (base64 && (data is string))
-            {
-                byteData = Common.Base64ToBytes((string)data);
-            }
-            else if (data is byte[])
-            {
-                byteData = (byte[])data;
-            }
-            else if (data is string)
-            {
-                byteData = Encoding.UTF8.GetBytes((string)data);
-            }
-            else
-            {
-                byteData = Common.ObjectToBytes(data);
-            }
-            
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    return await S3Write(id, byteData);
+                    return await S3Write(id, contentType, data);
                 case StorageType.Azure:
-                    return await AzureWrite(id, byteData);
+                    return await AzureWrite(id, contentType, data);
                 case StorageType.Disk:
-                    return await DiskWrite(id, byteData);
+                    return await DiskWrite(id, data);
                 case StorageType.Kvpbase:
-                    return _Kvpbase.WriteObject(_KvpbaseSettings.Container, id, "application/octet-stream", byteData);
+                    return _Kvpbase.WriteObject(_KvpbaseSettings.Container, id, contentType, data);
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
             } 
@@ -385,7 +367,7 @@ namespace BlobHelper
                 GetObjectRequest request = new GetObjectRequest
                 {
                     BucketName = _AwsSettings.Bucket,
-                    Key = id
+                    Key = id,
                 };
 
                 using (GetObjectResponse response = await _S3Client.GetObjectAsync(request))
@@ -436,7 +418,7 @@ namespace BlobHelper
             }
         }
 
-        private async Task<bool> S3Write(string id, byte[] data)
+        private async Task<bool> S3Write(string id, string contentType, byte[] data)
         {
             if (String.IsNullOrEmpty(id)) throw new ArgumentNullException(nameof(id));
                   
@@ -447,7 +429,7 @@ namespace BlobHelper
                 BucketName = _AwsSettings.Bucket,
                 Key = id,
                 InputStream = s,
-                ContentType = "application/octet-stream",
+                ContentType = contentType,
             };
 
             PutObjectResponse response = await _S3Client.PutObjectAsync(request);
@@ -523,12 +505,13 @@ namespace BlobHelper
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<bool> AzureWrite(string id, byte[] data)
+        private async Task<bool> AzureWrite(string id, string contentType, byte[] data)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             try
             {
                 CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(id);
+                blockBlob.Properties.ContentType = contentType;
                 OperationContext ctx = new OperationContext();
                 blockBlob.UploadFromByteArrayAsync(data, 0, data.Length).Wait(); 
                 return true;

@@ -51,8 +51,8 @@ namespace TestNetCore
                     case "write":
                         success = _Blobs.Write(
                             InputString("ID:", null, false),
-                            false,
-                            InputString("Data:", null, false)).Result;
+                            InputString("Content type:", "text/plain", false),
+                            Encoding.UTF8.GetBytes(InputString("Data:", null, false))).Result;
                         Console.WriteLine("Success: " + success);
                         break;
                     case "del":
