@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.2.0</Version>
+    <Version>1.2.2</Version>
     <Authors>Joel Christner</Authors>
     <Description>BLOB storage wrapper for Microsoft Azure, Amazon S3, Kvpbase, and local filesystem written in C#.</Description>
     <Copyright>(c)2019 Joel Christner</Copyright>
@@ -11,7 +11,9 @@
     <RepositoryUrl>https://github.com/jchristn/BlobHelper</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageLicenseUrl>https://github.com/jchristn/BlobHelper/blob/master/LICENSE.TXT</PackageLicenseUrl>
-    <PackageReleaseNotes>Breaking change to Write() method to include ContentType</PackageReleaseNotes>
+    <PackageReleaseNotes>Add missing regions</PackageReleaseNotes>
+    <PackageIconUrl>https://raw.githubusercontent.com/jchristn/BlobHelper/master/assets/icon.ico</PackageIconUrl>
+    <PackageTags>blob azure storage s3 object rest</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

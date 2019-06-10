@@ -326,11 +326,22 @@ namespace BlobHelper
         {
             List<string> ret = new List<string>();
             ret.Add("APNortheast1");
+            ret.Add("APNortheast2");
+            ret.Add("APNortheast3");
             ret.Add("APSoutheast1");
             ret.Add("APSoutheast2");
+            ret.Add("APSouth1");
+            ret.Add("CACentral1");
+            ret.Add("CNNorth1");
+            ret.Add("EUCentral1");
+            ret.Add("EUNorth1");
             ret.Add("EUWest1");
+            ret.Add("EUWest2");
+            ret.Add("EUWest3");
             ret.Add("SAEast1");
             ret.Add("USEast1");
+            ret.Add("USEast2");
+            ret.Add("USGovCloudEast1");
             ret.Add("USGovCloudWest1");
             ret.Add("USWest1");
             ret.Add("USWest2");

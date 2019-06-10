@@ -18,6 +18,7 @@ This project was built to provide a simple interface over external storage to he
 ## New in v1.2.0
 
 - Breaking change, add ContentType to Write method
+- Added missing AWS regions
 
 ## Example Project
 

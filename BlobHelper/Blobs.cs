@@ -430,6 +430,7 @@ namespace BlobHelper
                 Key = id,
                 InputStream = s,
                 ContentType = contentType,
+                UseChunkEncoding = false                
             };
 
             PutObjectResponse response = await _S3Client.PutObjectAsync(request);
