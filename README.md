@@ -19,6 +19,8 @@ This project was built to provide a simple interface over external storage to he
 
 - Added enumeration capabilities to list contents of a bucket or container
 - Added metadata capabilities to retrieve metadata for a given BLOB
+- Stream support for object read and write
+- Reworked test client exercising read, write, upload, download, metadata, exists, and enumeration
 
 ## Example Project
 
