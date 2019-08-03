@@ -15,10 +15,10 @@ If you have any issues or feedback, please file an issue here in Github. We'd lo
 
 This project was built to provide a simple interface over external storage to help support projects that need to work with potentially multiple storage providers.  It is by no means a comprehensive interface, rather, it supports core methods for creation, retrieval, and deletion.
 
-## New in v1.2.0
+## New in v1.3.x
 
-- Breaking change, add ContentType to Write method
-- Added missing AWS regions
+- Added enumeration capabilities to list contents of a bucket or container
+- Added metadata capabilities to retrieve metadata for a given BLOB
 
 ## Example Project
 
@@ -83,6 +83,10 @@ bool success = blobs.Delete("test").Result;
 ## Version History
 
 New capabilities and fixes starting in v1.0.0 will be shown here.
+
+v1.2.x
+- Breaking change, add ContentType to Write method
+- Added missing AWS regions
 
 v1.1.x
 - Breaking change; async methods

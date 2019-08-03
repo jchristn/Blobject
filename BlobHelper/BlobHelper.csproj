@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.2.2</Version>
+    <Version>1.3.0</Version>
     <Authors>Joel Christner</Authors>
     <Description>BLOB storage wrapper for Microsoft Azure, Amazon S3, Kvpbase, and local filesystem written in C#.</Description>
     <Copyright>(c)2019 Joel Christner</Copyright>
@@ -11,19 +11,19 @@
     <RepositoryUrl>https://github.com/jchristn/BlobHelper</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageLicenseUrl>https://github.com/jchristn/BlobHelper/blob/master/LICENSE.TXT</PackageLicenseUrl>
-    <PackageReleaseNotes>Add missing regions</PackageReleaseNotes>
+    <PackageReleaseNotes>Enumeration and object metadata.</PackageReleaseNotes>
     <PackageIconUrl>https://raw.githubusercontent.com/jchristn/BlobHelper/master/assets/icon.ico</PackageIconUrl>
     <PackageTags>blob azure storage s3 object rest</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Core" Version="3.3.100.7" />
+    <PackageReference Include="AWSSDK.Core" Version="3.3.103.18" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.3.100.1" />
-    <PackageReference Include="AWSSDK.S3" Version="3.3.101.5" />
-    <PackageReference Include="KvpbaseSDK" Version="3.1.5" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.104.6" />
+    <PackageReference Include="KvpbaseSDK" Version="3.1.8" />
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="RestWrapper" Version="1.0.9" />
+    <PackageReference Include="RestWrapper" Version="2.0.4" />
     <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
   </ItemGroup>
 
