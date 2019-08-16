@@ -17,6 +17,7 @@ This project was built to provide a simple interface over external storage to he
 
 ## New in v1.3.x
 
+- Fix to allow non-SSL connections to S3
 - Added enumeration capabilities to list contents of a bucket or container
 - Added metadata capabilities to retrieve metadata for a given BLOB
 - Stream support for object read and write

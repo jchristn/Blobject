@@ -344,9 +344,15 @@ namespace BlobHelper
                     _S3Credentials = new Amazon.Runtime.BasicAWSCredentials(_AwsSettings.AccessKey, _AwsSettings.SecretKey);
 
                     if (String.IsNullOrEmpty(_AwsSettings.Hostname))
-                    {
-                        _S3Config = null;
-                        _S3Client = new AmazonS3Client(_S3Credentials, _S3Region);
+                    { 
+                        _S3Config = new AmazonS3Config
+                        {
+                            RegionEndpoint = _S3Region,
+                            UseHttp = !_AwsSettings.Ssl,
+                        };
+
+                        // _S3Client = new AmazonS3Client(_S3Credentials, _S3Region);
+                        _S3Client = new AmazonS3Client(_S3Credentials, _S3Config);
                     }
                     else
                     {
@@ -355,7 +361,7 @@ namespace BlobHelper
                             RegionEndpoint = _S3Region,
                             ServiceURL = _AwsSettings.Hostname,
                             ForcePathStyle = true,
-                            UseHttp = _AwsSettings.Ssl
+                            UseHttp = !_AwsSettings.Ssl
                         };
                          
                         _S3Client = new AmazonS3Client(_S3Credentials, _S3Config);

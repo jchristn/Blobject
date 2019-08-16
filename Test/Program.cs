@@ -107,7 +107,8 @@ namespace TestNetCore
                         InputString("Access key :", null, false),
                         InputString("Secret key :", null, false),
                         InputString("Region     :", "USWest1", false),
-                        InputString("Bucket     :", null, false));
+                        InputString("Bucket     :", null, false),
+                        InputBoolean("SSL        :", true));
                     _Blobs = new Blobs(_AwsSettings);
                     break;
                 case StorageType.Azure:
@@ -157,6 +158,49 @@ namespace TestNetCore
                 }
 
                 return userInput;
+            }
+        }
+
+        static bool InputBoolean(string question, bool yesDefault)
+        {
+            Console.Write(question);
+
+            if (yesDefault) Console.Write(" [Y/n]? ");
+            else Console.Write(" [y/N]? ");
+
+            string userInput = Console.ReadLine();
+
+            if (String.IsNullOrEmpty(userInput))
+            {
+                if (yesDefault) return true;
+                return false;
+            }
+
+            userInput = userInput.ToLower();
+
+            if (yesDefault)
+            {
+                if (
+                    (String.Compare(userInput, "n") == 0)
+                    || (String.Compare(userInput, "no") == 0)
+                   )
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            else
+            {
+                if (
+                    (String.Compare(userInput, "y") == 0)
+                    || (String.Compare(userInput, "yes") == 0)
+                   )
+                {
+                    return true;
+                }
+
+                return false;
             }
         }
 
