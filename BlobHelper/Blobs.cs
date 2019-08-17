@@ -343,7 +343,7 @@ namespace BlobHelper
                     _S3Region = _AwsSettings.GetAwsRegion();
                     _S3Credentials = new Amazon.Runtime.BasicAWSCredentials(_AwsSettings.AccessKey, _AwsSettings.SecretKey);
 
-                    if (String.IsNullOrEmpty(_AwsSettings.Hostname))
+                    if (String.IsNullOrEmpty(_AwsSettings.Endpoint))
                     { 
                         _S3Config = new AmazonS3Config
                         {
@@ -359,7 +359,7 @@ namespace BlobHelper
                         _S3Config = new AmazonS3Config
                         {
                             RegionEndpoint = _S3Region,
-                            ServiceURL = _AwsSettings.Hostname,
+                            ServiceURL = _AwsSettings.Endpoint,
                             ForcePathStyle = true,
                             UseHttp = !_AwsSettings.Ssl
                         };

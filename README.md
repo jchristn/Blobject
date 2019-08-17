@@ -17,6 +17,7 @@ This project was built to provide a simple interface over external storage to he
 
 ## New in v1.3.x
 
+- New constructor to better support S3-compatible storage, update to test app
 - Fix to allow non-SSL connections to S3
 - Added enumeration capabilities to list contents of a bucket or container
 - Added metadata capabilities to retrieve metadata for a given BLOB

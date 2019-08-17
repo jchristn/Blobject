@@ -17,7 +17,7 @@ namespace BlobHelper
         /// Override the AWS S3 endpoint (if using non-Amazon storage), otherwise leave null.
         /// Use the form http://localhost:8000/
         /// </summary>
-        public string Hostname { get; set; }
+        public string Endpoint { get; set; }
 
         /// <summary>
         /// Enable or disable SSL (only if using non-Amazon storage).
@@ -72,7 +72,7 @@ namespace BlobHelper
             if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
             if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
             if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
-            Hostname = null;
+            Endpoint = null;
             Ssl = true;
             AccessKey = accessKey;
             SecretKey = secretKey;
@@ -114,7 +114,7 @@ namespace BlobHelper
             if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
             if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
             if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
-            Hostname = null;
+            Endpoint = null;
             Ssl = true;
             AccessKey = accessKey;
             SecretKey = secretKey;
@@ -148,24 +148,49 @@ namespace BlobHelper
         /// <summary>
         /// Initialize the object.
         /// </summary>
-        /// <param name="hostname">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
+        /// <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
         /// <param name="ssl">Enable or disable SSL.</param>
         /// <param name="accessKey">Access key with which to access AWS S3.</param>
         /// <param name="secretKey">Secret key with which to access AWS S3.</param>
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
-        public AwsSettings(string hostname, bool ssl, string accessKey, string secretKey, AwsRegion region, string bucket)
+        public AwsSettings(string endpoint, bool ssl, string accessKey, string secretKey, AwsRegion region, string bucket)
         {
-            if (String.IsNullOrEmpty(hostname)) throw new ArgumentNullException(nameof(hostname));
+            if (String.IsNullOrEmpty(endpoint)) throw new ArgumentNullException(nameof(endpoint));
             if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
             if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
             if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
-            Hostname = hostname;
+            Endpoint = endpoint;
             Ssl = ssl;
             AccessKey = accessKey;
             SecretKey = secretKey;
             Region = region;
             Bucket = bucket;
+        }
+
+        /// <summary>
+        /// Initialize the object.
+        /// </summary>
+        /// <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
+        /// <param name="ssl">Enable or disable SSL.</param>
+        /// <param name="accessKey">Access key with which to access AWS S3.</param>
+        /// <param name="secretKey">Secret key with which to access AWS S3.</param>
+        /// <param name="region">AWS region.</param>
+        /// <param name="bucket">Bucket in which to store BLOBs.</param>
+        public AwsSettings(string endpoint, bool ssl, string accessKey, string secretKey, string region, string bucket)
+        {
+            if (String.IsNullOrEmpty(endpoint)) throw new ArgumentNullException(nameof(endpoint));
+            if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
+            if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
+            if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
+            Endpoint = endpoint;
+            Ssl = ssl;
+            AccessKey = accessKey;
+            SecretKey = secretKey;
+            Bucket = bucket;
+
+            if (!ValidateRegion(region)) throw new ArgumentException("Unable to validate region: " + region);
+            Region = GetRegionFromString(region);
         }
 
         #endregion

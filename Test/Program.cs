@@ -103,12 +103,15 @@ namespace TestNetCore
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
+                    Console.WriteLine("For S3-compatible storage, endpoint should be of the form http://[hostname]:[port]/");
                     _AwsSettings = new AwsSettings(
+                        InputString("Endpoint   :", null, true),
+                        InputBoolean("SSL        :", true),
                         InputString("Access key :", null, false),
-                        InputString("Secret key :", null, false),
+                        InputString("Secret key :", null, false), 
                         InputString("Region     :", "USWest1", false),
-                        InputString("Bucket     :", null, false),
-                        InputBoolean("SSL        :", true));
+                        InputString("Bucket     :", null, false)
+                        );
                     _Blobs = new Blobs(_AwsSettings);
                     break;
                 case StorageType.Azure:
