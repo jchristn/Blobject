@@ -225,10 +225,21 @@ namespace TestNetCore
 
         static void WriteBlob()
         {
-            bool success = _Blobs.Write(
-                InputString("Key:", null, false),
-                InputString("Content type:", "text/plain", false),
-                Encoding.UTF8.GetBytes(InputString("Data:", null, false))).Result;
+            string key = InputString("Key:", null, false);
+            string contentType = InputString("Content type:", "text/plain", true);
+            string data = InputString("Data:", null, true);
+
+            bool success = false;
+
+            if (String.IsNullOrEmpty(data))
+            {
+                success = _Blobs.Write(key, contentType, null).Result;
+            }
+            else
+            {
+                success = _Blobs.Write(key, contentType, Encoding.UTF8.GetBytes(data)).Result;
+            }
+
             Console.WriteLine("Success: " + success);
         }
 

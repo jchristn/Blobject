@@ -17,6 +17,7 @@ This project was built to provide a simple interface over external storage to he
 
 ## New in v1.3.x
 
+- Better support for creating S3 folders using objects with keys ending in '/' and no data
 - New constructor to better support S3-compatible storage, update to test app
 - Fix to allow non-SSL connections to S3
 - Added enumeration capabilities to list contents of a bucket or container

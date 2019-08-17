@@ -825,17 +825,26 @@ namespace BlobHelper
         {
             try
             {
-                Stream s = new MemoryStream(data);
+                PutObjectRequest request = new PutObjectRequest();
 
-                PutObjectRequest request = new PutObjectRequest
+                if (data == null || data.Length < 0)
+                { 
+                    request.BucketName = _AwsSettings.Bucket;
+                    request.Key = key;
+                    request.ContentType = contentType;
+                    request.UseChunkEncoding = false;
+                    request.InputStream = new MemoryStream(new byte[0]);
+                }
+                else
                 {
-                    BucketName = _AwsSettings.Bucket,
-                    Key = key,
-                    InputStream = s,
-                    ContentType = contentType,
-                    UseChunkEncoding = false
-                };
-
+                    Stream s = new MemoryStream(data);
+                    request.BucketName = _AwsSettings.Bucket;
+                    request.Key = key;
+                    request.ContentType = contentType;
+                    request.UseChunkEncoding = false;
+                    request.InputStream = s;
+                }
+                 
                 PutObjectResponse response = await _S3Client.PutObjectAsync(request);
                 int statusCode = (int)response.HttpStatusCode;
 
@@ -852,15 +861,25 @@ namespace BlobHelper
         {
             try
             {
-                PutObjectRequest request = new PutObjectRequest
-                {
-                    BucketName = _AwsSettings.Bucket,
-                    Key = key,
-                    InputStream = stream,
-                    ContentType = contentType,
-                    UseChunkEncoding = false
-                };
+                PutObjectRequest request = new PutObjectRequest();
 
+                if (stream == null || contentLength < 1)
+                {
+                    request.BucketName = _AwsSettings.Bucket;
+                    request.Key = key;
+                    request.ContentType = contentType;
+                    request.UseChunkEncoding = false;
+                    request.InputStream = new MemoryStream(new byte[0]);
+                }
+                else
+                { 
+                    request.BucketName = _AwsSettings.Bucket;
+                    request.Key = key;
+                    request.ContentType = contentType;
+                    request.UseChunkEncoding = false;
+                    request.InputStream = stream;
+                }
+                 
                 PutObjectResponse response = _S3Client.PutObjectAsync(request).Result;
                 int statusCode = (int)response.HttpStatusCode;
 
