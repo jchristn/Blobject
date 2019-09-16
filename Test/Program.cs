@@ -63,6 +63,12 @@ namespace TestNetCore
                     case "enum":
                         Enumerate();
                         break;
+                    case "enumpfx":
+                        EnumeratePrefix();
+                        break;
+                    case "url":
+                        GenerateUrl();
+                        break;
                 }
             }
         }
@@ -104,14 +110,28 @@ namespace TestNetCore
             {
                 case StorageType.AwsS3:
                     Console.WriteLine("For S3-compatible storage, endpoint should be of the form http://[hostname]:[port]/");
-                    _AwsSettings = new AwsSettings(
-                        InputString("Endpoint   :", null, true),
-                        InputBoolean("SSL        :", true),
-                        InputString("Access key :", null, false),
-                        InputString("Secret key :", null, false), 
-                        InputString("Region     :", "USWest1", false),
-                        InputString("Bucket     :", null, false)
-                        );
+                    string endpoint = InputString("Endpoint   :", null, true);
+
+                    if (String.IsNullOrEmpty(endpoint))
+                    {
+                        _AwsSettings = new AwsSettings( 
+                           InputString("Access key :", null, false),
+                           InputString("Secret key :", null, false),
+                           InputString("Region     :", "USWest1", false),
+                           InputString("Bucket     :", null, false)
+                           ); 
+                    }
+                    else
+                    {
+                        _AwsSettings = new AwsSettings(
+                            endpoint,
+                            InputBoolean("SSL        :", true),
+                            InputString("Access key :", null, false),
+                            InputString("Secret key :", null, false),
+                            InputString("Region     :", "USWest1", false),
+                            InputString("Bucket     :", null, false)
+                            );
+                    }
                     _Blobs = new Blobs(_AwsSettings);
                     break;
                 case StorageType.Azure:
@@ -209,6 +229,7 @@ namespace TestNetCore
 
         static void Menu()
         {
+            Console.WriteLine("");
             Console.WriteLine("Available commands:");
             Console.WriteLine("  ?          Help, this menu");
             Console.WriteLine("  cls        Clear the screen");
@@ -221,6 +242,9 @@ namespace TestNetCore
             Console.WriteLine("  exists     Check if a BLOB exists");
             Console.WriteLine("  md         Retrieve BLOB metadata");
             Console.WriteLine("  enum       Enumerate a bucket");
+            Console.WriteLine("  enumpfx    Enumerate a bucket by object prefix");
+            Console.WriteLine("  url        Generate a URL for an object by key");
+            Console.WriteLine("");
         }
 
         static void WriteBlob()
@@ -360,6 +384,42 @@ namespace TestNetCore
 
                 if (!String.IsNullOrEmpty(nextContinuationToken)) Console.WriteLine("Continuation token: " + nextContinuationToken);
             }
+        }
+
+        static void EnumeratePrefix()
+        {
+            List<BlobMetadata> blobs = null;
+            string nextContinuationToken = null;
+
+            if (_Blobs.Enumerate(
+                InputString("Prefix:", null, true), 
+                InputString("Continuation token:", null, true),
+                out nextContinuationToken,
+                out blobs))
+            {
+                if (blobs != null && blobs.Count > 0)
+                {
+                    foreach (BlobMetadata curr in blobs)
+                    {
+                        Console.WriteLine(
+                            String.Format("{0,-27}", curr.Key) +
+                            String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
+                            String.Format("{0,-30}", curr.Created.ToString("yyyy-MM-dd HH:mm:ss")));
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("(none)");
+                }
+
+                if (!String.IsNullOrEmpty(nextContinuationToken)) Console.WriteLine("Continuation token: " + nextContinuationToken);
+            }
+        }
+
+        static void GenerateUrl()
+        {
+            Console.WriteLine(_Blobs.GenerateUrl(
+                InputString("Key:", "hello.txt", false)));
         }
     }
 }

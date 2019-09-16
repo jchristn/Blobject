@@ -1,30 +1,38 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.3.3</Version>
+    <Version>1.3.5</Version>
     <Authors>Joel Christner</Authors>
     <Description>BLOB storage wrapper for Microsoft Azure, Amazon S3, Kvpbase, and local filesystem written in C#.</Description>
     <Copyright>(c)2019 Joel Christner</Copyright>
     <PackageProjectUrl>https://github.com/jchristn/BlobHelper</PackageProjectUrl>
     <RepositoryUrl>https://github.com/jchristn/BlobHelper</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
-    <PackageLicenseUrl>https://github.com/jchristn/BlobHelper/blob/master/LICENSE.TXT</PackageLicenseUrl>
-    <PackageReleaseNotes>Support for creating S3 folders using keys containing '/'</PackageReleaseNotes>
+    <PackageLicenseUrl></PackageLicenseUrl>
+    <PackageReleaseNotes>Added GenerateUrl(string key) API</PackageReleaseNotes>
     <PackageIconUrl>https://raw.githubusercontent.com/jchristn/BlobHelper/master/assets/icon.ico</PackageIconUrl>
     <PackageTags>blob azure storage s3 object rest</PackageTags>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Core" Version="3.3.103.18" />
+    <PackageReference Include="AWSSDK.Core" Version="3.3.103.29" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.3.100.1" />
-    <PackageReference Include="AWSSDK.S3" Version="3.3.104.6" />
-    <PackageReference Include="KvpbaseSDK" Version="3.1.8" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.104.17" />
+    <PackageReference Include="KvpbaseSDK" Version="3.3.2.6" />
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="RestWrapper" Version="2.0.4" />
     <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE.md">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -279,6 +279,25 @@ namespace BlobHelper
             }
         }
 
+        public string GenerateUrl(string key)
+        {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+
+            switch (_StorageType)
+            {
+                case StorageType.AwsS3:
+                    return S3GenerateUrl(key);
+                case StorageType.Azure:
+                    return AzureGenerateUrl(key);
+                case StorageType.Disk:
+                    return DiskGenerateUrl(key);
+                case StorageType.Kvpbase:
+                    return KvpbaseGenerateUrl(key);
+                default:
+                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+            }
+        }
+
         /// <summary>
         /// Retrieve BLOB metadata.
         /// </summary>
@@ -306,8 +325,7 @@ namespace BlobHelper
 
         /// <summary>
         /// Enumerate BLOBs.
-        /// </summary>
-        /// <param name="prefix">Key prefix that must match.</param>
+        /// </summary> 
         /// <param name="continuationToken">Continuation token to use for subsequent enumeration requests.</param>
         /// <param name="nextContinuationToken">Next continuation token to supply should you want to continue enumerating from the end of the current response.</param>
         /// <param name="blobs">List of BLOB metadata.</param>
@@ -326,6 +344,33 @@ namespace BlobHelper
                     return DiskEnumerate(continuationToken, out nextContinuationToken, out blobs);
                 case StorageType.Kvpbase:
                     return KvpbaseEnumerate(continuationToken, out nextContinuationToken, out blobs);
+                default:
+                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Enumerate BLOBs.
+        /// </summary>
+        /// <param name="prefix">Key prefix that must match.</param>
+        /// <param name="continuationToken">Continuation token to use for subsequent enumeration requests.</param>
+        /// <param name="nextContinuationToken">Next continuation token to supply should you want to continue enumerating from the end of the current response.</param>
+        /// <param name="blobs">List of BLOB metadata.</param>
+        /// <returns>True if successful.</returns>
+        public bool Enumerate(string prefix, string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
+        {
+            blobs = new List<BlobMetadata>();
+
+            switch (_StorageType)
+            {
+                case StorageType.AwsS3:
+                    return S3Enumerate(prefix, continuationToken, out nextContinuationToken, out blobs);
+                case StorageType.Azure:
+                    return AzureEnumerate(prefix, continuationToken, out nextContinuationToken, out blobs);
+                case StorageType.Disk:
+                    return DiskEnumerate(prefix, continuationToken, out nextContinuationToken, out blobs);
+                case StorageType.Kvpbase:
+                    return KvpbaseEnumerate(prefix, continuationToken, out nextContinuationToken, out blobs);
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
             }
@@ -487,6 +532,54 @@ namespace BlobHelper
             return true;
         }
 
+        private bool KvpbaseEnumerate(string prefix, string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
+        {
+            blobs = new List<BlobMetadata>();
+            nextContinuationToken = null;
+
+            int startIndex = 0;
+            int count = 1000;
+            if (!String.IsNullOrEmpty(continuationToken))
+            {
+                if (!KvpbaseParseContinuationToken(continuationToken, out startIndex, out count))
+                {
+                    return false;
+                }
+            }
+
+            ContainerMetadata cmd = null;
+            if (String.IsNullOrEmpty(prefix))
+            {
+                if (!_Kvpbase.EnumerateContainer(_KvpbaseSettings.Container, startIndex, count, out cmd))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (!_Kvpbase.EnumerateContainer(prefix, _KvpbaseSettings.Container, startIndex, count, out cmd))
+                {
+                    return false;
+                }
+            }
+
+            if (cmd.Objects != null && cmd.Objects.Count > 0)
+            {
+                foreach (ObjectMetadata curr in cmd.Objects)
+                {
+                    BlobMetadata md = new BlobMetadata();
+                    md.Key = curr.Key;
+                    md.ETag = curr.Md5;
+                    md.ContentLength = Convert.ToInt64(curr.ContentLength);
+                    md.ContentType = curr.ContentType;
+                    md.Created = curr.CreatedUtc.Value;
+                    blobs.Add(md);
+                }
+            }
+
+            return true;
+        }
+
         private bool KvpbaseParseContinuationToken(string continuationToken, out int start, out int count)
         {
             start = -1;
@@ -507,6 +600,17 @@ namespace BlobHelper
             string ret = start.ToString() + " " + count.ToString();
             byte[] retBytes = Encoding.UTF8.GetBytes(ret);
             return Convert.ToBase64String(retBytes);
+        }
+
+        private string KvpbaseGenerateUrl(string key)
+        {
+            string ret =
+                _KvpbaseSettings.Endpoint +
+                _KvpbaseSettings.UserGuid + "/" +
+                _KvpbaseSettings.Container + "/" +
+                key;
+
+            return ret;
         }
 
         #endregion
@@ -634,8 +738,13 @@ namespace BlobHelper
 
         private bool DiskEnumerate(string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
         {
+            return DiskEnumerate(null, continuationToken, out nextContinuationToken, out blobs); 
+        }
+
+        private bool DiskEnumerate(string prefix, string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
+        {
             nextContinuationToken = null;
-            blobs = new List<BlobMetadata>(); 
+            blobs = new List<BlobMetadata>();
 
             int startIndex = 0;
             int count = 1000;
@@ -651,7 +760,17 @@ namespace BlobHelper
             long maxIndex = startIndex + count;
 
             long currCount = 0;
-            IEnumerable<string> files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.TopDirectoryOnly);
+            IEnumerable<string> files = null;
+
+            if (!String.IsNullOrEmpty(prefix))
+            {
+                files = Directory.EnumerateDirectories(_DiskSettings.Directory, prefix + "*", SearchOption.TopDirectoryOnly);
+            }
+            else
+            {
+                files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.TopDirectoryOnly);
+            }
+
             files = files.Skip(startIndex).Take(count);
 
             if (files.Count() < 1) return true;
@@ -659,8 +778,8 @@ namespace BlobHelper
             nextContinuationToken = DiskBuildContinuationToken(startIndex + count, count);
 
             foreach (string file in files)
-            { 
-                string key = Path.GetFileName(file); 
+            {
+                string key = Path.GetFileName(file);
                 FileInfo fi = new FileInfo(file);
 
                 BlobMetadata md = new BlobMetadata();
@@ -670,7 +789,7 @@ namespace BlobHelper
                 blobs.Add(md);
 
                 currCount++;
-                continue; 
+                continue;
             }
 
             return true;
@@ -700,7 +819,11 @@ namespace BlobHelper
 
         private string DiskGenerateUrl(string key)
         {
-            return _DiskSettings.Directory + "/" + key;
+            string dir = String.Copy(_DiskSettings.Directory);
+            while (dir.EndsWith("\\")) dir = dir.Substring(0, dir.Length - 1);
+            while (dir.EndsWith("/")) dir = dir.Substring(0, dir.Length - 1);
+            dir = dir.Replace("\\", "/");
+            return dir + "/" + key;
         }
 
         #endregion
@@ -932,11 +1055,17 @@ namespace BlobHelper
 
         private bool S3Enumerate(string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
         {
+            return S3Enumerate(null, continuationToken, out nextContinuationToken, out blobs); 
+        }
+
+        private bool S3Enumerate(string prefix, string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
+        {
             nextContinuationToken = null;
             blobs = new List<BlobMetadata>();
 
             ListObjectsRequest req = new ListObjectsRequest();
             req.BucketName = _AwsSettings.Bucket;
+            if (!String.IsNullOrEmpty(prefix)) req.Prefix = prefix;
 
             if (!String.IsNullOrEmpty(continuationToken)) req.Marker = continuationToken;
 
@@ -1117,6 +1246,11 @@ namespace BlobHelper
 
         private bool AzureEnumerate(string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
         {
+            return AzureEnumerate(null, continuationToken, out nextContinuationToken, out blobs); 
+        }
+
+        private bool AzureEnumerate(string prefix, string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
+        {
             nextContinuationToken = null;
             blobs = new List<BlobMetadata>();
 
@@ -1129,7 +1263,17 @@ namespace BlobHelper
                 }
             }
 
-            BlobResultSegment segment = _AzureContainer.ListBlobsSegmentedAsync(bct).Result;
+            BlobResultSegment segment = null;
+
+            if (!String.IsNullOrEmpty(prefix))
+            {
+                segment = _AzureContainer.ListBlobsSegmentedAsync(prefix, bct).Result;
+            }
+            else
+            {
+                segment = _AzureContainer.ListBlobsSegmentedAsync(bct).Result;
+            }
+
             if (segment == null || segment.Results == null || segment.Results.Count() < 1) return true;
 
             foreach (IListBlobItem item in segment.Results)
@@ -1150,7 +1294,7 @@ namespace BlobHelper
                     }
 
                     blobs.Add(md);
-                } 
+                }
             }
 
             if (segment.ContinuationToken != null)
