@@ -60,11 +60,15 @@ namespace BlobHelper
         {
             if (String.IsNullOrEmpty(endpoint)) throw new ArgumentNullException(nameof(endpoint));
             if (String.IsNullOrEmpty(userGuid)) throw new ArgumentNullException(nameof(userGuid));
+            if (String.IsNullOrEmpty(container)) throw new ArgumentNullException(nameof(container));
             if (String.IsNullOrEmpty(apiKey)) throw new ArgumentNullException(nameof(apiKey));
+
             Endpoint = endpoint;
             UserGuid = userGuid;
             Container = container;
             ApiKey = apiKey;
+
+            if (!Endpoint.EndsWith("/")) Endpoint += "/";
         }
 
         #endregion

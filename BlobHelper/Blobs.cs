@@ -143,8 +143,7 @@ namespace BlobHelper
         /// <summary>
         /// Retrieve a BLOB.
         /// </summary>
-        /// <param name="key">Key of the BLOB.</param>
-        /// <param name="data">Byte array containing BLOB data.</param>
+        /// <param name="key">Key of the BLOB.</param> 
         /// <returns>Byte data of the BLOB.</returns>
         public async Task<byte[]> Get(string key)
         { 
@@ -168,24 +167,22 @@ namespace BlobHelper
         /// <summary>
         /// Retrieve a BLOB.
         /// </summary>
-        /// <param name="key">Key of the BLOB.</param>
-        /// <param name="contentLength">Content length.</param>
-        /// <param name="stream">Stream.</param>
-        /// <returns>True if successful.</returns>
-        public bool Get(string key, out long contentLength, out Stream stream)
+        /// <param name="key">Key of the BLOB.</param> 
+        /// <returns>BLOB data.</returns>
+        public async Task<BlobData> GetStream(string key)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    return S3Get(key, out contentLength, out stream);
+                    return await S3GetStream(key);
                 case StorageType.Azure:
-                    return AzureGet(key, out contentLength, out stream);
+                    return await AzureGetStream(key);
                 case StorageType.Disk:
-                    return DiskGet(key, out contentLength, out stream);
+                    return await DiskGetStream(key);
                 case StorageType.Kvpbase:
-                    return KvpbaseGet(key, out contentLength, out stream);
+                    return await KvpbaseGetStream(key);
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
             }
@@ -195,10 +192,9 @@ namespace BlobHelper
         /// Write a BLOB using a byte array.
         /// </summary>
         /// <param name="key">Key of the BLOB.</param>
-        /// <param name="base64">True of the supplied data is a string containing Base64-encoded data.</param>
-        /// <param name="data">BLOB data.</param>
-        /// <returns>True if successful.</returns>
-        public async Task<bool> Write(
+        /// <param name="contentType">Content-type of the object.</param>
+        /// <param name="data">BLOB data.</param> 
+        public async Task Write(
             string key,
             string contentType,
             byte[] data)
@@ -209,13 +205,17 @@ namespace BlobHelper
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    return await S3Write(key, contentType, data);
+                    await S3Write(key, contentType, data);
+                    return;
                 case StorageType.Azure:
-                    return await AzureWrite(key, contentType, data);
+                    await AzureWrite(key, contentType, data);
+                    return;
                 case StorageType.Disk:
-                    return await DiskWrite(key, data);
+                    await DiskWrite(key, data);
+                    return;
                 case StorageType.Kvpbase:
-                    return await KvpbaseWrite(key, contentType, data);
+                    await KvpbaseWrite(key, contentType, data);
+                    return;
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
             } 
@@ -227,9 +227,8 @@ namespace BlobHelper
         /// <param name="key">Key of the BLOB.</param>
         /// <param name="contentType">Content type.</param>
         /// <param name="contentLength">Content length.</param>
-        /// <param name="stream">Stream containing the data.</param>
-        /// <returns>True if successful.</returns>
-        public bool Write(
+        /// <param name="stream">Stream containing the data.</param> 
+        public async Task Write(
             string key,
             string contentType,
             long contentLength,
@@ -243,13 +242,17 @@ namespace BlobHelper
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    return S3Write(key, contentType, contentLength, stream);
+                    await S3Write(key, contentType, contentLength, stream);
+                    return;
                 case StorageType.Azure:
-                    return AzureWrite(key, contentType, contentLength, stream);
+                    await AzureWrite(key, contentType, contentLength, stream);
+                    return;
                 case StorageType.Disk:
-                    return DiskWrite(key, contentLength, stream);
+                    await DiskWrite(key, contentLength, stream);
+                    return;
                 case StorageType.Kvpbase:
-                    return KvpbaseWrite(key, contentType, contentLength, stream);
+                    await KvpbaseWrite(key, contentType, contentLength, stream);
+                    return;
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
             }
@@ -279,6 +282,11 @@ namespace BlobHelper
             }
         }
 
+        /// <summary>
+        /// Generate a URL for a given object key.
+        /// </summary>
+        /// <param name="key">Object key.</param>
+        /// <returns>URL.</returns>
         public string GenerateUrl(string key)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
@@ -301,23 +309,22 @@ namespace BlobHelper
         /// <summary>
         /// Retrieve BLOB metadata.
         /// </summary>
-        /// <param name="key">Key of the BLOB.</param>
-        /// <param name="md">Metadata.</param>
-        /// <returns>True if successful.</returns>
-        public bool GetMetadata(string key, out BlobMetadata md)
+        /// <param name="key">Key of the BLOB.</param> 
+        /// <returns>BLOB metadata.</returns>
+        public async Task<BlobMetadata> GetMetadata(string key)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    return S3GetMetadata(key, out md);
+                    return await S3GetMetadata(key);
                 case StorageType.Azure:
-                    return AzureGetMetadata(key, out md);
+                    return await AzureGetMetadata(key);
                 case StorageType.Disk:
-                    return DiskGetMetadata(key, out md);
+                    return await DiskGetMetadata(key);
                 case StorageType.Kvpbase:
-                    return KvpbaseGetMetadata(key, out md);
+                    return await KvpbaseGetMetadata(key);
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
             } 
@@ -326,24 +333,41 @@ namespace BlobHelper
         /// <summary>
         /// Enumerate BLOBs.
         /// </summary> 
-        /// <param name="continuationToken">Continuation token to use for subsequent enumeration requests.</param>
-        /// <param name="nextContinuationToken">Next continuation token to supply should you want to continue enumerating from the end of the current response.</param>
-        /// <param name="blobs">List of BLOB metadata.</param>
-        /// <returns>True if successful.</returns>
-        public bool Enumerate(string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
+        /// <returns>Enumeration result.</returns>
+        public async Task<EnumerationResult> Enumerate()
         {
-            blobs = new List<BlobMetadata>();
-
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    return S3Enumerate(continuationToken, out nextContinuationToken, out blobs);
+                    return await S3Enumerate(null, null);
                 case StorageType.Azure:
-                    return AzureEnumerate(continuationToken, out nextContinuationToken, out blobs);
+                    return await AzureEnumerate(null, null);
                 case StorageType.Disk:
-                    return DiskEnumerate(continuationToken, out nextContinuationToken, out blobs);
+                    return await DiskEnumerate(null, null);
                 case StorageType.Kvpbase:
-                    return KvpbaseEnumerate(continuationToken, out nextContinuationToken, out blobs);
+                    return await KvpbaseEnumerate(null, null);
+                default:
+                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Enumerate BLOBs.
+        /// </summary> 
+        /// <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param> 
+        /// <returns>Enumeration result.</returns>
+        public async Task<EnumerationResult> Enumerate(string continuationToken)
+        { 
+            switch (_StorageType)
+            {
+                case StorageType.AwsS3:
+                    return await S3Enumerate(null, continuationToken);
+                case StorageType.Azure:
+                    return await AzureEnumerate(null, continuationToken);
+                case StorageType.Disk:
+                    return await DiskEnumerate(null, continuationToken);
+                case StorageType.Kvpbase:
+                    return await KvpbaseEnumerate(null, continuationToken);
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
             }
@@ -353,24 +377,20 @@ namespace BlobHelper
         /// Enumerate BLOBs.
         /// </summary>
         /// <param name="prefix">Key prefix that must match.</param>
-        /// <param name="continuationToken">Continuation token to use for subsequent enumeration requests.</param>
-        /// <param name="nextContinuationToken">Next continuation token to supply should you want to continue enumerating from the end of the current response.</param>
-        /// <param name="blobs">List of BLOB metadata.</param>
-        /// <returns>True if successful.</returns>
-        public bool Enumerate(string prefix, string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
-        {
-            blobs = new List<BlobMetadata>();
-
+        /// <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param> 
+        /// <returns>Enumeration result.</returns>
+        public async Task<EnumerationResult> Enumerate(string prefix, string continuationToken)
+        { 
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    return S3Enumerate(prefix, continuationToken, out nextContinuationToken, out blobs);
+                    return await S3Enumerate(prefix, continuationToken);
                 case StorageType.Azure:
-                    return AzureEnumerate(prefix, continuationToken, out nextContinuationToken, out blobs);
+                    return await AzureEnumerate(prefix, continuationToken);
                 case StorageType.Disk:
-                    return DiskEnumerate(prefix, continuationToken, out nextContinuationToken, out blobs);
+                    return await DiskEnumerate(prefix, continuationToken);
                 case StorageType.Kvpbase:
-                    return KvpbaseEnumerate(prefix, continuationToken, out nextContinuationToken, out blobs);
+                    return await KvpbaseEnumerate(prefix, continuationToken);
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
             }
@@ -385,7 +405,7 @@ namespace BlobHelper
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    _S3Region = _AwsSettings.GetAwsRegion();
+                    _S3Region = _AwsSettings.GetAwsRegionEndpoint();
                     _S3Credentials = new Amazon.Runtime.BasicAWSCredentials(_AwsSettings.AccessKey, _AwsSettings.SecretKey);
 
                     if (String.IsNullOrEmpty(_AwsSettings.Endpoint))
@@ -429,193 +449,20 @@ namespace BlobHelper
             }    
         }
 
-        #region Private-Kvpbase-Methods
+        #region Delete
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<bool> KvpbaseDelete(string key)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            return _Kvpbase.DeleteObject(_KvpbaseSettings.Container, key);
-        }
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<byte[]> KvpbaseGet(string key)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            byte[] data = null;
-            if (_Kvpbase.ReadObject(_KvpbaseSettings.Container, key, out data)) return data;
-            else throw new IOException("Unable to read object.");
-        }
-
-        private bool KvpbaseGet(string key, out long contentLength, out Stream stream)
-        {
-            contentLength = 0;
-            stream = null;
-            if (_Kvpbase.ReadObject(_KvpbaseSettings.Container, key, out contentLength, out stream)) return true;
-            else throw new IOException("Unable to read object.");
-        }
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<bool> KvpbaseExists(string key)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            return _Kvpbase.ObjectExists(_KvpbaseSettings.Container, key); 
-        }
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<bool> KvpbaseWrite(string key, string contentType, byte[] data)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            return _Kvpbase.WriteObject(_KvpbaseSettings.Container, key, contentType, data);
-        }
-
-        private bool KvpbaseWrite(string key, string contentType, long contentLength, Stream stream)
-        {
-            return _Kvpbase.WriteObject(_KvpbaseSettings.Container, key, contentType, contentLength, stream);
-        }
-
-        private bool KvpbaseGetMetadata(string key, out BlobMetadata md)
-        {
-            md = new BlobMetadata();
-            md.Key = key;
-
-            ObjectMetadata objMd = null;
-            if (_Kvpbase.GetObjectMetadata(_KvpbaseSettings.Container, key, out objMd))
+            try
             {
-                md.ContentLength = Convert.ToInt64(objMd.ContentLength);
-                md.ContentType = objMd.ContentType;
-                md.ETag = objMd.Md5;
-                md.Created = objMd.CreatedUtc.Value;
+                await _Kvpbase.DeleteObject(_KvpbaseSettings.Container, key);
                 return true;
             }
-            else
+            catch (Exception)
             {
                 return false;
             }
         }
-
-        private bool KvpbaseEnumerate(string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
-        {
-            blobs = new List<BlobMetadata>();
-            nextContinuationToken = null;
-
-            int startIndex = 0;
-            int count = 1000;
-            if (!String.IsNullOrEmpty(continuationToken))
-            {
-                if (!KvpbaseParseContinuationToken(continuationToken, out startIndex, out count))
-                {
-                    return false;
-                }
-            }
-
-            ContainerMetadata cmd = null;
-            if (!_Kvpbase.EnumerateContainer(_KvpbaseSettings.Container, startIndex, count, out cmd))
-            {
-                return false;
-            }
-
-            if (cmd.Objects != null && cmd.Objects.Count > 0)
-            {
-                foreach (ObjectMetadata curr in cmd.Objects)
-                {
-                    BlobMetadata md = new BlobMetadata();
-                    md.Key = curr.Key;
-                    md.ETag = curr.Md5;
-                    md.ContentLength = Convert.ToInt64(curr.ContentLength);
-                    md.ContentType = curr.ContentType;
-                    md.Created = curr.CreatedUtc.Value;
-                    blobs.Add(md);
-                }
-            }
-
-            return true;
-        }
-
-        private bool KvpbaseEnumerate(string prefix, string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
-        {
-            blobs = new List<BlobMetadata>();
-            nextContinuationToken = null;
-
-            int startIndex = 0;
-            int count = 1000;
-            if (!String.IsNullOrEmpty(continuationToken))
-            {
-                if (!KvpbaseParseContinuationToken(continuationToken, out startIndex, out count))
-                {
-                    return false;
-                }
-            }
-
-            ContainerMetadata cmd = null;
-            if (String.IsNullOrEmpty(prefix))
-            {
-                if (!_Kvpbase.EnumerateContainer(_KvpbaseSettings.Container, startIndex, count, out cmd))
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                if (!_Kvpbase.EnumerateContainer(prefix, _KvpbaseSettings.Container, startIndex, count, out cmd))
-                {
-                    return false;
-                }
-            }
-
-            if (cmd.Objects != null && cmd.Objects.Count > 0)
-            {
-                foreach (ObjectMetadata curr in cmd.Objects)
-                {
-                    BlobMetadata md = new BlobMetadata();
-                    md.Key = curr.Key;
-                    md.ETag = curr.Md5;
-                    md.ContentLength = Convert.ToInt64(curr.ContentLength);
-                    md.ContentType = curr.ContentType;
-                    md.Created = curr.CreatedUtc.Value;
-                    blobs.Add(md);
-                }
-            }
-
-            return true;
-        }
-
-        private bool KvpbaseParseContinuationToken(string continuationToken, out int start, out int count)
-        {
-            start = -1;
-            count = -1;
-            if (String.IsNullOrEmpty(continuationToken)) return false;
-            byte[] encoded = Convert.FromBase64String(continuationToken);
-            string encodedStr = Encoding.UTF8.GetString(encoded);
-            string[] parts = encodedStr.Split(' ');
-            if (parts.Length != 2) return false;
-
-            if (!Int32.TryParse(parts[0], out start)) return false;
-            if (!Int32.TryParse(parts[1], out count)) return false;
-            return true;
-        }
-
-        private string KvpbaseBuildContinuationToken(long start, int count)
-        {
-            string ret = start.ToString() + " " + count.ToString();
-            byte[] retBytes = Encoding.UTF8.GetBytes(ret);
-            return Convert.ToBase64String(retBytes);
-        }
-
-        private string KvpbaseGenerateUrl(string key)
-        {
-            string ret =
-                _KvpbaseSettings.Endpoint +
-                _KvpbaseSettings.UserGuid + "/" +
-                _KvpbaseSettings.Container + "/" +
-                key;
-
-            return ret;
-        }
-
-        #endregion
-
-        #region Private-Disk-Methods
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<bool> DiskDelete(string key)
@@ -631,204 +478,6 @@ namespace BlobHelper
                 return false;
             }
         }
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<byte[]> DiskGet(string key)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            try
-            {
-                return File.ReadAllBytes(DiskGenerateUrl(key));
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to read object.");
-            }
-        }
-         
-        private bool DiskGet(string key, out long contentLength, out Stream stream) 
-        {
-            contentLength = 0;
-            stream = null;
-
-            try
-            {
-                string url = DiskGenerateUrl(key);
-                contentLength = new FileInfo(url).Length;
-                stream = new FileStream(url, FileMode.Open);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<bool> DiskExists(string key)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            try
-            {
-                return File.Exists(DiskGenerateUrl(key));
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<bool> DiskWrite(string key, byte[] data)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            try
-            {
-                File.WriteAllBytes(DiskGenerateUrl(key), data);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-         
-        private bool DiskWrite(string key, long contentLength, Stream stream) 
-        {
-            try
-            {
-                int bytesRead = 0;
-                long bytesRemaining = contentLength;
-                byte[] buffer = new byte[65536];
-                string url = DiskGenerateUrl(key);
-
-                using (FileStream fs = new FileStream(url, FileMode.OpenOrCreate))
-                {
-                    while (bytesRemaining > 0)
-                    {
-                        bytesRead = stream.Read(buffer, 0, buffer.Length);
-                        if (bytesRead > 0)
-                        {
-                            fs.Write(buffer, 0, bytesRead);
-                            bytesRemaining -= bytesRead;
-                        }
-                    }
-                }
-
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private bool DiskGetMetadata(string key, out BlobMetadata md)
-        {
-            string url = DiskGenerateUrl(key);
-
-            FileInfo fi = new FileInfo(url);
-            md = new BlobMetadata();
-            md.Key = key;
-            md.ContentLength = fi.Length;
-            md.Created = fi.CreationTimeUtc;
-
-            return true;
-        }
-
-        private bool DiskEnumerate(string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
-        {
-            return DiskEnumerate(null, continuationToken, out nextContinuationToken, out blobs); 
-        }
-
-        private bool DiskEnumerate(string prefix, string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
-        {
-            nextContinuationToken = null;
-            blobs = new List<BlobMetadata>();
-
-            int startIndex = 0;
-            int count = 1000;
-
-            if (!String.IsNullOrEmpty(continuationToken))
-            {
-                if (!DiskParseContinuationToken(continuationToken, out startIndex, out count))
-                {
-                    return false;
-                }
-            }
-
-            long maxIndex = startIndex + count;
-
-            long currCount = 0;
-            IEnumerable<string> files = null;
-
-            if (!String.IsNullOrEmpty(prefix))
-            {
-                files = Directory.EnumerateDirectories(_DiskSettings.Directory, prefix + "*", SearchOption.TopDirectoryOnly);
-            }
-            else
-            {
-                files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.TopDirectoryOnly);
-            }
-
-            files = files.Skip(startIndex).Take(count);
-
-            if (files.Count() < 1) return true;
-
-            nextContinuationToken = DiskBuildContinuationToken(startIndex + count, count);
-
-            foreach (string file in files)
-            {
-                string key = Path.GetFileName(file);
-                FileInfo fi = new FileInfo(file);
-
-                BlobMetadata md = new BlobMetadata();
-                md.Key = key;
-                md.ContentLength = fi.Length;
-                md.Created = fi.CreationTimeUtc;
-                blobs.Add(md);
-
-                currCount++;
-                continue;
-            }
-
-            return true;
-        }
-
-        private bool DiskParseContinuationToken(string continuationToken, out int start, out int count)
-        {
-            start = -1;
-            count = -1;
-            if (String.IsNullOrEmpty(continuationToken)) return false;
-            byte[] encoded = Convert.FromBase64String(continuationToken);
-            string encodedStr = Encoding.UTF8.GetString(encoded);
-            string[] parts = encodedStr.Split(' ');
-            if (parts.Length != 2) return false;
-
-            if (!Int32.TryParse(parts[0], out start)) return false;
-            if (!Int32.TryParse(parts[1], out count)) return false;
-            return true;
-        }
-
-        private string DiskBuildContinuationToken(int start, int count)
-        {
-            string ret = start.ToString() + " " + count.ToString();
-            byte[] retBytes = Encoding.UTF8.GetBytes(ret);
-            return Convert.ToBase64String(retBytes);
-        }
-
-        private string DiskGenerateUrl(string key)
-        {
-            string dir = String.Copy(_DiskSettings.Directory);
-            while (dir.EndsWith("\\")) dir = dir.Substring(0, dir.Length - 1);
-            while (dir.EndsWith("/")) dir = dir.Substring(0, dir.Length - 1);
-            dir = dir.Replace("\\", "/");
-            return dir + "/" + key;
-        }
-
-        #endregion
-
-        #region Private-S3-Methods
 
         private async Task<bool> S3Delete(string key)
         {
@@ -852,10 +501,55 @@ namespace BlobHelper
             }
         }
 
+        private async Task<bool> AzureDelete(string key)
+        {
+            try
+            {
+                CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
+                OperationContext ctx = new OperationContext();
+                await blockBlob.DeleteAsync(DeleteSnapshotsOption.None, null, null, ctx);
+                int statusCode = ctx.LastResult.HttpStatusCode;
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Get
+
+        private async Task<byte[]> KvpbaseGet(string key)
+        {
+            try
+            {
+                KvpbaseObject kvpObject = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key);
+                return Common.StreamToBytes(kvpObject.Data);
+            }
+            catch
+            {
+                throw new IOException("Unable to read object.");
+            }
+        }
+
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<byte[]> S3Get(string key)
+        private async Task<byte[]> DiskGet(string key)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        { 
+        {
+            try
+            {
+                return File.ReadAllBytes(DiskGenerateUrl(key));
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to read object.");
+            }
+        }
+
+        private async Task<byte[]> S3Get(string key)
+        {
             try
             {
                 GetObjectRequest request = new GetObjectRequest
@@ -891,239 +585,6 @@ namespace BlobHelper
             }
         }
 
-        private bool S3Get(string key, out long contentLength, out Stream stream)
-        {
-            contentLength = 0;
-            stream = null;
-
-            try
-            {
-                GetObjectRequest request = new GetObjectRequest
-                {
-                    BucketName = _AwsSettings.Bucket,
-                    Key = key,
-                };
-
-                GetObjectResponse response = _S3Client.GetObjectAsync(request).Result;
-
-                if (response.ContentLength > 0)
-                {
-                    contentLength = response.ContentLength;
-                    stream = response.ResponseStream;
-                    return true;
-                }
-                else
-                {
-                    contentLength = 0;
-                    stream = null;
-                    return false;
-                }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private async Task<bool> S3Exists(string key)
-        { 
-            try
-            {
-                GetObjectMetadataRequest request = new GetObjectMetadataRequest
-                {
-                    BucketName = _AwsSettings.Bucket,
-                    Key = key
-                };
-
-                GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private async Task<bool> S3Write(string key, string contentType, byte[] data)
-        {
-            try
-            {
-                PutObjectRequest request = new PutObjectRequest();
-
-                if (data == null || data.Length < 0)
-                { 
-                    request.BucketName = _AwsSettings.Bucket;
-                    request.Key = key;
-                    request.ContentType = contentType;
-                    request.UseChunkEncoding = false;
-                    request.InputStream = new MemoryStream(new byte[0]);
-                }
-                else
-                {
-                    Stream s = new MemoryStream(data);
-                    request.BucketName = _AwsSettings.Bucket;
-                    request.Key = key;
-                    request.ContentType = contentType;
-                    request.UseChunkEncoding = false;
-                    request.InputStream = s;
-                }
-                 
-                PutObjectResponse response = await _S3Client.PutObjectAsync(request);
-                int statusCode = (int)response.HttpStatusCode;
-
-                if (response != null) return true;
-                else return false;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private bool S3Write(string key, string contentType, long contentLength, Stream stream)
-        {
-            try
-            {
-                PutObjectRequest request = new PutObjectRequest();
-
-                if (stream == null || contentLength < 1)
-                {
-                    request.BucketName = _AwsSettings.Bucket;
-                    request.Key = key;
-                    request.ContentType = contentType;
-                    request.UseChunkEncoding = false;
-                    request.InputStream = new MemoryStream(new byte[0]);
-                }
-                else
-                { 
-                    request.BucketName = _AwsSettings.Bucket;
-                    request.Key = key;
-                    request.ContentType = contentType;
-                    request.UseChunkEncoding = false;
-                    request.InputStream = stream;
-                }
-                 
-                PutObjectResponse response = _S3Client.PutObjectAsync(request).Result;
-                int statusCode = (int)response.HttpStatusCode;
-
-                if (response != null) return true;
-                else return false;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private bool S3GetMetadata(string key, out BlobMetadata md)
-        {
-            md = new BlobMetadata();
-            md.Key = key;
-
-            try
-            { 
-                GetObjectMetadataRequest request = new GetObjectMetadataRequest();
-                request.BucketName = _AwsSettings.Bucket;
-                request.Key = key;
-
-                GetObjectMetadataResponse response = _S3Client.GetObjectMetadataAsync(request).Result;
-
-                if (response.ContentLength > 0)
-                {
-                    md.ContentLength = response.ContentLength;
-                    md.ContentType = response.Headers.ContentType;
-                    md.ETag = response.ETag;
-                    md.Created = response.LastModified;
-                    
-                    if (!String.IsNullOrEmpty(md.ETag))
-                    {
-                        while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
-                    }
-
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private bool S3Enumerate(string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
-        {
-            return S3Enumerate(null, continuationToken, out nextContinuationToken, out blobs); 
-        }
-
-        private bool S3Enumerate(string prefix, string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
-        {
-            nextContinuationToken = null;
-            blobs = new List<BlobMetadata>();
-
-            ListObjectsRequest req = new ListObjectsRequest();
-            req.BucketName = _AwsSettings.Bucket;
-            if (!String.IsNullOrEmpty(prefix)) req.Prefix = prefix;
-
-            if (!String.IsNullOrEmpty(continuationToken)) req.Marker = continuationToken;
-
-            ListObjectsResponse resp = _S3Client.ListObjectsAsync(req).Result;
-            if (resp.S3Objects != null && resp.S3Objects.Count > 0)
-            {
-                foreach (S3Object curr in resp.S3Objects)
-                {
-                    BlobMetadata md = new BlobMetadata();
-                    md.Key = curr.Key;
-                    md.ContentLength = curr.Size;
-                    md.ETag = curr.ETag;
-                    md.Created = curr.LastModified;
-
-                    if (!String.IsNullOrEmpty(md.ETag))
-                    {
-                        while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
-                    }
-
-                    blobs.Add(md);
-                }
-            }
-
-            if (!String.IsNullOrEmpty(resp.NextMarker)) nextContinuationToken = resp.NextMarker;
-
-            return true;
-        }
-
-        private string S3GenerateUrl(string key)
-        {
-            GetPreSignedUrlRequest request = new GetPreSignedUrlRequest();
-            request.BucketName = _AwsSettings.Bucket;
-            request.Key = key;
-            request.Protocol = Protocol.HTTPS;
-            request.Expires = DateTime.Now.AddYears(100);
-            return _S3Client.GetPreSignedURL(request);
-        }
-
-        #endregion
-
-        #region Private-Azure-Methods
-
-        private async Task<bool> AzureDelete(string key)
-        {
-            try
-            {
-                CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
-                OperationContext ctx = new OperationContext();
-                await blockBlob.DeleteAsync(DeleteSnapshotsOption.None, null, null, ctx);
-                int statusCode = ctx.LastResult.HttpStatusCode;
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
         private async Task<byte[]> AzureGet(string key)
         {
             byte[] data = null;
@@ -1145,20 +606,129 @@ namespace BlobHelper
             }
         }
 
-        private bool AzureGet(string key, out long contentLength, out Stream stream)
-        {
-            contentLength = 0;
-            stream = null;
+        #endregion
 
+        #region Get-Stream
+
+        private async Task<BlobData> KvpbaseGetStream(string key)
+        {
+            try
+            {
+                KvpbaseObject kvpObj = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key);
+                return new BlobData(kvpObj.ContentLength, kvpObj.Data);
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to read object.");
+            }
+        }
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        private async Task<BlobData> DiskGetStream(string key)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        {
+            try
+            {
+                string url = DiskGenerateUrl(key);
+                long contentLength = new FileInfo(url).Length;
+                FileStream stream = new FileStream(url, FileMode.Open);
+                return new BlobData(contentLength, stream);
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to read object.");
+            }
+        }
+
+        private async Task<BlobData> S3GetStream(string key)
+        {
+            try
+            {
+                GetObjectRequest request = new GetObjectRequest
+                {
+                    BucketName = _AwsSettings.Bucket,
+                    Key = key,
+                };
+
+                GetObjectResponse response = await _S3Client.GetObjectAsync(request);
+                BlobData ret = new BlobData();
+
+                if (response.ContentLength > 0)
+                {
+                    ret.ContentLength = response.ContentLength;
+                    ret.Data = response.ResponseStream;
+                }
+                else
+                {
+                    ret.ContentLength = 0;
+                    ret.Data = new MemoryStream(new byte[0]);
+                }
+
+                return ret;
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to read object.");
+            }
+        }
+         
+        private async Task<BlobData> AzureGetStream(string key) 
+        { 
             try
             {
                 CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
                 blockBlob.FetchAttributesAsync().Wait();
-                contentLength = blockBlob.Properties.Length;
-                stream = new MemoryStream();
-                blockBlob.DownloadToStreamAsync(stream).Wait();
 
+                BlobData ret = new BlobData();
+                ret.ContentLength = blockBlob.Properties.Length;
+
+                MemoryStream stream = new MemoryStream();
+                await blockBlob.DownloadToStreamAsync(stream);
+
+                ret.Data = stream;
                 stream.Seek(0, SeekOrigin.Begin);
+                return ret;
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to read object.");
+            }
+        }
+
+        #endregion
+
+        #region Exists
+
+        private async Task<bool> KvpbaseExists(string key)
+        {
+            return await _Kvpbase.ObjectExists(_KvpbaseSettings.Container, key);
+        }
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        private async Task<bool> DiskExists(string key)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        {
+            try
+            {
+                return File.Exists(DiskGenerateUrl(key));
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private async Task<bool> S3Exists(string key)
+        {
+            try
+            {
+                GetObjectMetadataRequest request = new GetObjectMetadataRequest
+                {
+                    BucketName = _AwsSettings.Bucket,
+                    Key = key
+                };
+
+                GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request);
                 return true;
             }
             catch (Exception)
@@ -1167,13 +737,11 @@ namespace BlobHelper
             }
         }
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<bool> AzureExists(string key)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             try
             {
-                return _AzureBlobClient.GetContainerReference(_AzureSettings.Container).GetBlockBlobReference(key).ExistsAsync().Result;
+                return await _AzureBlobClient.GetContainerReference(_AzureSettings.Container).GetBlockBlobReference(key).ExistsAsync();
             }
             catch (Exception)
             {
@@ -1181,50 +749,249 @@ namespace BlobHelper
             }
         }
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<bool> AzureWrite(string key, string contentType, byte[] data)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        #endregion
+
+        #region Write
+
+        private async Task KvpbaseWrite(string key, string contentType, byte[] data)
+        {
+            long contentLength = 0;
+            MemoryStream stream = new MemoryStream(new byte[0]);
+
+            if (data != null && data.Length > 0)
+            {
+                contentLength = data.Length;
+                stream = new MemoryStream(data);
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
+            await KvpbaseWrite(key, contentType, contentLength, stream);
+        }
+
+        private async Task KvpbaseWrite(string key, string contentType, long contentLength, Stream stream)
         {
             try
             {
-                CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
-                blockBlob.Properties.ContentType = contentType;
-                OperationContext ctx = new OperationContext();
-                blockBlob.UploadFromByteArrayAsync(data, 0, data.Length).Wait();
-                return true;
+                await _Kvpbase.WriteObject(_KvpbaseSettings.Container, key, contentType, contentLength, stream); 
             }
             catch (Exception)
             {
-                return false;
+                throw new IOException("Unable to write object.");
+            }
+        }
+
+        private async Task DiskWrite(string key, byte[] data)
+        {
+            long contentLength = 0;
+            MemoryStream stream = new MemoryStream(new byte[0]);
+
+            if (data != null && data.Length > 0)
+            {
+                contentLength = data.Length;
+                stream = new MemoryStream(data);
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
+            await DiskWrite(key, contentLength, stream);
+        }
+
+        private async Task DiskWrite(string key, long contentLength, Stream stream)
+        {
+            try
+            {
+                int bytesRead = 0;
+                long bytesRemaining = contentLength;
+                byte[] buffer = new byte[65536];
+                string url = DiskGenerateUrl(key);
+
+                using (FileStream fs = new FileStream(url, FileMode.OpenOrCreate))
+                {
+                    while (bytesRemaining > 0)
+                    {
+                        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                        if (bytesRead > 0)
+                        {
+                            await fs.WriteAsync(buffer, 0, bytesRead);
+                            bytesRemaining -= bytesRead;
+                        }
+                    }
+                } 
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to write object.");
+            }
+        }
+
+        private async Task S3Write(string key, string contentType, byte[] data)
+        {
+            long contentLength = 0;
+            MemoryStream stream = new MemoryStream(new byte[0]);
+
+            if (data != null && data.Length > 0)
+            {
+                contentLength = data.Length;
+                stream = new MemoryStream(data);
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
+            await S3Write(key, contentType, contentLength, stream);
+        }
+
+        private async Task S3Write(string key, string contentType, long contentLength, Stream stream)
+        {
+            try
+            {
+                PutObjectRequest request = new PutObjectRequest();
+
+                if (stream == null || contentLength < 1)
+                {
+                    request.BucketName = _AwsSettings.Bucket;
+                    request.Key = key;
+                    request.ContentType = contentType;
+                    request.UseChunkEncoding = false;
+                    request.InputStream = new MemoryStream(new byte[0]);
+                }
+                else
+                {
+                    request.BucketName = _AwsSettings.Bucket;
+                    request.Key = key;
+                    request.ContentType = contentType;
+                    request.UseChunkEncoding = false;
+                    request.InputStream = stream;
+                }
+
+                PutObjectResponse response = await _S3Client.PutObjectAsync(request);
+                int statusCode = (int)response.HttpStatusCode; 
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to write object.");
             }
         }
          
-        private bool AzureWrite(string key, string contentType, long contentLength, Stream stream)
+        private async Task AzureWrite(string key, string contentType, byte[] data)
+        {
+            long contentLength = 0;
+            MemoryStream stream = new MemoryStream(new byte[0]);
+
+            if (data != null && data.Length > 0)
+            {
+                contentLength = data.Length;
+                stream = new MemoryStream(data);
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
+            await AzureWrite(key, contentType, contentLength, stream);
+        }
+
+        private async Task AzureWrite(string key, string contentType, long contentLength, Stream stream)
         {
             try
             {
                 CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
                 blockBlob.Properties.ContentType = contentType;
                 OperationContext ctx = new OperationContext();
-                blockBlob.UploadFromStreamAsync(stream, contentLength).Wait();
-                return true;
+                await blockBlob.UploadFromStreamAsync(stream, contentLength); 
             }
             catch (Exception)
             {
-                return false;
+                throw new IOException("Unable to write object.");
             }
         }
 
-        private bool AzureGetMetadata(string key, out BlobMetadata md)
-        {
-            md = new BlobMetadata();
-            md.Key = key;
+        #endregion
 
+        #region Get-Metadata
+
+        private async Task<BlobMetadata> KvpbaseGetMetadata(string key)
+        {
+            try
+            {
+                ObjectMetadata objMd = await _Kvpbase.ReadObjectMetadata(_KvpbaseSettings.Container, key);
+                BlobMetadata md = new BlobMetadata();
+                md.Key = objMd.ObjectKey;
+                md.ContentLength = Convert.ToInt64(objMd.ContentLength);
+                md.ContentType = objMd.ContentType;
+                md.ETag = objMd.Md5;
+                md.Created = objMd.CreatedUtc.Value;
+                return md;
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to read object.");
+            }
+        }
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        private async Task<BlobMetadata> DiskGetMetadata(string key)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        {
+            try
+            {
+                string url = DiskGenerateUrl(key);
+
+                FileInfo fi = new FileInfo(url);
+                BlobMetadata md = new BlobMetadata();
+                md.Key = key;
+                md.ContentLength = fi.Length;
+                md.Created = fi.CreationTimeUtc;
+
+                return md;
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to read object.");
+            }
+        }
+         
+        private async Task<BlobMetadata> S3GetMetadata(string key) 
+        {
+            try
+            {
+                GetObjectMetadataRequest request = new GetObjectMetadataRequest();
+                request.BucketName = _AwsSettings.Bucket;
+                request.Key = key;
+
+                GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request);
+
+                if (response.ContentLength > 0)
+                {
+                    BlobMetadata md = new BlobMetadata();
+                    md.Key = key;
+                    md.ContentLength = response.ContentLength;
+                    md.ContentType = response.Headers.ContentType;
+                    md.ETag = response.ETag;
+                    md.Created = response.LastModified;
+
+                    if (!String.IsNullOrEmpty(md.ETag))
+                    {
+                        while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
+                    }
+
+                    return md;
+                }
+                else
+                {
+                    throw new IOException("Unable to read object.");
+                }
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to read object.");
+            }
+        }
+         
+        private async Task<BlobMetadata> AzureGetMetadata(string key) 
+        { 
             try
             {
                 CloudBlobContainer container = _AzureBlobClient.GetContainerReference(_AzureSettings.Container);
                 CloudBlockBlob blockBlob = container.GetBlockBlobReference(key);
-                blockBlob.FetchAttributesAsync().Wait();
+                await blockBlob.FetchAttributesAsync();
+
+                BlobMetadata md = new BlobMetadata();
+                md.Key = key;
                 md.ContentLength = blockBlob.Properties.Length;
                 md.ContentType = blockBlob.Properties.ContentType;
                 md.ETag = blockBlob.Properties.ETag;
@@ -1235,46 +1002,183 @@ namespace BlobHelper
                     while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
                 }
 
-                return true;
+                return md;
             }
             catch (Exception)
             {
-                return false;
+                throw new IOException("Unable to read object.");
+            } 
+        }
+
+        #endregion
+
+        #region Enumeration
+
+        private async Task<EnumerationResult> KvpbaseEnumerate(string prefix, string continuationToken)
+        {
+            int startIndex = 0;
+            int count = 1000;
+            if (!String.IsNullOrEmpty(continuationToken))
+            {
+                if (!KvpbaseParseContinuationToken(continuationToken, out startIndex, out count))
+                {
+                    throw new ArgumentException("Unable to parse continuation token.");
+                }
             }
 
+            ContainerMetadata cmd = null;
+            EnumerationResult ret = new EnumerationResult();
+
+            try
+            {
+                if (String.IsNullOrEmpty(prefix))
+                {
+                    cmd = await _Kvpbase.EnumerateContainer(_KvpbaseSettings.Container, startIndex, count);
+                }
+                else
+                {
+                    EnumerationFilter filter = new EnumerationFilter();
+                    filter.Prefix = prefix;
+                    cmd = await _Kvpbase.EnumerateContainer(filter, _KvpbaseSettings.Container, startIndex, count);
+                }
+            }
+            catch (Exception)
+            {
+                throw new IOException("Unable to enumerate objects.");
+            }
+
+            ret.NextContinuationToken = KvpbaseBuildContinuationToken(startIndex + count, count);
+
+            if (cmd.Objects != null && cmd.Objects.Count > 0)
+            {
+                foreach (ObjectMetadata curr in cmd.Objects)
+                {
+                    BlobMetadata md = new BlobMetadata();
+                    md.Key = curr.ObjectKey;
+                    md.ETag = curr.Md5;
+                    md.ContentLength = Convert.ToInt64(curr.ContentLength);
+                    md.ContentType = curr.ContentType;
+                    md.Created = curr.CreatedUtc.Value;
+                    ret.Blobs.Add(md);
+                }
+            }
+
+            return ret;
         }
 
-        private bool AzureEnumerate(string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        private async Task<EnumerationResult> DiskEnumerate(string prefix, string continuationToken)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            return AzureEnumerate(null, continuationToken, out nextContinuationToken, out blobs); 
+            int startIndex = 0;
+            int count = 1000;
+
+            if (!String.IsNullOrEmpty(continuationToken))
+            {
+                if (!DiskParseContinuationToken(continuationToken, out startIndex, out count))
+                {
+                    throw new ArgumentException("Unable to parse continuation token.");
+                }
+            }
+
+            long maxIndex = startIndex + count;
+
+            long currCount = 0;
+            IEnumerable<string> files = null;
+
+            if (!String.IsNullOrEmpty(prefix))
+            {
+                files = Directory.EnumerateDirectories(_DiskSettings.Directory, prefix + "*", SearchOption.TopDirectoryOnly);
+            }
+            else
+            {
+                files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.TopDirectoryOnly);
+            }
+
+            files = files.Skip(startIndex).Take(count);
+
+            EnumerationResult ret = new EnumerationResult();
+            if (files.Count() < 1) return ret;
+
+            ret.NextContinuationToken = DiskBuildContinuationToken(startIndex + count, count);
+
+            foreach (string file in files)
+            {
+                string key = Path.GetFileName(file);
+                FileInfo fi = new FileInfo(file);
+
+                BlobMetadata md = new BlobMetadata();
+                md.Key = key;
+                md.ContentLength = fi.Length;
+                md.Created = fi.CreationTimeUtc;
+                ret.Blobs.Add(md);
+
+                currCount++;
+                continue;
+            }
+
+            return ret;
         }
 
-        private bool AzureEnumerate(string prefix, string continuationToken, out string nextContinuationToken, out List<BlobMetadata> blobs)
-        {
-            nextContinuationToken = null;
-            blobs = new List<BlobMetadata>();
+        private async Task<EnumerationResult> S3Enumerate(string prefix, string continuationToken)
+        { 
+            ListObjectsRequest req = new ListObjectsRequest();
+            req.BucketName = _AwsSettings.Bucket;
+            if (!String.IsNullOrEmpty(prefix)) req.Prefix = prefix;
 
+            if (!String.IsNullOrEmpty(continuationToken)) req.Marker = continuationToken;
+
+            ListObjectsResponse resp = await _S3Client.ListObjectsAsync(req);
+            EnumerationResult ret = new EnumerationResult();
+
+            if (resp.S3Objects != null && resp.S3Objects.Count > 0)
+            {
+                foreach (S3Object curr in resp.S3Objects)
+                {
+                    BlobMetadata md = new BlobMetadata();
+                    md.Key = curr.Key;
+                    md.ContentLength = curr.Size;
+                    md.ETag = curr.ETag;
+                    md.Created = curr.LastModified;
+
+                    if (!String.IsNullOrEmpty(md.ETag))
+                    {
+                        while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
+                    }
+
+                    ret.Blobs.Add(md);
+                }
+            }
+
+            if (!String.IsNullOrEmpty(resp.NextMarker)) ret.NextContinuationToken = resp.NextMarker;
+
+            return ret;
+        }
+
+        private async Task<EnumerationResult> AzureEnumerate(string prefix, string continuationToken)
+        { 
             BlobContinuationToken bct = null;
             if (!String.IsNullOrEmpty(continuationToken))
             {
                 if (!AzureGetContinuationToken(continuationToken, out bct))
                 {
-                    return false;
+                    throw new IOException("Unable to find continuation token.");
                 }
             }
 
             BlobResultSegment segment = null;
+            EnumerationResult ret = new EnumerationResult();
 
             if (!String.IsNullOrEmpty(prefix))
             {
-                segment = _AzureContainer.ListBlobsSegmentedAsync(prefix, bct).Result;
+                segment = await _AzureContainer.ListBlobsSegmentedAsync(prefix, bct);
             }
             else
             {
-                segment = _AzureContainer.ListBlobsSegmentedAsync(bct).Result;
+                segment = await _AzureContainer.ListBlobsSegmentedAsync(bct);
             }
 
-            if (segment == null || segment.Results == null || segment.Results.Count() < 1) return true;
+            if (segment == null || segment.Results == null || segment.Results.Count() < 1) return ret;
 
             foreach (IListBlobItem item in segment.Results)
             {
@@ -1293,19 +1197,67 @@ namespace BlobHelper
                         while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
                     }
 
-                    blobs.Add(md);
+                    ret.Blobs.Add(md);
                 }
             }
 
             if (segment.ContinuationToken != null)
             {
-                nextContinuationToken = Guid.NewGuid().ToString();
-                AzureStoreContinuationToken(nextContinuationToken, segment.ContinuationToken);
+                ret.NextContinuationToken = Guid.NewGuid().ToString();
+                AzureStoreContinuationToken(ret.NextContinuationToken, segment.ContinuationToken);
             }
 
             if (!String.IsNullOrEmpty(continuationToken)) AzureRemoveContinuationToken(continuationToken);
 
+            return ret;
+        }
+
+        #endregion
+
+        #region Continuation-Tokens
+
+        private bool KvpbaseParseContinuationToken(string continuationToken, out int start, out int count)
+        {
+            start = -1;
+            count = -1;
+            if (String.IsNullOrEmpty(continuationToken)) return false;
+            byte[] encoded = Convert.FromBase64String(continuationToken);
+            string encodedStr = Encoding.UTF8.GetString(encoded);
+            string[] parts = encodedStr.Split(' ');
+            if (parts.Length != 2) return false;
+
+            if (!Int32.TryParse(parts[0], out start)) return false;
+            if (!Int32.TryParse(parts[1], out count)) return false;
             return true;
+        }
+
+        private string KvpbaseBuildContinuationToken(long start, int count)
+        {
+            string ret = start.ToString() + " " + count.ToString();
+            byte[] retBytes = Encoding.UTF8.GetBytes(ret);
+            return Convert.ToBase64String(retBytes);
+        }
+
+        private bool DiskParseContinuationToken(string continuationToken, out int start, out int count)
+        {
+            start = -1;
+            count = -1;
+            if (String.IsNullOrEmpty(continuationToken)) return false;
+            byte[] encoded = Convert.FromBase64String(continuationToken);
+            string encodedStr = Encoding.UTF8.GetString(encoded);
+            string[] parts = encodedStr.Split(' ');
+            if (parts.Length != 2) return false;
+
+            if (!Int32.TryParse(parts[0], out start)) return false;
+            if (!Int32.TryParse(parts[1], out count)) return false;
+            return true;
+        }
+
+        private string DiskBuildContinuationToken(int start, int count)
+        {
+            string ret = start.ToString() + " " + count.ToString();
+            byte[] retBytes = Encoding.UTF8.GetBytes(ret);
+            return Convert.ToBase64String(retBytes);
         }
 
         private void AzureStoreContinuationToken(string guid, BlobContinuationToken token)
@@ -1324,6 +1276,42 @@ namespace BlobHelper
             _AzureContinuationTokens.TryRemove(guid, out token);
         }
 
+        #endregion
+
+        #region URL
+
+        private string KvpbaseGenerateUrl(string key)
+        {
+            if (!_KvpbaseSettings.Endpoint.EndsWith("/")) _KvpbaseSettings.Endpoint += "/";
+
+            string ret =
+                _KvpbaseSettings.Endpoint +
+                _KvpbaseSettings.UserGuid + "/" +
+                _KvpbaseSettings.Container + "/" +
+                key;
+
+            return ret;
+        }
+
+        private string DiskGenerateUrl(string key)
+        {
+            string dir = String.Copy(_DiskSettings.Directory);
+            while (dir.EndsWith("\\")) dir = dir.Substring(0, dir.Length - 1);
+            while (dir.EndsWith("/")) dir = dir.Substring(0, dir.Length - 1);
+            dir = dir.Replace("\\", "/");
+            return dir + "/" + key;
+        }
+
+        private string S3GenerateUrl(string key)
+        {
+            GetPreSignedUrlRequest request = new GetPreSignedUrlRequest();
+            request.BucketName = _AwsSettings.Bucket;
+            request.Key = key;
+            request.Protocol = Protocol.HTTPS;
+            request.Expires = DateTime.Now.AddYears(100);
+            return _S3Client.GetPreSignedURL(request);
+        }
+
         private string AzureGenerateUrl(string key)
         {
             return "https://" +
@@ -1335,7 +1323,7 @@ namespace BlobHelper
         }
 
         #endregion
-
+         
         #endregion
     }
 }

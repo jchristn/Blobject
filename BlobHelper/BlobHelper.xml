@@ -1,0 +1,534 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BlobHelper</name>
+    </assembly>
+    <members>
+        <member name="T:BlobHelper.AwsSettings">
+            <summary>
+            Settings when using AWS S3 for storage.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.Endpoint">
+            <summary>
+            Override the AWS S3 endpoint (if using non-Amazon storage), otherwise leave null.
+            Use the form http://localhost:8000/
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.Ssl">
+            <summary>
+            Enable or disable SSL (only if using non-Amazon storage).
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.AccessKey">
+            <summary>
+            AWS S3 access key.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.SecretKey">
+            <summary>
+            AWS S3 secret key.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.Region">
+            <summary>
+            AWS S3 region.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.Bucket">
+            <summary>
+            AWS S3 bucket.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,BlobHelper.AwsRegion,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,BlobHelper.AwsRegion,System.String,System.Boolean)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,BlobHelper.AwsRegion,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.GetAwsRegionEndpoint">
+            <summary>
+            Retrieve AWS region endpoint.
+            </summary>
+            <returns>AWS region endpoint.</returns>
+        </member>
+        <member name="T:BlobHelper.AzureSettings">
+            <summary>
+            Settings when using Microsoft Azure BLOB Storage for storage.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AzureSettings.AccountName">
+            <summary>
+            Microsoft Azure BLOB storage account name (the name of the account in the Azure portal).
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AzureSettings.AccessKey">
+            <summary>
+            Microsoft Azure BLOB storage access key.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AzureSettings.Endpoint">
+            <summary>
+            Microsoft Azure BLOB storage endpoint (primary or secondary from the Azure portal, likely of the form https://[accountname].blob.core.windows.net/.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AzureSettings.Container">
+            <summary>
+            Microsoft Azure BLOB storage container.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.AzureSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.AzureSettings.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accountName">The account name.</param>
+            <param name="accessKey">The access key with which to access Azure BLOB storage.</param>
+            <param name="endpoint">The Azure BLOB storage endpoint for the account.</param>
+            <param name="container">The container in which BLOBs should be stored.</param>
+        </member>
+        <member name="T:BlobHelper.BlobData">
+            <summary>
+            Contains content-length (how many bytes to read) and data stream for a given object.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.BlobData.ContentLength">
+            <summary>
+            Content-length of the object (how many bytes to read from Data).
+            </summary>
+        </member>
+        <member name="F:BlobHelper.BlobData.Data">
+            <summary>
+            Stream containing requested data.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.BlobData.#ctor">
+            <summary>
+            Instantiates the object.
+            </summary>
+        </member>
+        <member name="T:BlobHelper.BlobMetadata">
+            <summary>
+            Metadata about a BLOB.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.Key">
+            <summary>
+            Object key.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.ContentType">
+            <summary>
+            Content type for the object.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.ContentLength">
+            <summary>
+            Content length of the object.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.ETag">
+            <summary>
+            ETag of the object.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.Created">
+            <summary>
+            Timestamp from when the object was created.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.BlobMetadata.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.BlobMetadata.ToString">
+            <summary>
+            Create a human-readable string of the object.
+            </summary>
+            <returns>String.</returns>
+        </member>
+        <member name="T:BlobHelper.Blobs">
+            <summary>
+            BLOB storage client.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.Blobs.#ctor(BlobHelper.AzureSettings)">
+            <summary>
+            Instantiate the object for Azure BLOB strorage.
+            </summary>
+            <param name="config">Storage configuration.</param>
+        </member>
+        <member name="M:BlobHelper.Blobs.#ctor(BlobHelper.AwsSettings)">
+            <summary>
+            Instantiate the object for AWS S3 strorage.
+            </summary>
+            <param name="config">Storage configuration.</param>
+        </member>
+        <member name="M:BlobHelper.Blobs.#ctor(BlobHelper.DiskSettings)">
+            <summary>
+            Instantiate the object for disk strorage.
+            </summary>
+            <param name="config">Storage configuration.</param>
+        </member>
+        <member name="M:BlobHelper.Blobs.#ctor(BlobHelper.KvpbaseSettings)">
+            <summary>
+            Instantiate the object for Kvpbase strorage.
+            </summary>
+            <param name="config">Storage configuration.</param>
+        </member>
+        <member name="M:BlobHelper.Blobs.Delete(System.String)">
+            <summary>
+            Delete a BLOB by its key.
+            </summary>
+            <param name="key">Key of the BLOB.</param>
+            <returns>True if successful.</returns>
+        </member>
+        <member name="M:BlobHelper.Blobs.Get(System.String)">
+            <summary>
+            Retrieve a BLOB.
+            </summary>
+            <param name="key">Key of the BLOB.</param> 
+            <returns>Byte data of the BLOB.</returns>
+        </member>
+        <member name="M:BlobHelper.Blobs.GetStream(System.String)">
+            <summary>
+            Retrieve a BLOB.
+            </summary>
+            <param name="key">Key of the BLOB.</param> 
+            <returns>BLOB data.</returns>
+        </member>
+        <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.Byte[])">
+            <summary>
+            Write a BLOB using a byte array.
+            </summary>
+            <param name="key">Key of the BLOB.</param>
+            <param name="contentType">Content-type of the object.</param>
+            <param name="data">BLOB data.</param> 
+        </member>
+        <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.Int64,System.IO.Stream)">
+            <summary>
+            Write a BLOB.
+            </summary>
+            <param name="key">Key of the BLOB.</param>
+            <param name="contentType">Content type.</param>
+            <param name="contentLength">Content length.</param>
+            <param name="stream">Stream containing the data.</param> 
+        </member>
+        <member name="M:BlobHelper.Blobs.Exists(System.String)">
+            <summary>
+            Check if a BLOB exists.
+            </summary>
+            <param name="key">Key of the BLOB.</param>
+            <returns>True if exists.</returns>
+        </member>
+        <member name="M:BlobHelper.Blobs.GenerateUrl(System.String)">
+            <summary>
+            Generate a URL for a given object key.
+            </summary>
+            <param name="key">Object key.</param>
+            <returns>URL.</returns>
+        </member>
+        <member name="M:BlobHelper.Blobs.GetMetadata(System.String)">
+            <summary>
+            Retrieve BLOB metadata.
+            </summary>
+            <param name="key">Key of the BLOB.</param> 
+            <returns>BLOB metadata.</returns>
+        </member>
+        <member name="M:BlobHelper.Blobs.Enumerate">
+            <summary>
+            Enumerate BLOBs.
+            </summary> 
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="M:BlobHelper.Blobs.Enumerate(System.String)">
+            <summary>
+            Enumerate BLOBs.
+            </summary> 
+            <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param> 
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="M:BlobHelper.Blobs.Enumerate(System.String,System.String)">
+            <summary>
+            Enumerate BLOBs.
+            </summary>
+            <param name="prefix">Key prefix that must match.</param>
+            <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param> 
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="T:BlobHelper.DiskSettings">
+            <summary>
+            Settings when using local filesystem for storage.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.DiskSettings.Directory">
+            <summary>
+            The filesystem directory to use.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.DiskSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.DiskSettings.#ctor(System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="directory">The directory where BLOBs should be stored.</param>
+        </member>
+        <member name="T:BlobHelper.EnumerationResult">
+            <summary>
+            Enumeration results.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.EnumerationResult.NextContinuationToken">
+            <summary>
+            Next continuation token to supply in order to continue enumerating from the end of the previous request.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.EnumerationResult.Blobs">
+            <summary>
+            List of BLOB metadata objects.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.EnumerationResult.#ctor">
+            <summary>
+            Instantiates the object.
+            </summary>
+        </member>
+        <member name="T:BlobHelper.AwsRegion">
+            <summary>
+            AWS region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.APNortheast1">
+            <summary>
+            APNortheast1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.APNortheast2">
+            <summary>
+            APNortheast2 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.APNortheast3">
+            <summary>
+            APNortheast3 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.APSoutheast1">
+            <summary>
+            APSoutheast1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.APSoutheast2">
+            <summary>
+            APSoutheast2 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.APSouth1">
+            <summary>
+            APSouth1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.CACentral1">
+            <summary>
+            CACentral1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.CNNorth1">
+            <summary>
+            CNNorth1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.EUCentral1">
+            <summary>
+            EUCentral1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.EUNorth1">
+            <summary>
+            EUNorth1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.EUWest1">
+            <summary>
+            EUWest1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.EUWest2">
+            <summary>
+            EUWest2 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.EUWest3">
+            <summary>
+            EUWest3 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.SAEast1">
+            <summary>
+            SAEast1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.USEast1">
+            <summary>
+            USEast1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.USEast2">
+            <summary>
+            USEast2 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.USGovCloudEast1">
+            <summary>
+            USGovCloudEast1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.USGovCloudWest1">
+            <summary>
+            USGovCloudWest1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.USWest1">
+            <summary>
+            USWest1 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.USWest2">
+            <summary>
+            USWest2 region.
+            </summary>
+        </member>
+        <member name="T:BlobHelper.StorageType">
+            <summary>
+            Storage type.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.StorageType.AwsS3">
+            <summary>
+            Amazon Simple Storage Service.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.StorageType.Azure">
+            <summary>
+            Microsoft Azure BLOB Storage Service.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.StorageType.Disk">
+            <summary>
+            Local filesystem/disk storage.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.StorageType.Kvpbase">
+            <summary>
+            Kvpbase Storage Server.
+            </summary>
+        </member>
+        <member name="T:BlobHelper.KvpbaseSettings">
+            <summary>
+            Settings when using kvpbase for storage.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.KvpbaseSettings.Endpoint">
+            <summary>
+            Kvpbase endpoint URL, of the form http://[hostname]:[port]/.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.KvpbaseSettings.UserGuid">
+            <summary>
+            Kvpbase user GUID.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.KvpbaseSettings.Container">
+            <summary>
+            Kvpbase container.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.KvpbaseSettings.ApiKey">
+            <summary>
+            Kvpbase API key.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.KvpbaseSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.KvpbaseSettings.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="endpoint">Kvpbase endpoint, i.e. http://localhost:8000/</param>
+            <param name="userGuid">GUID of the user.</param>
+            <param name="container">Container in which BLOBs should be stored.</param>
+            <param name="apiKey">API key with read, write, and delete permissions.</param>
+        </member>
+    </members>
+</doc>

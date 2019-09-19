@@ -2,12 +2,22 @@
 
 ## Current Version
 
+v2.0.1
+
+- Breaking changes
+- Fully async APIs
+- Separation of ```Get``` and ```GetStream``` APIs
+- ```BlobData``` object returned when using ```GetStream``` API to download objects to stream (contains content length and stream)
+- ```EnumerationResult``` object returned for enumeration results including continuation token and list of ```BlobMetadata``` objects
+- Internal consistency amongst APIs
+- Dependency updates
+
+## Previous Versions
+
 v1.3.5
 
 - Added ```string GenerateUrl(string key)``` API
 - Fixed test project issue with AWS instantiation when no endpoint is supplied
-
-## Previous Versions
 
 v1.3.x
 

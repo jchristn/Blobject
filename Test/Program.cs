@@ -252,19 +252,17 @@ namespace TestNetCore
             string key = InputString("Key:", null, false);
             string contentType = InputString("Content type:", "text/plain", true);
             string data = InputString("Data:", null, true);
-
-            bool success = false;
-
+             
             if (String.IsNullOrEmpty(data))
             {
-                success = _Blobs.Write(key, contentType, null).Result;
+                _Blobs.Write(key, contentType, null).Wait();
             }
             else
             {
-                success = _Blobs.Write(key, contentType, Encoding.UTF8.GetBytes(data)).Result;
+                _Blobs.Write(key, contentType, Encoding.UTF8.GetBytes(data)).Wait();
             }
 
-            Console.WriteLine("Success: " + success);
+            Console.WriteLine("Success");
         }
 
         static void ReadBlob()
@@ -299,15 +297,10 @@ namespace TestNetCore
 
             using (FileStream fs = new FileStream(filename, FileMode.Open))
             {
-                if (_Blobs.Write(key, contentType, contentLength, fs))
-                {
-                    Console.WriteLine("Success");
-                }
-                else
-                {
-                    Console.WriteLine("Failed");
-                }
+                _Blobs.Write(key, contentType, contentLength, fs).Wait();
             }
+
+            Console.WriteLine("Success");
         }
 
         static void DownloadBlob()
@@ -315,106 +308,84 @@ namespace TestNetCore
             string key = InputString("Key:", null, false);
             string filename = InputString("Filename:", null, false);
 
-            long contentLength = 0;
-            Stream stream = null;
-
-            if (_Blobs.Get(key, out contentLength, out stream))
+            BlobData blob = _Blobs.GetStream(key).Result;
+            using (FileStream fs = new FileStream(filename, FileMode.OpenOrCreate))
             {
-                using (FileStream fs = new FileStream(filename, FileMode.OpenOrCreate))
-                {
-                    int bytesRead = 0;
-                    long bytesRemaining = contentLength;
-                    byte[] buffer = new byte[65536];
+                int bytesRead = 0;
+                long bytesRemaining = blob.ContentLength;
+                byte[] buffer = new byte[65536];
 
-                    while (bytesRemaining > 0)
+                while (bytesRemaining > 0)
+                {
+                    bytesRead = blob.Data.Read(buffer, 0, buffer.Length);
+                    if (bytesRead > 0)
                     {
-                        bytesRead = stream.Read(buffer, 0, buffer.Length);
-                        if (bytesRead > 0)
-                        {
-                            fs.Write(buffer, 0, bytesRead);
-                            bytesRemaining -= bytesRead;
-                        }
+                        fs.Write(buffer, 0, bytesRead);
+                        bytesRemaining -= bytesRead;
                     }
                 }
-
-                Console.WriteLine("Success");
             }
-            else
-            {
-                Console.WriteLine("Failed");
-            } 
+
+            Console.WriteLine("Success");
         }
 
         static void BlobMetadata()
         {
-            BlobMetadata md = null;
-            bool success = _Blobs.GetMetadata(
-                InputString("Key:", null, false),
-                out md);
-            if (success)
-            {
-                Console.WriteLine(md.ToString());
-            }
+            BlobMetadata md = _Blobs.GetMetadata(InputString("Key:", null, false)).Result;
+            Console.WriteLine("");
+            Console.WriteLine(md.ToString());
         }
 
         static void Enumerate()
-        {
-            List<BlobMetadata> blobs = null;
-            string nextContinuationToken = null;
+        { 
+            EnumerationResult result = _Blobs.Enumerate(InputString("Continuation token:", null, true)).Result;
 
-            if (_Blobs.Enumerate(
-                InputString("Continuation token:", null, true),
-                out nextContinuationToken,
-                out blobs))
+            Console.WriteLine("");
+            if (result.Blobs != null && result.Blobs.Count > 0)
             {
-                if (blobs != null && blobs.Count > 0)
+                foreach (BlobMetadata curr in result.Blobs)
                 {
-                    foreach (BlobMetadata curr in blobs)
-                    {
-                        Console.WriteLine(
-                            String.Format("{0,-27}", curr.Key) +
-                            String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
-                            String.Format("{0,-30}", curr.Created.ToString("yyyy-MM-dd HH:mm:ss")));
-                    }
+                    Console.WriteLine(
+                        String.Format("{0,-27}", curr.Key) +
+                        String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
+                        String.Format("{0,-30}", curr.Created.ToString("yyyy-MM-dd HH:mm:ss")));
                 }
-                else
-                {
-                    Console.WriteLine("(none)");
-                }
-
-                if (!String.IsNullOrEmpty(nextContinuationToken)) Console.WriteLine("Continuation token: " + nextContinuationToken);
             }
+            else
+            {
+                Console.WriteLine("(none)");
+            }
+
+            if (!String.IsNullOrEmpty(result.NextContinuationToken))
+                Console.WriteLine("Continuation token: " + result.NextContinuationToken);
+
+            Console.WriteLine("");
         }
 
         static void EnumeratePrefix()
-        {
-            List<BlobMetadata> blobs = null;
-            string nextContinuationToken = null;
+        { 
+            EnumerationResult result = _Blobs.Enumerate(
+                InputString("Prefix:", null, true),
+                InputString("Continuation token:", null, true)).Result;
 
-            if (_Blobs.Enumerate(
-                InputString("Prefix:", null, true), 
-                InputString("Continuation token:", null, true),
-                out nextContinuationToken,
-                out blobs))
+            if (result.Blobs != null && result.Blobs.Count > 0)
             {
-                if (blobs != null && blobs.Count > 0)
+                foreach (BlobMetadata curr in result.Blobs)
                 {
-                    foreach (BlobMetadata curr in blobs)
-                    {
-                        Console.WriteLine(
-                            String.Format("{0,-27}", curr.Key) +
-                            String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
-                            String.Format("{0,-30}", curr.Created.ToString("yyyy-MM-dd HH:mm:ss")));
-                    }
+                    Console.WriteLine(
+                        String.Format("{0,-27}", curr.Key) +
+                        String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
+                        String.Format("{0,-30}", curr.Created.ToString("yyyy-MM-dd HH:mm:ss")));
                 }
-                else
-                {
-                    Console.WriteLine("(none)");
-                }
-
-                if (!String.IsNullOrEmpty(nextContinuationToken)) Console.WriteLine("Continuation token: " + nextContinuationToken);
             }
-        }
+            else
+            {
+                Console.WriteLine("(none)");
+            }
+
+            if (!String.IsNullOrEmpty(result.NextContinuationToken))
+                Console.WriteLine("Continuation token: " + result.NextContinuationToken);
+        } 
 
         static void GenerateUrl()
         {

@@ -130,6 +130,7 @@ namespace BlobHelper
         /// <param name="secretKey">Secret key with which to access AWS S3.</param>
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
+        /// <param name="ssl">Enable or disable SSL.</param>
         public AwsSettings(string accessKey, string secretKey, string region, string bucket, bool ssl)
         {
             if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
@@ -197,7 +198,11 @@ namespace BlobHelper
 
         #region Public-Methods
 
-        public Amazon.RegionEndpoint GetAwsRegion()
+        /// <summary>
+        /// Retrieve AWS region endpoint.
+        /// </summary>
+        /// <returns>AWS region endpoint.</returns>
+        public Amazon.RegionEndpoint GetAwsRegionEndpoint()
         { 
             switch (Region)
             {
@@ -242,7 +247,7 @@ namespace BlobHelper
             throw new ArgumentException("Unknown region: " + Region.ToString());
         }
 
-        public bool ValidateRegion(string region)
+        internal bool ValidateRegion(string region)
         {
             return ValidRegions().Contains(region);
         }

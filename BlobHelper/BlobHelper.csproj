@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.3.5</Version>
+    <Version>2.0.1</Version>
     <Authors>Joel Christner</Authors>
     <Description>BLOB storage wrapper for Microsoft Azure, Amazon S3, Kvpbase, and local filesystem written in C#.</Description>
     <Copyright>(c)2019 Joel Christner</Copyright>
@@ -11,20 +11,24 @@
     <RepositoryUrl>https://github.com/jchristn/BlobHelper</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageLicenseUrl></PackageLicenseUrl>
-    <PackageReleaseNotes>Added GenerateUrl(string key) API</PackageReleaseNotes>
+    <PackageReleaseNotes>Breaking changes; fully async APIs, objects returned when download objects to stream, object returned for enumeration results, internal consistency, dependency updates.</PackageReleaseNotes>
     <PackageIconUrl>https://raw.githubusercontent.com/jchristn/BlobHelper/master/assets/icon.ico</PackageIconUrl>
     <PackageTags>blob azure storage s3 object rest</PackageTags>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
+    <DocumentationFile>C:\Code\Misc\BlobHelper-1.3\BlobHelper\BlobHelper.xml</DocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Core" Version="3.3.103.29" />
+    <PackageReference Include="AWSSDK.Core" Version="3.3.103.40" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.3.100.1" />
-    <PackageReference Include="AWSSDK.S3" Version="3.3.104.17" />
-    <PackageReference Include="KvpbaseSDK" Version="3.3.2.6" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.104.28" />
+    <PackageReference Include="KvpbaseSDK" Version="4.0.2" />
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="RestWrapper" Version="2.0.4" />
+    <PackageReference Include="RestWrapper" Version="2.1.0" />
     <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
   </ItemGroup>
 

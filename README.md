@@ -1,9 +1,7 @@
 # BlobHelper
 
-BLOB storage wrapper for Microsoft Azure, Amazon S3, Kvpbase, and local filesystem written in C#.
-
-As of v1.1.0, BlobHelper is now targeted to both .NET Core 2.0 and .NET Framework 4.6.2.
-
+BlobHelper is a common, consistent storage interface for Microsoft Azure, Amazon S3, Kvpbase, and local filesystem written in C#.
+ 
 [nuget]:     https://www.nuget.org/packages/BlobHelper/
 [nuget-img]: https://badge.fury.io/nu/Object.svg
 
@@ -13,12 +11,17 @@ If you have any issues or feedback, please file an issue here in Github. We'd lo
 
 ## Overview
 
-This project was built to provide a simple interface over external storage to help support projects that need to work with potentially multiple storage providers.  It is by no means a comprehensive interface, rather, it supports core methods for creation, retrieval, and deletion.
+This project was built to provide a simple interface over external storage to help support projects that need to work with potentially multiple storage providers.  It is by no means a comprehensive interface, rather, it supports core methods for creation, retrieval, deletion, metadata, and enumeration.
 
-## New in v1.3.5
+## New in v2.0.1
 
-- Added ```string GenerateUrl(string key)``` API
-- Fixed test project issue with AWS instantiation when no endpoint is supplied
+- Breaking changes
+- Fully async APIs
+- Separation of ```Get``` and ```GetStream``` APIs
+- ```BlobData``` object returned when using ```GetStream``` API to download objects to stream (contains content length and stream)
+- ```EnumerationResult``` object returned for enumeration results including continuation token and list of ```BlobMetadata``` objects
+- Internal consistency amongst APIs
+- Dependency updates
 
 ## Example Project
 
@@ -74,10 +77,10 @@ Blobs blobs = new Blobs(settings);
 
 ## Getting Started (Byte Arrays for Smaller Objects)
 ```
-bool success = blobs.Write("test", "text/plain", This is some data").Result;
-byte[] data = blobs.Get("test"); // throws IOException
-bool exists = blobs.Exists("test").Result;
-bool success = blobs.Delete("test").Result;
+await blobs.Write("test", "text/plain", This is some data");  // throws IOException
+byte[] data = await blobs.Get("test");                        // throws IOException
+bool exists = await blobs.Exists("test");
+bool success = await blobs.Delete("test");
 ```
 
 ## Getting Started (Streams for Larger Objects)
@@ -88,35 +91,23 @@ long contentLength = fi.Length;
 
 using (FileStream fs = new FileStream(inputFile, FileMode.Open))
 {
-    if (_Blobs.Write("key", "content-type", contentLength, fs)) Console.WriteLine("Success");
-    else Console.WriteLine("Failed");
+    await _Blobs.Write("key", "content-type", contentLength, fs);  // throws IOException
 }
 
 // Downloading to a stream
-long contentLength = 0;
-Stream stream = null; 
-if (_Blobs.Get(key, out contentLength, out stream))
-{
-	// use the stream...
-}
-else Console.WriteLine("Failed");
+BlobData blob = await _Blobs.GetStream(key);
+// read blob.ContentLength bytes from blob.Data
 ```
 
 ## Metadata and Enumeration
 ```
 // Get BLOB metadata
-BlobMetadata md = null;
-if (_Blobs.GetMetadata("key", out md)) Console.WriteLine(md.ToString());
-else Console.WriteLine("Failed");
+BlobMetadata md = await _Blobs.GetMetadata("key");
 
 // Enumerate BLOBs
-List<BlobMetadata> blobs = null;
-string nextToken = null; 
-if (_Blobs.Enumerate(null, out nextToken, out blobs))
-{
-	foreach (BlobMetadata md in blobs) Console.WriteLine(md.ToString());
-}
-else Console.WriteLine("Failed"); 
+EnumerationResult result = await _Blobs.Enumerate();
+// list of BlobMetadata contained in result.Blobs
+// continuation token in result.NextContinuationToken
 ```
 
 ## Version History
