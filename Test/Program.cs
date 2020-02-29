@@ -252,15 +252,10 @@ namespace TestNetCore
             string key = InputString("Key:", null, false);
             string contentType = InputString("Content type:", "text/plain", true);
             string data = InputString("Data:", null, true);
-             
-            if (String.IsNullOrEmpty(data))
-            {
-                _Blobs.Write(key, contentType, null).Wait();
-            }
-            else
-            {
-                _Blobs.Write(key, contentType, Encoding.UTF8.GetBytes(data)).Wait();
-            }
+
+            byte[] bytes = new byte[0];
+            if (!String.IsNullOrEmpty(data)) bytes = Encoding.UTF8.GetBytes(data);
+            _Blobs.Write(key, contentType, bytes).Wait();
 
             Console.WriteLine("Success");
         }

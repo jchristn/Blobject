@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <Authors>Joel Christner</Authors>
     <Description>BLOB storage wrapper for Microsoft Azure, Amazon S3, Kvpbase, and local filesystem written in C#.</Description>
     <Copyright>(c)2019 Joel Christner</Copyright>
@@ -11,7 +11,7 @@
     <RepositoryUrl>https://github.com/jchristn/BlobHelper</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageLicenseUrl></PackageLicenseUrl>
-    <PackageReleaseNotes>Breaking changes; fully async APIs, objects returned when download objects to stream, object returned for enumeration results, internal consistency, dependency updates.</PackageReleaseNotes>
+    <PackageReleaseNotes>Write API using string as data.</PackageReleaseNotes>
     <PackageIconUrl>https://raw.githubusercontent.com/jchristn/BlobHelper/master/assets/icon.ico</PackageIconUrl>
     <PackageTags>blob azure storage s3 object rest</PackageTags>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>

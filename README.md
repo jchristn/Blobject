@@ -13,15 +13,9 @@ If you have any issues or feedback, please file an issue here in Github. We'd lo
 
 This project was built to provide a simple interface over external storage to help support projects that need to work with potentially multiple storage providers.  It is by no means a comprehensive interface, rather, it supports core methods for creation, retrieval, deletion, metadata, and enumeration.
 
-## New in v2.0.1
+## New in v2.0.2
 
-- Breaking changes
-- Fully async APIs
-- Separation of ```Get``` and ```GetStream``` APIs
-- ```BlobData``` object returned when using ```GetStream``` API to download objects to stream (contains content length and stream)
-- ```EnumerationResult``` object returned for enumeration results including continuation token and list of ```BlobMetadata``` objects
-- Internal consistency amongst APIs
-- Dependency updates
+- Added support for writing strings
 
 ## Example Project
 

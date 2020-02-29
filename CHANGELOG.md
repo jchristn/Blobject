@@ -2,6 +2,12 @@
 
 ## Current Version
 
+v2.0.2
+
+- Added support for writing strings
+
+## Previous Versions
+
 v2.0.1
 
 - Breaking changes
@@ -11,8 +17,6 @@ v2.0.1
 - ```EnumerationResult``` object returned for enumeration results including continuation token and list of ```BlobMetadata``` objects
 - Internal consistency amongst APIs
 - Dependency updates
-
-## Previous Versions
 
 v1.3.5
 

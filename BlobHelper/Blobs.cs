@@ -189,6 +189,19 @@ namespace BlobHelper
         }
 
         /// <summary>
+        /// Writea  BLOB using a string.
+        /// </summary>
+        /// <param name="key">Key of the BLOB.</param>
+        /// <param name="contentType">Content-type of the object.</param>
+        /// <param name="data">BLOB data.</param>
+        /// <returns></returns>
+        public async Task Write(string key, string contentType, string data)
+        {
+            if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
+            await Write(key, contentType, Encoding.UTF8.GetBytes(data));
+        }
+
+        /// <summary>
         /// Write a BLOB using a byte array.
         /// </summary>
         /// <param name="key">Key of the BLOB.</param>
@@ -199,8 +212,7 @@ namespace BlobHelper
             string contentType,
             byte[] data)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-            if (_StorageType != StorageType.Disk && String.IsNullOrEmpty(contentType)) throw new ArgumentNullException(nameof(contentType));
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key)); 
 
             switch (_StorageType)
             {
@@ -222,7 +234,7 @@ namespace BlobHelper
         }
 
         /// <summary>
-        /// Write a BLOB.
+        /// Write a BLOB using a stream.
         /// </summary>
         /// <param name="key">Key of the BLOB.</param>
         /// <param name="contentType">Content type.</param>
