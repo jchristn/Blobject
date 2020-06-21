@@ -1316,12 +1316,7 @@ namespace BlobHelper
 
         private string S3GenerateUrl(string key)
         {
-            GetPreSignedUrlRequest request = new GetPreSignedUrlRequest();
-            request.BucketName = _AwsSettings.Bucket;
-            request.Key = key;
-            request.Protocol = Protocol.HTTPS;
-            request.Expires = DateTime.Now.AddYears(100);
-            return _S3Client.GetPreSignedURL(request);
+            return _AwsSettings.BaseUrl + key;
         }
 
         private string AzureGenerateUrl(string key)

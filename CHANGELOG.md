@@ -2,11 +2,15 @@
 
 ## Current Version
 
+v2.0.3
+
+- Added AwsS3 property ```BaseUrl``` for returning BLOB URLs
+
+## Previous Versions
+
 v2.0.2
 
 - Added support for writing strings
-
-## Previous Versions
 
 v2.0.1
 

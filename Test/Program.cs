@@ -118,7 +118,8 @@ namespace TestNetCore
                            InputString("Access key :", null, false),
                            InputString("Secret key :", null, false),
                            InputString("Region     :", "USWest1", false),
-                           InputString("Bucket     :", null, false)
+                           InputString("Bucket     :", null, false),
+                           InputString("Base URL   :", null, false)
                            ); 
                     }
                     else
@@ -129,7 +130,8 @@ namespace TestNetCore
                             InputString("Access key :", null, false),
                             InputString("Secret key :", null, false),
                             InputString("Region     :", "USWest1", false),
-                            InputString("Bucket     :", null, false)
+                            InputString("Bucket     :", null, false),
+                            InputString("Base URL   :", null, false)
                             );
                     }
                     _Blobs = new Blobs(_AwsSettings);
