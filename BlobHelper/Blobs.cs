@@ -1331,7 +1331,7 @@ namespace BlobHelper
                     ret = "http://";
                 }
 
-                ret += _AwsSettings.Bucket + ".s3." + S3RegionToString(_AwsSettings.Region) + ".amazonaws.com";
+                ret += _AwsSettings.Bucket + ".s3." + S3RegionToString(_AwsSettings.Region) + ".amazonaws.com/" + key;
 
                 return ret;
             }
