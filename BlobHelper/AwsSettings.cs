@@ -165,7 +165,7 @@ namespace BlobHelper
         /// <param name="secretKey">Secret key with which to access AWS S3.</param>
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
-        /// <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/</param>
+        /// <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
         public AwsSettings(string endpoint, bool ssl, string accessKey, string secretKey, AwsRegion region, string bucket, string baseUrl)
         {
             if (String.IsNullOrEmpty(endpoint)) throw new ArgumentNullException(nameof(endpoint));
@@ -194,7 +194,7 @@ namespace BlobHelper
         /// <param name="secretKey">Secret key with which to access AWS S3.</param>
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
-        /// <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/</param>
+        /// <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
         public AwsSettings(string endpoint, bool ssl, string accessKey, string secretKey, string region, string bucket, string baseUrl)
         {
             if (String.IsNullOrEmpty(endpoint)) throw new ArgumentNullException(nameof(endpoint));
