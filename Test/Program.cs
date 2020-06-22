@@ -130,7 +130,7 @@ namespace TestNetCore
                             InputString("Secret key :", null, false),
                             InputString("Region     :", "USWest1", false),
                             InputString("Bucket     :", null, false),
-                            InputString("Base URL   :", null, false)
+                            InputString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
                             );
                     }
                     _Blobs = new Blobs(_AwsSettings);

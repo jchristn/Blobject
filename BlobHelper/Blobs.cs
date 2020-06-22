@@ -306,7 +306,7 @@ namespace BlobHelper
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    return S3GenerateUrl(key);
+                    return S3GenerateUrl(_AwsSettings.Bucket, key);
                 case StorageType.Azure:
                     return AzureGenerateUrl(key);
                 case StorageType.Disk:
@@ -1314,24 +1314,24 @@ namespace BlobHelper
             return dir + "/" + key;
         }
 
-        private string S3GenerateUrl(string key)
+        private string S3GenerateUrl(string bucket, string key)
         {
-            if (!String.IsNullOrEmpty(_AwsSettings.BaseUrl)) return _AwsSettings.BaseUrl + key;
+            if (!String.IsNullOrEmpty(_AwsSettings.BaseUrl))
+            {
+                string url = _AwsSettings.BaseUrl;
+                url = url.Replace("{bucket}", bucket);
+                url = url.Replace("{key}", key);
+                return url;
+            }
             else
             {
                 string ret = "";
 
                 // https://[bucketname].s3.[regionname].amazonaws.com/
-                if (_AwsSettings.Ssl)
-                {
-                    ret = "https://";
-                }
-                else
-                {
-                    ret = "http://";
-                }
+                if (_AwsSettings.Ssl) ret = "https://"; 
+                else ret = "http://"; 
 
-                ret += _AwsSettings.Bucket + ".s3." + S3RegionToString(_AwsSettings.Region) + ".amazonaws.com/" + key;
+                ret += bucket + ".s3." + S3RegionToString(_AwsSettings.Region) + ".amazonaws.com/" + key;
 
                 return ret;
             }

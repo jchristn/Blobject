@@ -45,7 +45,8 @@ namespace BlobHelper
         public string Bucket { get; set; }
 
         /// <summary>
-        /// Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/
+        /// Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.
+        /// For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.
         /// </summary>
         public string BaseUrl { get; set; }
 
