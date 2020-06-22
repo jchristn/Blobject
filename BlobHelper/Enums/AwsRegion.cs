@@ -62,6 +62,11 @@ namespace BlobHelper
         [EnumMember(Value = "CNNorth1")]
         CNNorth1,
         /// <summary>
+        /// CNNorthwest1 region.
+        /// </summary>
+        [EnumMember(Value = "CNNorthwest1")]
+        CNNorthwest1,
+        /// <summary>
         /// EUCentral1 region.
         /// </summary>
         [EnumMember(Value = "EUCentral1")]

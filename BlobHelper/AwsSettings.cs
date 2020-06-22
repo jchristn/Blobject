@@ -72,23 +72,18 @@ namespace BlobHelper
         /// <param name="secretKey">Secret key with which to access AWS S3.</param>
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
-        /// <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/</param>
-        public AwsSettings(string accessKey, string secretKey, AwsRegion region, string bucket, string baseUrl)
+        public AwsSettings(string accessKey, string secretKey, AwsRegion region, string bucket)
         {
             if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
             if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
-            if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
-            if (String.IsNullOrEmpty(baseUrl)) throw new ArgumentNullException(nameof(baseUrl));
+            if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket)); 
 
             Endpoint = null;
             Ssl = true;
             AccessKey = accessKey;
             SecretKey = secretKey;
             Region = region;
-            Bucket = bucket;
-            BaseUrl = baseUrl;
-
-            if (!BaseUrl.EndsWith("/")) BaseUrl += "/";
+            Bucket = bucket; 
         }
 
         /// <summary>
@@ -98,21 +93,16 @@ namespace BlobHelper
         /// <param name="secretKey">Secret key with which to access AWS S3.</param>
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
-        /// <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/</param>
-        public AwsSettings(string accessKey, string secretKey, string region, string bucket, string baseUrl)
+        public AwsSettings(string accessKey, string secretKey, string region, string bucket)
         {
             if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
             if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
             if (String.IsNullOrEmpty(region)) throw new ArgumentNullException(nameof(region));
             if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
-            if (String.IsNullOrEmpty(baseUrl)) throw new ArgumentNullException(nameof(baseUrl));
 
             AccessKey = accessKey;
             SecretKey = secretKey;
             Bucket = bucket;
-            BaseUrl = baseUrl;
-
-            if (!BaseUrl.EndsWith("/")) BaseUrl += "/";
 
             if (!ValidateRegion(region)) throw new ArgumentException("Unable to validate region: " + region);
             Region = GetRegionFromString(region);
@@ -126,13 +116,11 @@ namespace BlobHelper
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
         /// <param name="ssl">Enable or disable SSL.</param>
-        /// <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/</param>
-        public AwsSettings(string accessKey, string secretKey, AwsRegion region, string bucket, bool ssl, string baseUrl)
+        public AwsSettings(string accessKey, string secretKey, AwsRegion region, string bucket, bool ssl)
         {
             if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
             if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
-            if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
-            if (String.IsNullOrEmpty(baseUrl)) throw new ArgumentNullException(nameof(baseUrl));
+            if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket)); 
 
             Endpoint = null;
             Ssl = true;
@@ -140,10 +128,7 @@ namespace BlobHelper
             SecretKey = secretKey;
             Region = region;
             Bucket = bucket;
-            Ssl = ssl;
-            BaseUrl = baseUrl;
-
-            if (!BaseUrl.EndsWith("/")) BaseUrl += "/";
+            Ssl = ssl; 
         }
 
         /// <summary>
@@ -153,23 +138,18 @@ namespace BlobHelper
         /// <param name="secretKey">Secret key with which to access AWS S3.</param>
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
-        /// <param name="ssl">Enable or disable SSL.</param>
-        /// <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/</param>
-        public AwsSettings(string accessKey, string secretKey, string region, string bucket, bool ssl, string baseUrl)
+        /// <param name="ssl">Enable or disable SSL.</param> 
+        public AwsSettings(string accessKey, string secretKey, string region, string bucket, bool ssl)
         {
             if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
             if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
             if (String.IsNullOrEmpty(region)) throw new ArgumentNullException(nameof(region));
-            if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
-            if (String.IsNullOrEmpty(baseUrl)) throw new ArgumentNullException(nameof(baseUrl));
+            if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket)); 
             
             AccessKey = accessKey;
             SecretKey = secretKey;
             Bucket = bucket;
             Ssl = ssl;
-            BaseUrl = baseUrl;
-
-            if (!BaseUrl.EndsWith("/")) BaseUrl += "/";
 
             if (!ValidateRegion(region)) throw new ArgumentException("Unable to validate region: " + region);
             Region = GetRegionFromString(region);
