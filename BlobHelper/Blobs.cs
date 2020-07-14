@@ -413,11 +413,11 @@ namespace BlobHelper
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    _S3Region = _AwsSettings.GetAwsRegionEndpoint();
                     _S3Credentials = new Amazon.Runtime.BasicAWSCredentials(_AwsSettings.AccessKey, _AwsSettings.SecretKey);
 
                     if (String.IsNullOrEmpty(_AwsSettings.Endpoint))
-                    { 
+                    {
+                        _S3Region = _AwsSettings.GetAwsRegionEndpoint();
                         _S3Config = new AmazonS3Config
                         {
                             RegionEndpoint = _S3Region,
@@ -430,8 +430,7 @@ namespace BlobHelper
                     else
                     {
                         _S3Config = new AmazonS3Config
-                        {
-                            RegionEndpoint = _S3Region,
+                        { 
                             ServiceURL = _AwsSettings.Endpoint,
                             ForcePathStyle = true,
                             UseHttp = !_AwsSettings.Ssl
