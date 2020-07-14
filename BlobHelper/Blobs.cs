@@ -113,31 +113,27 @@ namespace BlobHelper
         /// </summary>
         /// <param name="key">Key of the BLOB.</param>
         /// <returns>True if successful.</returns>
-        public async Task<bool> Delete(string key)
+        public async Task Delete(string key)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-
-            bool success = false;
 
             switch (_StorageType)
             {
                 case StorageType.AwsS3:
-                    success = await S3Delete(key);
+                    await S3Delete(key);
                     break;
                 case StorageType.Azure:
-                    success = await AzureDelete(key);
+                    await AzureDelete(key);
                     break;
                 case StorageType.Disk:
-                    success = await DiskDelete(key);
+                    await DiskDelete(key);
                     break;
                 case StorageType.Kvpbase:
-                    success = await KvpbaseDelete(key);
+                    await KvpbaseDelete(key);
                     break;
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString()); 
             }
-
-            return success;
         }
 
         /// <summary>
@@ -463,70 +459,34 @@ namespace BlobHelper
 
         #region Delete
 
-        private async Task<bool> KvpbaseDelete(string key)
-        {
-            try
-            {
-                await _Kvpbase.DeleteObject(_KvpbaseSettings.Container, key);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+        private async Task KvpbaseDelete(string key)
+        { 
+            await _Kvpbase.DeleteObject(_KvpbaseSettings.Container, key); 
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<bool> DiskDelete(string key)
+        private async Task DiskDelete(string key)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            try
-            {
-                File.Delete(DiskGenerateUrl(key));
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+        { 
+            File.Delete(DiskGenerateUrl(key)); 
         }
 
-        private async Task<bool> S3Delete(string key)
-        {
-            try
+        private async Task S3Delete(string key)
+        { 
+            DeleteObjectRequest request = new DeleteObjectRequest
             {
-                DeleteObjectRequest request = new DeleteObjectRequest
-                {
-                    BucketName = _AwsSettings.Bucket,
-                    Key = key
-                };
+                BucketName = _AwsSettings.Bucket,
+                Key = key
+            };
 
-                DeleteObjectResponse response = await _S3Client.DeleteObjectAsync(request);
-                int statusCode = (int)response.HttpStatusCode;
-
-                if (response != null) return true;
-                else return false;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            DeleteObjectResponse response = await _S3Client.DeleteObjectAsync(request); 
         }
 
-        private async Task<bool> AzureDelete(string key)
-        {
-            try
-            {
-                CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
-                OperationContext ctx = new OperationContext();
-                await blockBlob.DeleteAsync(DeleteSnapshotsOption.None, null, null, ctx);
-                int statusCode = ctx.LastResult.HttpStatusCode;
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+        private async Task AzureDelete(string key)
+        { 
+            CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
+            OperationContext ctx = new OperationContext();
+            await blockBlob.DeleteAsync(DeleteSnapshotsOption.None, null, null, ctx); 
         }
 
         #endregion
@@ -534,88 +494,60 @@ namespace BlobHelper
         #region Get
 
         private async Task<byte[]> KvpbaseGet(string key)
-        {
-            try
-            {
-                KvpbaseObject kvpObject = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key);
-                return Common.StreamToBytes(kvpObject.Data);
-            }
-            catch
-            {
-                throw new IOException("Unable to read object.");
-            }
+        { 
+            KvpbaseObject kvpObject = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key);
+            return Common.StreamToBytes(kvpObject.Data); 
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<byte[]> DiskGet(string key)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            try
-            {
-                return File.ReadAllBytes(DiskGenerateUrl(key));
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to read object.");
-            }
+        { 
+            return File.ReadAllBytes(DiskGenerateUrl(key)); 
         }
 
         private async Task<byte[]> S3Get(string key)
-        {
-            try
+        { 
+            GetObjectRequest request = new GetObjectRequest
             {
-                GetObjectRequest request = new GetObjectRequest
+                BucketName = _AwsSettings.Bucket,
+                Key = key,
+            };
+
+            using (GetObjectResponse response = await _S3Client.GetObjectAsync(request))
+            using (Stream responseStream = response.ResponseStream)
+            using (StreamReader reader = new StreamReader(responseStream))
+            {
+                if (response.ContentLength > 0)
                 {
-                    BucketName = _AwsSettings.Bucket,
-                    Key = key,
-                };
+                    // first copy the stream
+                    byte[] data = new byte[response.ContentLength];
 
-                using (GetObjectResponse response = await _S3Client.GetObjectAsync(request))
-                using (Stream responseStream = response.ResponseStream)
-                using (StreamReader reader = new StreamReader(responseStream))
-                {
-                    if (response.ContentLength > 0)
-                    {
-                        // first copy the stream
-                        byte[] data = new byte[response.ContentLength];
+                    Stream bodyStream = response.ResponseStream;
+                    data = Common.StreamToBytes(bodyStream);
 
-                        Stream bodyStream = response.ResponseStream;
-                        data = Common.StreamToBytes(bodyStream);
-
-                        int statusCode = (int)response.HttpStatusCode;
-                        return data;
-                    }
-                    else
-                    {
-                        throw new IOException("Unable to read object.");
-                    }
+                    int statusCode = (int)response.HttpStatusCode;
+                    return data;
                 }
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to read object.");
-            }
+                else
+                {
+                    throw new IOException("Unable to read object.");
+                }
+            } 
         }
 
         private async Task<byte[]> AzureGet(string key)
         {
             byte[] data = null;
+             
+            CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
+            OperationContext ctx = new OperationContext();
 
-            try
-            {
-                CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
-                OperationContext ctx = new OperationContext();
-
-                MemoryStream stream = new MemoryStream();
-                await blockBlob.DownloadToStreamAsync(stream);
-                stream.Seek(0, SeekOrigin.Begin);
-                data = Common.StreamToBytes(stream);
-                return data;
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to read object.");
-            }
+            MemoryStream stream = new MemoryStream();
+            await blockBlob.DownloadToStreamAsync(stream);
+            stream.Seek(0, SeekOrigin.Begin);
+            data = Common.StreamToBytes(stream);
+            return data; 
         }
 
         #endregion
@@ -623,88 +555,60 @@ namespace BlobHelper
         #region Get-Stream
 
         private async Task<BlobData> KvpbaseGetStream(string key)
-        {
-            try
-            {
-                KvpbaseObject kvpObj = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key);
-                return new BlobData(kvpObj.ContentLength, kvpObj.Data);
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to read object.");
-            }
+        { 
+            KvpbaseObject kvpObj = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key);
+            return new BlobData(kvpObj.ContentLength, kvpObj.Data); 
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<BlobData> DiskGetStream(string key)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            try
-            {
-                string url = DiskGenerateUrl(key);
-                long contentLength = new FileInfo(url).Length;
-                FileStream stream = new FileStream(url, FileMode.Open);
-                return new BlobData(contentLength, stream);
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to read object.");
-            }
+        { 
+            string url = DiskGenerateUrl(key);
+            long contentLength = new FileInfo(url).Length;
+            FileStream stream = new FileStream(url, FileMode.Open);
+            return new BlobData(contentLength, stream); 
         }
 
         private async Task<BlobData> S3GetStream(string key)
-        {
-            try
+        { 
+            GetObjectRequest request = new GetObjectRequest
             {
-                GetObjectRequest request = new GetObjectRequest
-                {
-                    BucketName = _AwsSettings.Bucket,
-                    Key = key,
-                };
+                BucketName = _AwsSettings.Bucket,
+                Key = key,
+            };
 
-                GetObjectResponse response = await _S3Client.GetObjectAsync(request);
-                BlobData ret = new BlobData();
+            GetObjectResponse response = await _S3Client.GetObjectAsync(request);
+            BlobData ret = new BlobData();
 
-                if (response.ContentLength > 0)
-                {
-                    ret.ContentLength = response.ContentLength;
-                    ret.Data = response.ResponseStream;
-                }
-                else
-                {
-                    ret.ContentLength = 0;
-                    ret.Data = new MemoryStream(new byte[0]);
-                }
-
-                return ret;
-            }
-            catch (Exception)
+            if (response.ContentLength > 0)
             {
-                throw new IOException("Unable to read object.");
+                ret.ContentLength = response.ContentLength;
+                ret.Data = response.ResponseStream;
             }
+            else
+            {
+                ret.ContentLength = 0;
+                ret.Data = new MemoryStream(new byte[0]);
+            }
+
+            return ret; 
         }
          
         private async Task<BlobData> AzureGetStream(string key) 
-        { 
-            try
-            {
-                CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
-                blockBlob.FetchAttributesAsync().Wait();
+        {  
+            CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
+            blockBlob.FetchAttributesAsync().Wait();
 
-                BlobData ret = new BlobData();
-                ret.ContentLength = blockBlob.Properties.Length;
+            BlobData ret = new BlobData();
+            ret.ContentLength = blockBlob.Properties.Length;
 
-                MemoryStream stream = new MemoryStream();
-                await blockBlob.DownloadToStreamAsync(stream);
+            MemoryStream stream = new MemoryStream();
+            await blockBlob.DownloadToStreamAsync(stream);
 
-                ret.Data = stream;
-                stream.Seek(0, SeekOrigin.Begin);
-                return ret;
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to read object.");
-            }
+            ret.Data = stream;
+            stream.Seek(0, SeekOrigin.Begin);
+            return ret; 
         }
 
         #endregion
@@ -719,46 +623,36 @@ namespace BlobHelper
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<bool> DiskExists(string key)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            try
-            {
-                return File.Exists(DiskGenerateUrl(key));
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+        { 
+            return File.Exists(DiskGenerateUrl(key)); 
         }
 
         private async Task<bool> S3Exists(string key)
-        {
+        { 
+            GetObjectMetadataRequest request = new GetObjectMetadataRequest
+            {
+                BucketName = _AwsSettings.Bucket,
+                Key = key
+            };
+
             try
             {
-                GetObjectMetadataRequest request = new GetObjectMetadataRequest
-                {
-                    BucketName = _AwsSettings.Bucket,
-                    Key = key
-                };
-
                 GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request);
                 return true;
             }
-            catch (Exception)
+            catch (Amazon.S3.AmazonS3Exception ex)
             {
-                return false;
+                if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    return false;
+
+                //status wasn't not found, so throw the exception
+                throw;
             }
         }
 
         private async Task<bool> AzureExists(string key)
-        {
-            try
-            {
-                return await _AzureBlobClient.GetContainerReference(_AzureSettings.Container).GetBlockBlobReference(key).ExistsAsync();
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+        { 
+            return await _AzureBlobClient.GetContainerReference(_AzureSettings.Container).GetBlockBlobReference(key).ExistsAsync(); 
         }
 
         #endregion
@@ -781,15 +675,8 @@ namespace BlobHelper
         }
 
         private async Task KvpbaseWrite(string key, string contentType, long contentLength, Stream stream)
-        {
-            try
-            {
-                await _Kvpbase.WriteObject(_KvpbaseSettings.Container, key, contentType, contentLength, stream); 
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to write object.");
-            }
+        { 
+            await _Kvpbase.WriteObject(_KvpbaseSettings.Container, key, contentType, contentLength, stream);  
         }
 
         private async Task DiskWrite(string key, byte[] data)
@@ -808,31 +695,24 @@ namespace BlobHelper
         }
 
         private async Task DiskWrite(string key, long contentLength, Stream stream)
-        {
-            try
-            {
-                int bytesRead = 0;
-                long bytesRemaining = contentLength;
-                byte[] buffer = new byte[65536];
-                string url = DiskGenerateUrl(key);
+        { 
+            int bytesRead = 0;
+            long bytesRemaining = contentLength;
+            byte[] buffer = new byte[65536];
+            string url = DiskGenerateUrl(key);
 
-                using (FileStream fs = new FileStream(url, FileMode.OpenOrCreate))
-                {
-                    while (bytesRemaining > 0)
-                    {
-                        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                        if (bytesRead > 0)
-                        {
-                            await fs.WriteAsync(buffer, 0, bytesRead);
-                            bytesRemaining -= bytesRead;
-                        }
-                    }
-                } 
-            }
-            catch (Exception)
+            using (FileStream fs = new FileStream(url, FileMode.OpenOrCreate))
             {
-                throw new IOException("Unable to write object.");
-            }
+                while (bytesRemaining > 0)
+                {
+                    bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    if (bytesRead > 0)
+                    {
+                        await fs.WriteAsync(buffer, 0, bytesRead);
+                        bytesRemaining -= bytesRead;
+                    }
+                }
+            }  
         }
 
         private async Task S3Write(string key, string contentType, byte[] data)
@@ -851,35 +731,27 @@ namespace BlobHelper
         }
 
         private async Task S3Write(string key, string contentType, long contentLength, Stream stream)
-        {
-            try
-            {
-                PutObjectRequest request = new PutObjectRequest();
+        { 
+            PutObjectRequest request = new PutObjectRequest();
 
-                if (stream == null || contentLength < 1)
-                {
-                    request.BucketName = _AwsSettings.Bucket;
-                    request.Key = key;
-                    request.ContentType = contentType;
-                    request.UseChunkEncoding = false;
-                    request.InputStream = new MemoryStream(new byte[0]);
-                }
-                else
-                {
-                    request.BucketName = _AwsSettings.Bucket;
-                    request.Key = key;
-                    request.ContentType = contentType;
-                    request.UseChunkEncoding = false;
-                    request.InputStream = stream;
-                }
-
-                PutObjectResponse response = await _S3Client.PutObjectAsync(request);
-                int statusCode = (int)response.HttpStatusCode; 
-            }
-            catch (Exception)
+            if (stream == null || contentLength < 1)
             {
-                throw new IOException("Unable to write object.");
+                request.BucketName = _AwsSettings.Bucket;
+                request.Key = key;
+                request.ContentType = contentType;
+                request.UseChunkEncoding = false;
+                request.InputStream = new MemoryStream(new byte[0]);
             }
+            else
+            {
+                request.BucketName = _AwsSettings.Bucket;
+                request.Key = key;
+                request.ContentType = contentType;
+                request.UseChunkEncoding = false;
+                request.InputStream = stream;
+            }
+
+            PutObjectResponse response = await _S3Client.PutObjectAsync(request); 
         }
          
         private async Task AzureWrite(string key, string contentType, byte[] data)
@@ -898,18 +770,11 @@ namespace BlobHelper
         }
 
         private async Task AzureWrite(string key, string contentType, long contentLength, Stream stream)
-        {
-            try
-            {
-                CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
-                blockBlob.Properties.ContentType = contentType;
-                OperationContext ctx = new OperationContext();
-                await blockBlob.UploadFromStreamAsync(stream, contentLength); 
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to write object.");
-            }
+        { 
+            CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
+            blockBlob.Properties.ContentType = contentType;
+            OperationContext ctx = new OperationContext();
+            await blockBlob.UploadFromStreamAsync(stream, contentLength);  
         }
 
         #endregion
@@ -917,10 +782,10 @@ namespace BlobHelper
         #region Get-Metadata
 
         private async Task<BlobMetadata> KvpbaseGetMetadata(string key)
-        {
-            try
+        { 
+            ObjectMetadata objMd = await _Kvpbase.ReadObjectMetadata(_KvpbaseSettings.Container, key);
+            if (objMd != null)
             {
-                ObjectMetadata objMd = await _Kvpbase.ReadObjectMetadata(_KvpbaseSettings.Container, key);
                 BlobMetadata md = new BlobMetadata();
                 md.Key = objMd.ObjectKey;
                 md.ContentLength = Convert.ToInt64(objMd.ContentLength);
@@ -929,85 +794,43 @@ namespace BlobHelper
                 md.Created = objMd.CreatedUtc.Value;
                 return md;
             }
-            catch (Exception)
+            else
             {
-                throw new IOException("Unable to read object.");
+                throw new KeyNotFoundException("The requested object was not found.");
             }
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<BlobMetadata> DiskGetMetadata(string key)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            try
-            {
-                string url = DiskGenerateUrl(key);
+        { 
+            string url = DiskGenerateUrl(key);
 
-                FileInfo fi = new FileInfo(url);
-                BlobMetadata md = new BlobMetadata();
-                md.Key = key;
-                md.ContentLength = fi.Length;
-                md.Created = fi.CreationTimeUtc;
+            FileInfo fi = new FileInfo(url);
+            BlobMetadata md = new BlobMetadata();
+            md.Key = key;
+            md.ContentLength = fi.Length;
+            md.Created = fi.CreationTimeUtc;
 
-                return md;
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to read object.");
-            }
+            return md; 
         }
          
         private async Task<BlobMetadata> S3GetMetadata(string key) 
-        {
-            try
-            {
-                GetObjectMetadataRequest request = new GetObjectMetadataRequest();
-                request.BucketName = _AwsSettings.Bucket;
-                request.Key = key;
-
-                GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request);
-
-                if (response.ContentLength > 0)
-                {
-                    BlobMetadata md = new BlobMetadata();
-                    md.Key = key;
-                    md.ContentLength = response.ContentLength;
-                    md.ContentType = response.Headers.ContentType;
-                    md.ETag = response.ETag;
-                    md.Created = response.LastModified;
-
-                    if (!String.IsNullOrEmpty(md.ETag))
-                    {
-                        while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
-                    }
-
-                    return md;
-                }
-                else
-                {
-                    throw new IOException("Unable to read object.");
-                }
-            }
-            catch (Exception)
-            {
-                throw new IOException("Unable to read object.");
-            }
-        }
-         
-        private async Task<BlobMetadata> AzureGetMetadata(string key) 
         { 
-            try
-            {
-                CloudBlobContainer container = _AzureBlobClient.GetContainerReference(_AzureSettings.Container);
-                CloudBlockBlob blockBlob = container.GetBlockBlobReference(key);
-                await blockBlob.FetchAttributesAsync();
+            GetObjectMetadataRequest request = new GetObjectMetadataRequest();
+            request.BucketName = _AwsSettings.Bucket;
+            request.Key = key;
 
+            GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request);
+
+            if (response.ContentLength > 0)
+            {
                 BlobMetadata md = new BlobMetadata();
                 md.Key = key;
-                md.ContentLength = blockBlob.Properties.Length;
-                md.ContentType = blockBlob.Properties.ContentType;
-                md.ETag = blockBlob.Properties.ETag;
-                md.Created = blockBlob.Properties.Created.Value.UtcDateTime;
+                md.ContentLength = response.ContentLength;
+                md.ContentType = response.Headers.ContentType;
+                md.ETag = response.ETag;
+                md.Created = response.LastModified;
 
                 if (!String.IsNullOrEmpty(md.ETag))
                 {
@@ -1016,10 +839,31 @@ namespace BlobHelper
 
                 return md;
             }
-            catch (Exception)
+            else
             {
-                throw new IOException("Unable to read object.");
-            } 
+                throw new KeyNotFoundException("The requested object was not found.");
+            }
+        }
+         
+        private async Task<BlobMetadata> AzureGetMetadata(string key) 
+        {  
+            CloudBlobContainer container = _AzureBlobClient.GetContainerReference(_AzureSettings.Container);
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(key);
+            await blockBlob.FetchAttributesAsync();
+
+            BlobMetadata md = new BlobMetadata();
+            md.Key = key;
+            md.ContentLength = blockBlob.Properties.Length;
+            md.ContentType = blockBlob.Properties.ContentType;
+            md.ETag = blockBlob.Properties.ETag;
+            md.Created = blockBlob.Properties.Created.Value.UtcDateTime;
+
+            if (!String.IsNullOrEmpty(md.ETag))
+            {
+                while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
+            }
+
+            return md; 
         }
 
         #endregion
@@ -1040,24 +884,17 @@ namespace BlobHelper
 
             ContainerMetadata cmd = null;
             EnumerationResult ret = new EnumerationResult();
-
-            try
+             
+            if (String.IsNullOrEmpty(prefix))
             {
-                if (String.IsNullOrEmpty(prefix))
-                {
-                    cmd = await _Kvpbase.EnumerateContainer(_KvpbaseSettings.Container, startIndex, count);
-                }
-                else
-                {
-                    EnumerationFilter filter = new EnumerationFilter();
-                    filter.Prefix = prefix;
-                    cmd = await _Kvpbase.EnumerateContainer(filter, _KvpbaseSettings.Container, startIndex, count);
-                }
+                cmd = await _Kvpbase.EnumerateContainer(_KvpbaseSettings.Container, startIndex, count);
             }
-            catch (Exception)
+            else
             {
-                throw new IOException("Unable to enumerate objects.");
-            }
+                EnumerationFilter filter = new EnumerationFilter();
+                filter.Prefix = prefix;
+                cmd = await _Kvpbase.EnumerateContainer(filter, _KvpbaseSettings.Container, startIndex, count);
+            } 
 
             ret.NextContinuationToken = KvpbaseBuildContinuationToken(startIndex + count, count);
 

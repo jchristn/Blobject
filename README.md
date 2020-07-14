@@ -73,7 +73,7 @@ Blobs blobs = new Blobs(settings);
 await blobs.Write("test", "text/plain", This is some data");  // throws IOException
 byte[] data = await blobs.Get("test");                        // throws IOException
 bool exists = await blobs.Exists("test");
-bool success = await blobs.Delete("test");
+await blobs.Delete("test");
 ```
 
 ## Getting Started (Streams for Larger Objects)
