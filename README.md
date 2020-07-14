@@ -1,6 +1,6 @@
 # BlobHelper
 
-BlobHelper is a common, consistent storage interface for Microsoft Azure, Amazon S3, Kvpbase, and local filesystem written in C#.
+BlobHelper is a common, consistent storage interface for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3), Kvpbase, and local filesystem written in C#.
 
 [![NuGet Version](https://img.shields.io/nuget/v/BlobHelper.svg?style=flat)](https://www.nuget.org/packages/BlobHelper/) [![NuGet](https://img.shields.io/nuget/dt/BlobHelper.svg)](https://www.nuget.org/packages/BlobHelper) 
 
@@ -20,7 +20,7 @@ This project was built to provide a simple interface over external storage to he
 
 Refer to the ```Test``` project for exercising the library.
 
-## Getting Started - AWS
+## Getting Started - AWS S3
 ```
 using BlobHelper;
 
@@ -29,6 +29,23 @@ AwsSettings settings = new AwsSettings(
 	secretKey, 
 	AwsRegion.USWest1,
 	bucket);
+
+Blobs blobs = new Blobs(settings); 
+```
+
+## Getting Started - AWS S3 Compatible Storage (Minio, Less3, etc)
+```
+using BlobHelper;
+
+AwsSettings settings = new AwsSettings(
+	endpoint,      // http://localhost:8000/
+	true,          // enable or disable SSL
+	accessKey, 
+	secretKey, 
+	AwsRegion.USWest1,
+	bucket,
+	baseUrl        // i.e. http://localhost:8000/{bucket}/{key}
+	);
 
 Blobs blobs = new Blobs(settings); 
 ```
