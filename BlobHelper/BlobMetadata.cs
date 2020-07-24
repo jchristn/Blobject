@@ -34,7 +34,17 @@ namespace BlobHelper
         /// <summary>
         /// Timestamp from when the object was created.
         /// </summary>
-        public DateTime Created { get; set; }
+        public DateTime? CreatedUtc = null;
+
+        /// <summary>
+        /// Timestamp from when the object was last updated, if available.
+        /// </summary>
+        public DateTime? LastUpdateUtc = null;
+
+        /// <summary>
+        /// Timestamp from when the object was last accessed, if available.
+        /// </summary>
+        public DateTime? LastAccessUtc = null;
 
         #endregion
 
@@ -67,8 +77,16 @@ namespace BlobHelper
                 "   Key            : " + Key + Environment.NewLine +
                 "   Content Type   : " + ContentType + Environment.NewLine +
                 "   Content Length : " + ContentLength + Environment.NewLine +
-                "   ETag           : " + ETag + Environment.NewLine +
-                "   Created        : " + Created.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
+                "   ETag           : " + ETag + Environment.NewLine;
+
+            if (CreatedUtc != null) ret +=
+                "   Created        : " + CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
+
+            if (LastUpdateUtc != null) ret +=
+                "   Last Update    : " + CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
+
+            if (LastAccessUtc != null) ret +=
+                "   Last Access    : " + CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
 
             return ret; 
         }

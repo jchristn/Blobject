@@ -790,7 +790,9 @@ namespace BlobHelper
                 md.ContentLength = Convert.ToInt64(objMd.ContentLength);
                 md.ContentType = objMd.ContentType;
                 md.ETag = objMd.Md5;
-                md.Created = objMd.CreatedUtc.Value;
+                md.CreatedUtc = objMd.CreatedUtc;
+                md.LastAccessUtc = objMd.LastAccessUtc;
+                md.LastUpdateUtc = objMd.LastUpdateUtc;
                 return md;
             }
             else
@@ -809,8 +811,9 @@ namespace BlobHelper
             BlobMetadata md = new BlobMetadata();
             md.Key = key;
             md.ContentLength = fi.Length;
-            md.Created = fi.CreationTimeUtc;
-
+            md.CreatedUtc = fi.CreationTimeUtc;
+            md.LastAccessUtc = fi.LastAccessTimeUtc;
+            md.LastUpdateUtc = fi.LastWriteTimeUtc;
             return md; 
         }
          
@@ -829,7 +832,7 @@ namespace BlobHelper
                 md.ContentLength = response.ContentLength;
                 md.ContentType = response.Headers.ContentType;
                 md.ETag = response.ETag;
-                md.Created = response.LastModified;
+                md.CreatedUtc = response.LastModified;
 
                 if (!String.IsNullOrEmpty(md.ETag))
                 {
@@ -855,7 +858,8 @@ namespace BlobHelper
             md.ContentLength = blockBlob.Properties.Length;
             md.ContentType = blockBlob.Properties.ContentType;
             md.ETag = blockBlob.Properties.ETag;
-            md.Created = blockBlob.Properties.Created.Value.UtcDateTime;
+            md.CreatedUtc = blockBlob.Properties.Created.Value.UtcDateTime;
+            md.LastUpdateUtc = blockBlob.Properties.LastModified.Value.UtcDateTime;
 
             if (!String.IsNullOrEmpty(md.ETag))
             {
@@ -906,7 +910,7 @@ namespace BlobHelper
                     md.ETag = curr.Md5;
                     md.ContentLength = Convert.ToInt64(curr.ContentLength);
                     md.ContentType = curr.ContentType;
-                    md.Created = curr.CreatedUtc.Value;
+                    md.CreatedUtc = curr.CreatedUtc.Value;
                     ret.Blobs.Add(md);
                 }
             }
@@ -958,7 +962,7 @@ namespace BlobHelper
                 BlobMetadata md = new BlobMetadata();
                 md.Key = key;
                 md.ContentLength = fi.Length;
-                md.Created = fi.CreationTimeUtc;
+                md.CreatedUtc = fi.CreationTimeUtc;
                 ret.Blobs.Add(md);
 
                 currCount++;
@@ -987,7 +991,7 @@ namespace BlobHelper
                     md.Key = curr.Key;
                     md.ContentLength = curr.Size;
                     md.ETag = curr.ETag;
-                    md.Created = curr.LastModified;
+                    md.CreatedUtc = curr.LastModified;
 
                     if (!String.IsNullOrEmpty(md.ETag))
                     {
@@ -1038,7 +1042,7 @@ namespace BlobHelper
                     md.ETag = blob.Properties.ETag;
                     md.ContentType = blob.Properties.ContentType;
                     md.ContentLength = blob.Properties.Length;
-                    md.Created = blob.Properties.Created.Value.DateTime;
+                    md.CreatedUtc = blob.Properties.Created.Value.DateTime;
 
                     if (!String.IsNullOrEmpty(md.ETag))
                     {

@@ -360,7 +360,7 @@ namespace TestNetCore
                     Console.WriteLine(
                         String.Format("{0,-27}", curr.Key) +
                         String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
-                        String.Format("{0,-30}", curr.Created.ToString("yyyy-MM-dd HH:mm:ss")));
+                        String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")));
                 }
             }
             else
@@ -387,7 +387,7 @@ namespace TestNetCore
                     Console.WriteLine(
                         String.Format("{0,-27}", curr.Key) +
                         String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
-                        String.Format("{0,-30}", curr.Created.ToString("yyyy-MM-dd HH:mm:ss")));
+                        String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")));
                 }
             }
             else
