@@ -12,7 +12,9 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Amazon.S3;
-using Amazon.S3.Model; 
+using Amazon.S3.Model;
+using Komodo.Sdk;
+using Komodo.Sdk.Classes;
 
 namespace BlobHelper
 {
@@ -32,6 +34,7 @@ namespace BlobHelper
         private AzureSettings _AzureSettings;
         private DiskSettings _DiskSettings;
         private KvpbaseSettings _KvpbaseSettings;
+        private KomodoSettings _KomodoSettings;
 
         private AmazonS3Config _S3Config;
         private IAmazonS3 _S3Client;
@@ -45,6 +48,8 @@ namespace BlobHelper
 
         private KvpbaseClient _Kvpbase;
 
+        private KomodoSdk _Komodo;
+         
         private ConcurrentDictionary<string, BlobContinuationToken> _AzureContinuationTokens = new ConcurrentDictionary<string, BlobContinuationToken>();
 
         #endregion
@@ -104,6 +109,18 @@ namespace BlobHelper
             InitializeClients();
         }
 
+        /// <summary>
+        /// Instantiate the object for a Komodo index.
+        /// </summary>
+        /// <param name="config">Storage configuration.</param>
+        public Blobs(KomodoSettings config)
+        {
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            _KomodoSettings = config;
+            _StorageType = StorageType.Komodo;
+            InitializeClients();
+        }
+
         #endregion
 
         #region Public-Methods
@@ -127,6 +144,9 @@ namespace BlobHelper
                     break;
                 case StorageType.Disk:
                     await DiskDelete(key);
+                    break;
+                case StorageType.Komodo:
+                    await KomodoDelete(key);
                     break;
                 case StorageType.Kvpbase:
                     await KvpbaseDelete(key);
@@ -153,6 +173,8 @@ namespace BlobHelper
                     return await AzureGet(key);
                 case StorageType.Disk:
                     return await DiskGet(key);
+                case StorageType.Komodo:
+                    return await KomodoGet(key);
                 case StorageType.Kvpbase:
                     return await KvpbaseGet(key);
                 default:
@@ -177,6 +199,8 @@ namespace BlobHelper
                     return await AzureGetStream(key);
                 case StorageType.Disk:
                     return await DiskGetStream(key);
+                case StorageType.Komodo:
+                    return await KomodoGetStream(key);
                 case StorageType.Kvpbase:
                     return await KvpbaseGetStream(key);
                 default:
@@ -221,6 +245,9 @@ namespace BlobHelper
                 case StorageType.Disk:
                     await DiskWrite(key, data);
                     return;
+                case StorageType.Komodo:
+                    await KomodoWrite(key, contentType, data);
+                    return;
                 case StorageType.Kvpbase:
                     await KvpbaseWrite(key, contentType, data);
                     return;
@@ -258,6 +285,9 @@ namespace BlobHelper
                 case StorageType.Disk:
                     await DiskWrite(key, contentLength, stream);
                     return;
+                case StorageType.Komodo:
+                    await KomodoWrite(key, contentType, contentLength, stream);
+                    return;
                 case StorageType.Kvpbase:
                     await KvpbaseWrite(key, contentType, contentLength, stream);
                     return;
@@ -283,6 +313,8 @@ namespace BlobHelper
                     return await AzureExists(key);
                 case StorageType.Disk:
                     return await DiskExists(key);
+                case StorageType.Komodo:
+                    return await KomodoExists(key);
                 case StorageType.Kvpbase:
                     return await KvpbaseExists(key);
                 default:
@@ -307,6 +339,8 @@ namespace BlobHelper
                     return AzureGenerateUrl(key);
                 case StorageType.Disk:
                     return DiskGenerateUrl(key);
+                case StorageType.Komodo:
+                    return KomodoGenerateUrl(key);
                 case StorageType.Kvpbase:
                     return KvpbaseGenerateUrl(key);
                 default:
@@ -331,6 +365,8 @@ namespace BlobHelper
                     return await AzureGetMetadata(key);
                 case StorageType.Disk:
                     return await DiskGetMetadata(key);
+                case StorageType.Komodo:
+                    return await KomodoGetMetadata(key);
                 case StorageType.Kvpbase:
                     return await KvpbaseGetMetadata(key);
                 default:
@@ -352,6 +388,8 @@ namespace BlobHelper
                     return await AzureEnumerate(null, null);
                 case StorageType.Disk:
                     return await DiskEnumerate(null, null);
+                case StorageType.Komodo:
+                    return await KomodoEnumerate(null, null);
                 case StorageType.Kvpbase:
                     return await KvpbaseEnumerate(null, null);
                 default:
@@ -374,6 +412,8 @@ namespace BlobHelper
                     return await AzureEnumerate(null, continuationToken);
                 case StorageType.Disk:
                     return await DiskEnumerate(null, continuationToken);
+                case StorageType.Komodo:
+                    return await KomodoEnumerate(null, continuationToken);
                 case StorageType.Kvpbase:
                     return await KvpbaseEnumerate(null, continuationToken);
                 default:
@@ -397,6 +437,8 @@ namespace BlobHelper
                     return await AzureEnumerate(prefix, continuationToken);
                 case StorageType.Disk:
                     return await DiskEnumerate(prefix, continuationToken);
+                case StorageType.Komodo:
+                    return await KomodoEnumerate(prefix, continuationToken);
                 case StorageType.Kvpbase:
                     return await KvpbaseEnumerate(prefix, continuationToken);
                 default:
@@ -451,6 +493,9 @@ namespace BlobHelper
                 case StorageType.Kvpbase:
                     _Kvpbase = new KvpbaseClient(_KvpbaseSettings.UserGuid, _KvpbaseSettings.ApiKey, _KvpbaseSettings.Endpoint);
                     break;
+                case StorageType.Komodo:
+                    _Komodo = new KomodoSdk(_KomodoSettings.Endpoint, _KomodoSettings.ApiKey);
+                    break;
                 default:
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
             }    
@@ -487,6 +532,11 @@ namespace BlobHelper
             OperationContext ctx = new OperationContext();
             await blockBlob.DeleteAsync(DeleteSnapshotsOption.None, null, null, ctx); 
         }
+         
+        private async Task KomodoDelete(string key)
+        {
+            await _Komodo.DeleteDocument(_KomodoSettings.IndexGUID, key);
+        }
 
         #endregion
 
@@ -497,7 +547,7 @@ namespace BlobHelper
             KvpbaseObject kvpObject = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key);
             return Common.StreamToBytes(kvpObject.Data); 
         }
-
+         
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<byte[]> DiskGet(string key)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -549,6 +599,12 @@ namespace BlobHelper
             return data; 
         }
 
+        private async Task<byte[]> KomodoGet(string key)
+        {
+            DocumentData data = await _Komodo.GetSourceDocument(_KomodoSettings.IndexGUID, key);
+            return data.Data;
+        }
+
         #endregion
 
         #region Get-Stream
@@ -594,7 +650,7 @@ namespace BlobHelper
             return ret; 
         }
          
-        private async Task<BlobData> AzureGetStream(string key) 
+        private async Task<BlobData> AzureGetStream(string key)
         {  
             CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
             blockBlob.FetchAttributesAsync().Wait();
@@ -608,6 +664,15 @@ namespace BlobHelper
             ret.Data = stream;
             stream.Seek(0, SeekOrigin.Begin);
             return ret; 
+        }
+
+        private async Task<BlobData> KomodoGetStream(string key)
+        {
+            BlobData ret = new BlobData();
+            DocumentData data = await _Komodo.GetSourceDocument(_KomodoSettings.IndexGUID, key);
+            ret.ContentLength = data.ContentLength;
+            ret.Data = data.DataStream;
+            return ret;
         }
 
         #endregion
@@ -652,6 +717,19 @@ namespace BlobHelper
         private async Task<bool> AzureExists(string key)
         { 
             return await _AzureBlobClient.GetContainerReference(_AzureSettings.Container).GetBlockBlobReference(key).ExistsAsync(); 
+        }
+
+        private async Task<bool> KomodoExists(string key)
+        {
+            try
+            {
+                DocumentMetadata md = await _Komodo.GetDocumentMetadata(_KomodoSettings.IndexGUID, key);
+                return true;
+            }
+            catch (KomodoException)
+            {
+                return false;
+            }
         }
 
         #endregion
@@ -776,6 +854,17 @@ namespace BlobHelper
             await blockBlob.UploadFromStreamAsync(stream, contentLength);  
         }
 
+        private async Task KomodoWrite(string key, string contentType, byte[] data)
+        {
+            await _Komodo.AddDocument(_KomodoSettings.IndexGUID, key, null, null, null, DocType.Unknown, data);
+        }
+
+        private async Task KomodoWrite(string key, string contentType, long contentLength, Stream stream)
+        {
+            byte[] data = Common.StreamToBytes(stream);
+            await KomodoWrite(key, contentType, data);
+        }
+
         #endregion
 
         #region Get-Metadata
@@ -817,7 +906,7 @@ namespace BlobHelper
             return md; 
         }
          
-        private async Task<BlobMetadata> S3GetMetadata(string key) 
+        private async Task<BlobMetadata> S3GetMetadata(string key)
         { 
             GetObjectMetadataRequest request = new GetObjectMetadataRequest();
             request.BucketName = _AwsSettings.Bucket;
@@ -847,7 +936,7 @@ namespace BlobHelper
             }
         }
          
-        private async Task<BlobMetadata> AzureGetMetadata(string key) 
+        private async Task<BlobMetadata> AzureGetMetadata(string key)
         {  
             CloudBlobContainer container = _AzureBlobClient.GetContainerReference(_AzureSettings.Container);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(key);
@@ -867,6 +956,20 @@ namespace BlobHelper
             }
 
             return md; 
+        }
+
+        private async Task<BlobMetadata> KomodoGetMetadata(string key)
+        {
+            DocumentMetadata dm = await _Komodo.GetDocumentMetadata(_KomodoSettings.IndexGUID, key);
+            BlobMetadata md = new BlobMetadata();
+            md.ContentLength = dm.SourceRecord.ContentLength;
+            md.ContentType = dm.SourceRecord.ContentType;
+            md.CreatedUtc = dm.SourceRecord.Created;
+            md.ETag = dm.SourceRecord.Md5;
+            md.Key = dm.SourceRecord.GUID;
+            md.LastAccessUtc = null;
+            md.LastUpdateUtc = null;
+            return md;
         }
 
         #endregion
@@ -1064,6 +1167,43 @@ namespace BlobHelper
             return ret;
         }
 
+        private async Task<EnumerationResult> KomodoEnumerate(string prefix, string continuationToken)
+        {
+            int startIndex = 0;
+            int count = 1000;
+            if (!String.IsNullOrEmpty(continuationToken))
+            {
+                if (!KomodoParseContinuationToken(continuationToken, out startIndex, out count))
+                {
+                    throw new ArgumentException("Unable to parse continuation token.");
+                }
+            }
+
+            EnumerationQuery eq = new EnumerationQuery();
+            eq.StartIndex = startIndex;
+            eq.MaxResults = count;
+
+            Komodo.Sdk.Classes.EnumerationResult ker = await _Komodo.Enumerate(_KomodoSettings.IndexGUID, eq);
+            EnumerationResult ret = new EnumerationResult();
+            ret.NextContinuationToken = KomodoBuildContinuationToken(startIndex + count, count);
+
+            if (ker.Matches != null && ker.Matches.Count > 0)
+            {
+                foreach (SourceDocument curr in ker.Matches)
+                {
+                    BlobMetadata md = new BlobMetadata();
+                    md.ContentLength = curr.ContentLength;
+                    md.ContentType = curr.ContentType;
+                    md.CreatedUtc = curr.Created;
+                    md.ETag = curr.Md5;
+                    md.Key = curr.GUID;
+                    ret.Blobs.Add(md);
+                }
+            }
+
+            return ret;
+        }
+
         #endregion
 
         #region Continuation-Tokens
@@ -1088,6 +1228,16 @@ namespace BlobHelper
             string ret = start.ToString() + " " + count.ToString();
             byte[] retBytes = Encoding.UTF8.GetBytes(ret);
             return Convert.ToBase64String(retBytes);
+        }
+
+        private bool KomodoParseContinuationToken(string continuationToken, out int start, out int count)
+        {
+            return KvpbaseParseContinuationToken(continuationToken, out start, out count);
+        }
+
+        private string KomodoBuildContinuationToken(long start, int count)
+        {
+            return KvpbaseBuildContinuationToken(start, count);
         }
 
         private bool DiskParseContinuationToken(string continuationToken, out int start, out int count)
@@ -1236,6 +1386,18 @@ namespace BlobHelper
                 default:
                     throw new ArgumentException("Unknown region: " + region.ToString());
             } 
+        }
+
+        private string KomodoGenerateUrl(string key)
+        {
+            if (!_KomodoSettings.Endpoint.EndsWith("/")) _KomodoSettings.Endpoint += "/";
+
+            string ret =
+                _KomodoSettings.Endpoint +
+                _KomodoSettings.IndexGUID + "/" +
+                key;
+
+            return ret;
         }
 
         #endregion

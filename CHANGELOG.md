@@ -2,11 +2,15 @@
 
 ## Current Version
 
+v2.0.4
+
+- Added support for Komodo as a storage repository
+
+## Previous Versions
+
 v2.0.3
 
 - Added AwsS3 property ```BaseUrl``` for returning BLOB URLs
-
-## Previous Versions
 
 v2.0.2
 

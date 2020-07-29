@@ -15,6 +15,7 @@ namespace TestNetCore
         static AwsSettings _AwsSettings;
         static AzureSettings _AzureSettings;
         static DiskSettings _DiskSettings;
+        static KomodoSettings _KomodoSettings;
         static KvpbaseSettings _KvpbaseSettings;
 
         static void Main(string[] args)
@@ -81,7 +82,7 @@ namespace TestNetCore
             bool runForever = true;
             while (runForever)
             {
-                string storageType = InputString("Storage type [aws azure disk kvp]:", "disk", false);
+                string storageType = InputString("Storage type [aws azure disk kvp komodo]:", "disk", false);
                 switch (storageType)
                 {
                     case "aws":
@@ -94,6 +95,10 @@ namespace TestNetCore
                         break;
                     case "disk":
                         _StorageType = StorageType.Disk;
+                        runForever = false;
+                        break;
+                    case "komodo":
+                        _StorageType = StorageType.Komodo;
                         runForever = false;
                         break;
                     case "kvp":
@@ -151,12 +156,19 @@ namespace TestNetCore
                         InputString("Directory :", null, false));
                     _Blobs = new Blobs(_DiskSettings);
                     break;
+                case StorageType.Komodo:
+                    _KomodoSettings = new KomodoSettings(
+                        InputString("Endpoint URL :", "http://localhost:9090/", false),
+                        InputString("Index GUID   :", "default", false),
+                        InputString("API key      :", "default", false));
+                    _Blobs = new Blobs(_KomodoSettings);
+                    break;
                 case StorageType.Kvpbase:
                     _KvpbaseSettings = new KvpbaseSettings(
-                        InputString("Endpoint URL :", null, false),
-                        InputString("User GUID    :", null, false),
-                        InputString("Container    :", null, true),
-                        InputString("API key      :", null, false));
+                        InputString("Endpoint URL :", "http://localhost:8000/", false),
+                        InputString("User GUID    :", "default", false),
+                        InputString("Container    :", "default", true),
+                        InputString("API key      :", "default", false));
                     _Blobs = new Blobs(_KvpbaseSettings);
                     break;
             }

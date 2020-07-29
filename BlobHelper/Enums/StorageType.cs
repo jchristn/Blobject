@@ -33,6 +33,11 @@ namespace BlobHelper
         [EnumMember(Value = "Disk")]
         Disk,
         /// <summary>
+        /// Komodo index.
+        /// </summary>
+        [EnumMember(Value = "Komodo")]
+        Komodo,
+        /// <summary>
         /// Kvpbase Storage Server.
         /// </summary>
         [EnumMember(Value = "Kvpbase")]

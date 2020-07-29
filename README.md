@@ -12,9 +12,9 @@ If you have any issues or feedback, please file an issue here in Github. We'd lo
 
 This project was built to provide a simple interface over external storage to help support projects that need to work with potentially multiple storage providers.  It is by no means a comprehensive interface, rather, it supports core methods for creation, retrieval, deletion, metadata, and enumeration.
 
-## New in v2.0.3
+## New in v2.0.4
 
-- Added AwsS3 property ```BaseUrl``` for returning BLOB URLs
+- Added support for Komodo as a storage repository
 
 ## Example Project
 
@@ -59,6 +59,18 @@ AzureSettings settings = new AzureSettings(
 	accessKey, 
 	"https://[accountName].blob.core.windows.net/", 
 	containerName);
+
+Blobs blobs = new Blobs(settings); 
+```
+
+## Getting Started - Komodo
+```
+using BlobHelper;
+
+KomodoSettings settings = new KomodoSettings(
+	"http://localhost:9090/", 
+	indexGuid, 
+	apiKey);
 
 Blobs blobs = new Blobs(settings); 
 ```
