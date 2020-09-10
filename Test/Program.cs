@@ -266,15 +266,22 @@ namespace TestNetCore
 
         static void WriteBlob()
         {
-            string key = InputString("Key:", null, false);
-            string contentType = InputString("Content type:", "text/plain", true);
-            string data = InputString("Data:", null, true);
+            try
+            {
+                string key = InputString("Key:", null, false);
+                string contentType = InputString("Content type:", "text/plain", true);
+                string data = InputString("Data:", null, true);
 
-            byte[] bytes = new byte[0];
-            if (!String.IsNullOrEmpty(data)) bytes = Encoding.UTF8.GetBytes(data);
-            _Blobs.Write(key, contentType, bytes).Wait();
+                byte[] bytes = new byte[0];
+                if (!String.IsNullOrEmpty(data)) bytes = Encoding.UTF8.GetBytes(data);
+                _Blobs.Write(key, contentType, bytes).Wait();
 
-            Console.WriteLine("Success");
+                Console.WriteLine("Success");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
         }
 
         static void ReadBlob()

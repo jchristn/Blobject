@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks; 
-using KvpbaseSDK;
+using KvpbaseSDK; 
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Blob;
@@ -856,7 +856,7 @@ namespace BlobHelper
 
         private async Task KomodoWrite(string key, string contentType, byte[] data)
         {
-            await _Komodo.AddDocument(_KomodoSettings.IndexGUID, key, null, null, null, DocType.Unknown, data);
+            await _Komodo.AddDocument(_KomodoSettings.IndexGUID, key, key, null, null, null, DocType.Unknown, data);
         }
 
         private async Task KomodoWrite(string key, string contentType, long contentLength, Stream stream)
@@ -1182,6 +1182,12 @@ namespace BlobHelper
             EnumerationQuery eq = new EnumerationQuery();
             eq.StartIndex = startIndex;
             eq.MaxResults = count;
+
+            if (!String.IsNullOrEmpty(prefix))
+            {
+                SearchFilter sf = new SearchFilter("GUID", SearchCondition.StartsWith, prefix);
+                eq.Filters.Add(sf);
+            }
 
             Komodo.Sdk.Classes.EnumerationResult ker = await _Komodo.Enumerate(_KomodoSettings.IndexGUID, eq);
             EnumerationResult ret = new EnumerationResult();
