@@ -21,7 +21,7 @@ This project was built to provide a simple interface over external storage to he
 Refer to the ```Test``` project for exercising the library.
 
 ## Getting Started - AWS S3
-```
+```csharp
 using BlobHelper;
 
 AwsSettings settings = new AwsSettings(
@@ -34,7 +34,7 @@ Blobs blobs = new Blobs(settings);
 ```
 
 ## Getting Started - AWS S3 Compatible Storage (Minio, Less3, etc)
-```
+```csharp
 using BlobHelper;
 
 AwsSettings settings = new AwsSettings(
@@ -51,7 +51,7 @@ Blobs blobs = new Blobs(settings);
 ```
 
 ## Getting Started - Azure
-```
+```csharp
 using BlobHelper;
 
 AzureSettings settings = new AzureSettings(
@@ -64,7 +64,7 @@ Blobs blobs = new Blobs(settings);
 ```
 
 ## Getting Started - Komodo
-```
+```csharp
 using BlobHelper;
 
 KomodoSettings settings = new KomodoSettings(
@@ -76,7 +76,7 @@ Blobs blobs = new Blobs(settings);
 ```
 
 ## Getting Started - Kvpbase
-```
+```csharp
 using BlobHelper;
 
 KvpbaseSettings settings = new KvpbaseSettings(
@@ -89,7 +89,7 @@ Blobs blobs = new Blobs(settings);
 ```
 
 ## Getting Started - Disk
-```
+```csharp
 using BlobHelper;
 
 DiskSettings settings = new DiskSettings("blobs"); 
@@ -98,15 +98,15 @@ Blobs blobs = new Blobs(settings);
 ```
 
 ## Getting Started (Byte Arrays for Smaller Objects)
-```
-await blobs.Write("test", "text/plain", This is some data");  // throws IOException
-byte[] data = await blobs.Get("test");                        // throws IOException
+```csharp
+await blobs.Write("test", "text/plain", "This is some data");  // throws IOException
+byte[] data = await blobs.Get("test");                         // throws IOException
 bool exists = await blobs.Exists("test");
 await blobs.Delete("test");
 ```
 
 ## Getting Started (Streams for Larger Objects)
-```
+```csharp
 // Writing a file using a stream
 FileInfo fi = new FileInfo(inputFile);
 long contentLength = fi.Length;
@@ -122,7 +122,7 @@ BlobData blob = await _Blobs.GetStream(key);
 ```
 
 ## Metadata and Enumeration
-```
+```csharp
 // Get BLOB metadata
 BlobMetadata md = await _Blobs.GetMetadata("key");
 
