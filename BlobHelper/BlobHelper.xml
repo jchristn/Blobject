@@ -40,6 +40,12 @@
             AWS S3 bucket.
             </summary>
         </member>
+        <member name="P:BlobHelper.AwsSettings.BaseUrl">
+            <summary>
+            Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.
+            For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.
+            </summary>
+        </member>
         <member name="M:BlobHelper.AwsSettings.#ctor">
             <summary>
             Initialize the object.
@@ -81,9 +87,9 @@
             <param name="secretKey">Secret key with which to access AWS S3.</param>
             <param name="region">AWS region.</param>
             <param name="bucket">Bucket in which to store BLOBs.</param>
-            <param name="ssl">Enable or disable SSL.</param>
+            <param name="ssl">Enable or disable SSL.</param> 
         </member>
-        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,BlobHelper.AwsRegion,System.String)">
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,BlobHelper.AwsRegion,System.String,System.String)">
             <summary>
             Initialize the object.
             </summary>
@@ -93,8 +99,9 @@
             <param name="secretKey">Secret key with which to access AWS S3.</param>
             <param name="region">AWS region.</param>
             <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
         </member>
-        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,System.String,System.String)">
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,System.String,System.String,System.String)">
             <summary>
             Initialize the object.
             </summary>
@@ -104,6 +111,7 @@
             <param name="secretKey">Secret key with which to access AWS S3.</param>
             <param name="region">AWS region.</param>
             <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
         </member>
         <member name="M:BlobHelper.AwsSettings.GetAwsRegionEndpoint">
             <summary>
@@ -195,9 +203,19 @@
             ETag of the object.
             </summary>
         </member>
-        <member name="P:BlobHelper.BlobMetadata.Created">
+        <member name="F:BlobHelper.BlobMetadata.CreatedUtc">
             <summary>
             Timestamp from when the object was created.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.BlobMetadata.LastUpdateUtc">
+            <summary>
+            Timestamp from when the object was last updated, if available.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.BlobMetadata.LastAccessUtc">
+            <summary>
+            Timestamp from when the object was last accessed, if available.
             </summary>
         </member>
         <member name="M:BlobHelper.BlobMetadata.#ctor">
@@ -240,6 +258,12 @@
             </summary>
             <param name="config">Storage configuration.</param>
         </member>
+        <member name="M:BlobHelper.Blobs.#ctor(BlobHelper.KomodoSettings)">
+            <summary>
+            Instantiate the object for a Komodo index.
+            </summary>
+            <param name="config">Storage configuration.</param>
+        </member>
         <member name="M:BlobHelper.Blobs.Delete(System.String)">
             <summary>
             Delete a BLOB by its key.
@@ -261,6 +285,15 @@
             <param name="key">Key of the BLOB.</param> 
             <returns>BLOB data.</returns>
         </member>
+        <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.String)">
+            <summary>
+            Writea  BLOB using a string.
+            </summary>
+            <param name="key">Key of the BLOB.</param>
+            <param name="contentType">Content-type of the object.</param>
+            <param name="data">BLOB data.</param>
+            <returns></returns>
+        </member>
         <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.Byte[])">
             <summary>
             Write a BLOB using a byte array.
@@ -271,7 +304,7 @@
         </member>
         <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.Int64,System.IO.Stream)">
             <summary>
-            Write a BLOB.
+            Write a BLOB using a stream.
             </summary>
             <param name="key">Key of the BLOB.</param>
             <param name="contentType">Content type.</param>
@@ -406,6 +439,11 @@
             CNNorth1 region.
             </summary>
         </member>
+        <member name="F:BlobHelper.AwsRegion.CNNorthwest1">
+            <summary>
+            CNNorthwest1 region.
+            </summary>
+        </member>
         <member name="F:BlobHelper.AwsRegion.EUCentral1">
             <summary>
             EUCentral1 region.
@@ -486,10 +524,48 @@
             Local filesystem/disk storage.
             </summary>
         </member>
+        <member name="F:BlobHelper.StorageType.Komodo">
+            <summary>
+            Komodo index.
+            </summary>
+        </member>
         <member name="F:BlobHelper.StorageType.Kvpbase">
             <summary>
             Kvpbase Storage Server.
             </summary>
+        </member>
+        <member name="T:BlobHelper.KomodoSettings">
+            <summary>
+            Settings when using Komodo for storage.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.KomodoSettings.Endpoint">
+            <summary>
+            Komodo endpoint URL, of the form http://[hostname]:[port]/.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.KomodoSettings.IndexGUID">
+            <summary>
+            Komodo index GUID.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.KomodoSettings.ApiKey">
+            <summary>
+            Komodo API key.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.KomodoSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.KomodoSettings.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="endpoint">Komodo endpoint, i.e. http://localhost:8000/</param>
+            <param name="indexGuid">GUID of the index.</param>
+            <param name="apiKey">API key with read, write, and delete permissions.</param>
         </member>
         <member name="T:BlobHelper.KvpbaseSettings">
             <summary>

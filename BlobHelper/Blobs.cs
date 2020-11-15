@@ -1303,7 +1303,7 @@ namespace BlobHelper
 
         private string DiskGenerateUrl(string key)
         {
-            string dir = String.Copy(_DiskSettings.Directory);
+            string dir = _DiskSettings.Directory;
             while (dir.EndsWith("\\")) dir = dir.Substring(0, dir.Length - 1);
             while (dir.EndsWith("/")) dir = dir.Substring(0, dir.Length - 1);
             dir = dir.Replace("\\", "/");
