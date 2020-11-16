@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks; 
 using KvpbaseSDK; 
 using Microsoft.WindowsAzure.Storage;
@@ -129,30 +130,37 @@ namespace BlobHelper
         /// Delete a BLOB by its key.
         /// </summary>
         /// <param name="key">Key of the BLOB.</param>
+        /// <param name="token">Cancellation token to cancel the request.</param>
         /// <returns>True if successful.</returns>
-        public async Task Delete(string key)
+        public Task Delete(string key, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            switch (_StorageType)
+            try
             {
-                case StorageType.AwsS3:
-                    await S3Delete(key);
-                    break;
-                case StorageType.Azure:
-                    await AzureDelete(key);
-                    break;
-                case StorageType.Disk:
-                    await DiskDelete(key);
-                    break;
-                case StorageType.Komodo:
-                    await KomodoDelete(key);
-                    break;
-                case StorageType.Kvpbase:
-                    await KvpbaseDelete(key);
-                    break;
-                default:
-                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString()); 
+                switch (_StorageType)
+                {
+                    case StorageType.AwsS3:
+                        return S3Delete(key, token);
+                    case StorageType.Azure:
+                        return AzureDelete(key, token);
+                    case StorageType.Disk:
+                        return DiskDelete(key, token);
+                    case StorageType.Komodo:
+                        return KomodoDelete(key, token);
+                    case StorageType.Kvpbase:
+                        return KvpbaseDelete(key, token);
+                    default:
+                        throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
             }
         }
 
@@ -160,25 +168,37 @@ namespace BlobHelper
         /// Retrieve a BLOB.
         /// </summary>
         /// <param name="key">Key of the BLOB.</param> 
+        /// <param name="token">Cancellation token to cancel the request.</param>
         /// <returns>Byte data of the BLOB.</returns>
-        public async Task<byte[]> Get(string key)
+        public Task<byte[]> Get(string key, CancellationToken token = default)
         { 
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            switch (_StorageType)
+            try
             {
-                case StorageType.AwsS3:
-                    return await S3Get(key);
-                case StorageType.Azure:
-                    return await AzureGet(key);
-                case StorageType.Disk:
-                    return await DiskGet(key);
-                case StorageType.Komodo:
-                    return await KomodoGet(key);
-                case StorageType.Kvpbase:
-                    return await KvpbaseGet(key);
-                default:
-                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                switch (_StorageType)
+                {
+                    case StorageType.AwsS3:
+                        return S3Get(key, token);
+                    case StorageType.Azure:
+                        return AzureGet(key, token);
+                    case StorageType.Disk:
+                        return DiskGet(key, token);
+                    case StorageType.Komodo:
+                        return KomodoGet(key, token);
+                    case StorageType.Kvpbase:
+                        return KvpbaseGet(key, token);
+                    default:
+                        throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
             }
         }
 
@@ -186,39 +206,52 @@ namespace BlobHelper
         /// Retrieve a BLOB.
         /// </summary>
         /// <param name="key">Key of the BLOB.</param> 
+        /// <param name="token">Cancellation token to cancel the request.</param>
         /// <returns>BLOB data.</returns>
-        public async Task<BlobData> GetStream(string key)
+        public Task<BlobData> GetStream(string key, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            switch (_StorageType)
+            try
             {
-                case StorageType.AwsS3:
-                    return await S3GetStream(key);
-                case StorageType.Azure:
-                    return await AzureGetStream(key);
-                case StorageType.Disk:
-                    return await DiskGetStream(key);
-                case StorageType.Komodo:
-                    return await KomodoGetStream(key);
-                case StorageType.Kvpbase:
-                    return await KvpbaseGetStream(key);
-                default:
-                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                switch (_StorageType)
+                {
+                    case StorageType.AwsS3:
+                        return S3GetStream(key, token);
+                    case StorageType.Azure:
+                        return AzureGetStream(key, token);
+                    case StorageType.Disk:
+                        return DiskGetStream(key, token);
+                    case StorageType.Komodo:
+                        return KomodoGetStream(key, token);
+                    case StorageType.Kvpbase:
+                        return KvpbaseGetStream(key, token);
+                    default:
+                        throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
             }
         }
 
         /// <summary>
-        /// Writea  BLOB using a string.
+        /// Write a BLOB using a string.
         /// </summary>
         /// <param name="key">Key of the BLOB.</param>
         /// <param name="contentType">Content-type of the object.</param>
         /// <param name="data">BLOB data.</param>
+        /// <param name="token">Cancellation token to cancel the request.</param>
         /// <returns></returns>
-        public async Task Write(string key, string contentType, string data)
+        public Task Write(string key, string contentType, string data, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
-            await Write(key, contentType, Encoding.UTF8.GetBytes(data));
+            return Write(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
         /// <summary>
@@ -227,33 +260,41 @@ namespace BlobHelper
         /// <param name="key">Key of the BLOB.</param>
         /// <param name="contentType">Content-type of the object.</param>
         /// <param name="data">BLOB data.</param> 
-        public async Task Write(
+        /// <param name="token">Cancellation token to cancel the request.</param>
+        public Task Write(
             string key,
             string contentType,
-            byte[] data)
+            byte[] data, 
+            CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key)); 
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            switch (_StorageType)
+            try
             {
-                case StorageType.AwsS3:
-                    await S3Write(key, contentType, data);
-                    return;
-                case StorageType.Azure:
-                    await AzureWrite(key, contentType, data);
-                    return;
-                case StorageType.Disk:
-                    await DiskWrite(key, data);
-                    return;
-                case StorageType.Komodo:
-                    await KomodoWrite(key, contentType, data);
-                    return;
-                case StorageType.Kvpbase:
-                    await KvpbaseWrite(key, contentType, data);
-                    return;
-                default:
-                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
-            } 
+                switch (_StorageType)
+                {
+                    case StorageType.AwsS3:
+                        return S3Write(key, contentType, data, token);
+                    case StorageType.Azure:
+                        return AzureWrite(key, contentType, data, token);
+                    case StorageType.Disk:
+                        return DiskWrite(key, data, token);
+                    case StorageType.Komodo:
+                        return KomodoWrite(key, contentType, data, token);
+                    case StorageType.Kvpbase:
+                        return KvpbaseWrite(key, contentType, data, token);
+                    default:
+                        throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -263,36 +304,44 @@ namespace BlobHelper
         /// <param name="contentType">Content type.</param>
         /// <param name="contentLength">Content length.</param>
         /// <param name="stream">Stream containing the data.</param> 
-        public async Task Write(
+        /// <param name="token">Cancellation token to cancel the request.</param>
+        public Task Write(
             string key,
             string contentType,
             long contentLength,
-            Stream stream)
+            Stream stream, 
+            CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             if (contentLength < 0) throw new ArgumentException("Content length must be zero or greater.");
             if (stream == null) throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead) throw new IOException("Cannot read from supplied stream.");
 
-            switch (_StorageType)
+            try
             {
-                case StorageType.AwsS3:
-                    await S3Write(key, contentType, contentLength, stream);
-                    return;
-                case StorageType.Azure:
-                    await AzureWrite(key, contentType, contentLength, stream);
-                    return;
-                case StorageType.Disk:
-                    await DiskWrite(key, contentLength, stream);
-                    return;
-                case StorageType.Komodo:
-                    await KomodoWrite(key, contentType, contentLength, stream);
-                    return;
-                case StorageType.Kvpbase:
-                    await KvpbaseWrite(key, contentType, contentLength, stream);
-                    return;
-                default:
-                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                switch (_StorageType)
+                {
+                    case StorageType.AwsS3:
+                        return S3Write(key, contentType, contentLength, stream, token);
+                    case StorageType.Azure:
+                        return AzureWrite(key, contentType, contentLength, stream, token);
+                    case StorageType.Disk:
+                        return DiskWrite(key, contentLength, stream, token);
+                    case StorageType.Komodo:
+                        return KomodoWrite(key, contentType, contentLength, stream, token);
+                    case StorageType.Kvpbase:
+                        return KvpbaseWrite(key, contentType, contentLength, stream, token);
+                    default:
+                        throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
             }
         }
 
@@ -300,25 +349,37 @@ namespace BlobHelper
         /// Check if a BLOB exists.
         /// </summary>
         /// <param name="key">Key of the BLOB.</param>
+        /// <param name="token">Cancellation token to cancel the request.</param>
         /// <returns>True if exists.</returns>
-        public async Task<bool> Exists(string key)
+        public Task<bool> Exists(string key, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            switch (_StorageType)
+            try
             {
-                case StorageType.AwsS3:
-                    return await S3Exists(key);
-                case StorageType.Azure:
-                    return await AzureExists(key);
-                case StorageType.Disk:
-                    return await DiskExists(key);
-                case StorageType.Komodo:
-                    return await KomodoExists(key);
-                case StorageType.Kvpbase:
-                    return await KvpbaseExists(key);
-                default:
-                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                switch (_StorageType)
+                {
+                    case StorageType.AwsS3:
+                        return S3Exists(key, token);
+                    case StorageType.Azure:
+                        return AzureExists(key, token);
+                    case StorageType.Disk:
+                        return DiskExists(key, token);
+                    case StorageType.Komodo:
+                        return KomodoExists(key, token);
+                    case StorageType.Kvpbase:
+                        return KvpbaseExists(key, token);
+                    default:
+                        throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return Task.FromResult(false);
+            }
+            catch (OperationCanceledException)
+            {
+                return Task.FromResult(false);
             }
         }
 
@@ -326,8 +387,9 @@ namespace BlobHelper
         /// Generate a URL for a given object key.
         /// </summary>
         /// <param name="key">Object key.</param>
+        /// <param name="token">Cancellation token to cancel the request.</param>
         /// <returns>URL.</returns>
-        public string GenerateUrl(string key)
+        public string GenerateUrl(string key, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
@@ -352,97 +414,74 @@ namespace BlobHelper
         /// Retrieve BLOB metadata.
         /// </summary>
         /// <param name="key">Key of the BLOB.</param> 
+        /// <param name="token">Cancellation token to cancel the request.</param>
         /// <returns>BLOB metadata.</returns>
-        public async Task<BlobMetadata> GetMetadata(string key)
+        public Task<BlobMetadata> GetMetadata(string key, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            switch (_StorageType)
+            try
             {
-                case StorageType.AwsS3:
-                    return await S3GetMetadata(key);
-                case StorageType.Azure:
-                    return await AzureGetMetadata(key);
-                case StorageType.Disk:
-                    return await DiskGetMetadata(key);
-                case StorageType.Komodo:
-                    return await KomodoGetMetadata(key);
-                case StorageType.Kvpbase:
-                    return await KvpbaseGetMetadata(key);
-                default:
-                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
-            } 
-        }
-
-        /// <summary>
-        /// Enumerate BLOBs.
-        /// </summary> 
-        /// <returns>Enumeration result.</returns>
-        public async Task<EnumerationResult> Enumerate()
-        {
-            switch (_StorageType)
+                switch (_StorageType)
+                {
+                    case StorageType.AwsS3:
+                        return S3GetMetadata(key, token);
+                    case StorageType.Azure:
+                        return AzureGetMetadata(key, token);
+                    case StorageType.Disk:
+                        return DiskGetMetadata(key, token);
+                    case StorageType.Komodo:
+                        return KomodoGetMetadata(key, token);
+                    case StorageType.Kvpbase:
+                        return KvpbaseGetMetadata(key, token);
+                    default:
+                        throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                }
+            }
+            catch (TaskCanceledException)
             {
-                case StorageType.AwsS3:
-                    return await S3Enumerate(null, null);
-                case StorageType.Azure:
-                    return await AzureEnumerate(null, null);
-                case StorageType.Disk:
-                    return await DiskEnumerate(null, null);
-                case StorageType.Komodo:
-                    return await KomodoEnumerate(null, null);
-                case StorageType.Kvpbase:
-                    return await KvpbaseEnumerate(null, null);
-                default:
-                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
             }
         }
-
-        /// <summary>
-        /// Enumerate BLOBs.
-        /// </summary> 
-        /// <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param> 
-        /// <returns>Enumeration result.</returns>
-        public async Task<EnumerationResult> Enumerate(string continuationToken)
-        { 
-            switch (_StorageType)
-            {
-                case StorageType.AwsS3:
-                    return await S3Enumerate(null, continuationToken);
-                case StorageType.Azure:
-                    return await AzureEnumerate(null, continuationToken);
-                case StorageType.Disk:
-                    return await DiskEnumerate(null, continuationToken);
-                case StorageType.Komodo:
-                    return await KomodoEnumerate(null, continuationToken);
-                case StorageType.Kvpbase:
-                    return await KvpbaseEnumerate(null, continuationToken);
-                default:
-                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
-            }
-        }
-
+         
         /// <summary>
         /// Enumerate BLOBs.
         /// </summary>
         /// <param name="prefix">Key prefix that must match.</param>
-        /// <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param> 
+        /// <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param>
+        /// <param name="token">Cancellation token to cancel the request.</param> 
         /// <returns>Enumeration result.</returns>
-        public async Task<EnumerationResult> Enumerate(string prefix, string continuationToken)
-        { 
-            switch (_StorageType)
+        public Task<EnumerationResult> Enumerate(string prefix = null, string continuationToken = null, CancellationToken token = default)
+        {
+            try
             {
-                case StorageType.AwsS3:
-                    return await S3Enumerate(prefix, continuationToken);
-                case StorageType.Azure:
-                    return await AzureEnumerate(prefix, continuationToken);
-                case StorageType.Disk:
-                    return await DiskEnumerate(prefix, continuationToken);
-                case StorageType.Komodo:
-                    return await KomodoEnumerate(prefix, continuationToken);
-                case StorageType.Kvpbase:
-                    return await KvpbaseEnumerate(prefix, continuationToken);
-                default:
-                    throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                switch (_StorageType)
+                {
+                    case StorageType.AwsS3:
+                        return S3Enumerate(prefix, continuationToken, token);
+                    case StorageType.Azure:
+                        return AzureEnumerate(prefix, continuationToken, token);
+                    case StorageType.Disk:
+                        return DiskEnumerate(prefix, continuationToken, token);
+                    case StorageType.Komodo:
+                        return KomodoEnumerate(prefix, continuationToken, token);
+                    case StorageType.Kvpbase:
+                        return KvpbaseEnumerate(prefix, continuationToken, token);
+                    default:
+                        throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
             }
         }
 
@@ -503,19 +542,19 @@ namespace BlobHelper
 
         #region Delete
 
-        private async Task KvpbaseDelete(string key)
+        private async Task KvpbaseDelete(string key, CancellationToken token)
         { 
-            await _Kvpbase.DeleteObject(_KvpbaseSettings.Container, key); 
+            await _Kvpbase.DeleteObject(_KvpbaseSettings.Container, key, token).ConfigureAwait(false); 
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task DiskDelete(string key)
+        private async Task DiskDelete(string key, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         { 
             File.Delete(DiskGenerateUrl(key)); 
         }
 
-        private async Task S3Delete(string key)
+        private async Task S3Delete(string key, CancellationToken token)
         { 
             DeleteObjectRequest request = new DeleteObjectRequest
             {
@@ -523,39 +562,39 @@ namespace BlobHelper
                 Key = key
             };
 
-            DeleteObjectResponse response = await _S3Client.DeleteObjectAsync(request); 
+            DeleteObjectResponse response = await _S3Client.DeleteObjectAsync(request, token).ConfigureAwait(false); 
         }
 
-        private async Task AzureDelete(string key)
+        private async Task AzureDelete(string key, CancellationToken token)
         { 
             CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
             OperationContext ctx = new OperationContext();
-            await blockBlob.DeleteAsync(DeleteSnapshotsOption.None, null, null, ctx); 
+            await blockBlob.DeleteAsync(DeleteSnapshotsOption.None, null, null, ctx, token).ConfigureAwait(false); 
         }
          
-        private async Task KomodoDelete(string key)
+        private async Task KomodoDelete(string key, CancellationToken token)
         {
-            await _Komodo.DeleteDocument(_KomodoSettings.IndexGUID, key);
+            await _Komodo.DeleteDocument(_KomodoSettings.IndexGUID, key, token).ConfigureAwait(false);
         }
 
         #endregion
 
         #region Get
 
-        private async Task<byte[]> KvpbaseGet(string key)
+        private async Task<byte[]> KvpbaseGet(string key, CancellationToken token)
         { 
-            KvpbaseObject kvpObject = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key);
+            KvpbaseObject kvpObject = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key, token).ConfigureAwait(false);
             return Common.StreamToBytes(kvpObject.Data); 
         }
          
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<byte[]> DiskGet(string key)
+        private async Task<byte[]> DiskGet(string key, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         { 
             return File.ReadAllBytes(DiskGenerateUrl(key)); 
         }
 
-        private async Task<byte[]> S3Get(string key)
+        private async Task<byte[]> S3Get(string key, CancellationToken token)
         { 
             GetObjectRequest request = new GetObjectRequest
             {
@@ -563,7 +602,7 @@ namespace BlobHelper
                 Key = key,
             };
 
-            using (GetObjectResponse response = await _S3Client.GetObjectAsync(request))
+            using (GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false))
             using (Stream responseStream = response.ResponseStream)
             using (StreamReader reader = new StreamReader(responseStream))
             {
@@ -585,7 +624,7 @@ namespace BlobHelper
             } 
         }
 
-        private async Task<byte[]> AzureGet(string key)
+        private async Task<byte[]> AzureGet(string key, CancellationToken token)
         {
             byte[] data = null;
              
@@ -593,15 +632,15 @@ namespace BlobHelper
             OperationContext ctx = new OperationContext();
 
             MemoryStream stream = new MemoryStream();
-            await blockBlob.DownloadToStreamAsync(stream);
+            await blockBlob.DownloadToStreamAsync(stream).ConfigureAwait(false);
             stream.Seek(0, SeekOrigin.Begin);
             data = Common.StreamToBytes(stream);
             return data; 
         }
 
-        private async Task<byte[]> KomodoGet(string key)
+        private async Task<byte[]> KomodoGet(string key, CancellationToken token)
         {
-            DocumentData data = await _Komodo.GetSourceDocument(_KomodoSettings.IndexGUID, key);
+            DocumentData data = await _Komodo.GetSourceDocument(_KomodoSettings.IndexGUID, key, token).ConfigureAwait(false);
             return data.Data;
         }
 
@@ -609,14 +648,14 @@ namespace BlobHelper
 
         #region Get-Stream
 
-        private async Task<BlobData> KvpbaseGetStream(string key)
+        private async Task<BlobData> KvpbaseGetStream(string key, CancellationToken token)
         { 
-            KvpbaseObject kvpObj = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key);
+            KvpbaseObject kvpObj = await _Kvpbase.ReadObject(_KvpbaseSettings.Container, key, token).ConfigureAwait(false);
             return new BlobData(kvpObj.ContentLength, kvpObj.Data); 
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<BlobData> DiskGetStream(string key)
+        private async Task<BlobData> DiskGetStream(string key, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         { 
             string url = DiskGenerateUrl(key);
@@ -625,7 +664,7 @@ namespace BlobHelper
             return new BlobData(contentLength, stream); 
         }
 
-        private async Task<BlobData> S3GetStream(string key)
+        private async Task<BlobData> S3GetStream(string key, CancellationToken token)
         { 
             GetObjectRequest request = new GetObjectRequest
             {
@@ -633,7 +672,7 @@ namespace BlobHelper
                 Key = key,
             };
 
-            GetObjectResponse response = await _S3Client.GetObjectAsync(request);
+            GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false);
             BlobData ret = new BlobData();
 
             if (response.ContentLength > 0)
@@ -650,7 +689,7 @@ namespace BlobHelper
             return ret; 
         }
          
-        private async Task<BlobData> AzureGetStream(string key)
+        private async Task<BlobData> AzureGetStream(string key, CancellationToken token)
         {  
             CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
             blockBlob.FetchAttributesAsync().Wait();
@@ -659,17 +698,17 @@ namespace BlobHelper
             ret.ContentLength = blockBlob.Properties.Length;
 
             MemoryStream stream = new MemoryStream();
-            await blockBlob.DownloadToStreamAsync(stream);
+            await blockBlob.DownloadToStreamAsync(stream).ConfigureAwait(false);
 
             ret.Data = stream;
             stream.Seek(0, SeekOrigin.Begin);
             return ret; 
         }
 
-        private async Task<BlobData> KomodoGetStream(string key)
+        private async Task<BlobData> KomodoGetStream(string key, CancellationToken token)
         {
             BlobData ret = new BlobData();
-            DocumentData data = await _Komodo.GetSourceDocument(_KomodoSettings.IndexGUID, key);
+            DocumentData data = await _Komodo.GetSourceDocument(_KomodoSettings.IndexGUID, key, token).ConfigureAwait(false);
             ret.ContentLength = data.ContentLength;
             ret.Data = data.DataStream;
             return ret;
@@ -679,19 +718,19 @@ namespace BlobHelper
 
         #region Exists
 
-        private async Task<bool> KvpbaseExists(string key)
+        private async Task<bool> KvpbaseExists(string key, CancellationToken token)
         {
-            return await _Kvpbase.ObjectExists(_KvpbaseSettings.Container, key);
+            return await _Kvpbase.ObjectExists(_KvpbaseSettings.Container, key, token).ConfigureAwait(false);
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<bool> DiskExists(string key)
+        private async Task<bool> DiskExists(string key, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         { 
             return File.Exists(DiskGenerateUrl(key)); 
         }
 
-        private async Task<bool> S3Exists(string key)
+        private async Task<bool> S3Exists(string key, CancellationToken token)
         { 
             GetObjectMetadataRequest request = new GetObjectMetadataRequest
             {
@@ -701,7 +740,7 @@ namespace BlobHelper
 
             try
             {
-                GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request);
+                GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request, token).ConfigureAwait(false);
                 return true;
             }
             catch (Amazon.S3.AmazonS3Exception ex)
@@ -714,16 +753,16 @@ namespace BlobHelper
             }
         }
 
-        private async Task<bool> AzureExists(string key)
+        private async Task<bool> AzureExists(string key, CancellationToken token)
         { 
-            return await _AzureBlobClient.GetContainerReference(_AzureSettings.Container).GetBlockBlobReference(key).ExistsAsync(); 
+            return await _AzureBlobClient.GetContainerReference(_AzureSettings.Container).GetBlockBlobReference(key).ExistsAsync().ConfigureAwait(false); 
         }
 
-        private async Task<bool> KomodoExists(string key)
+        private async Task<bool> KomodoExists(string key, CancellationToken token)
         {
             try
             {
-                DocumentMetadata md = await _Komodo.GetDocumentMetadata(_KomodoSettings.IndexGUID, key);
+                DocumentMetadata md = await _Komodo.GetDocumentMetadata(_KomodoSettings.IndexGUID, key, token).ConfigureAwait(false);
                 return true;
             }
             catch (KomodoException)
@@ -736,7 +775,7 @@ namespace BlobHelper
 
         #region Write
 
-        private async Task KvpbaseWrite(string key, string contentType, byte[] data)
+        private async Task KvpbaseWrite(string key, string contentType, byte[] data, CancellationToken token)
         {
             long contentLength = 0;
             MemoryStream stream = new MemoryStream(new byte[0]);
@@ -748,15 +787,15 @@ namespace BlobHelper
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            await KvpbaseWrite(key, contentType, contentLength, stream);
+            await KvpbaseWrite(key, contentType, contentLength, stream, token).ConfigureAwait(false);
         }
 
-        private async Task KvpbaseWrite(string key, string contentType, long contentLength, Stream stream)
+        private async Task KvpbaseWrite(string key, string contentType, long contentLength, Stream stream, CancellationToken token)
         { 
-            await _Kvpbase.WriteObject(_KvpbaseSettings.Container, key, contentType, contentLength, stream);  
+            await _Kvpbase.WriteObject(_KvpbaseSettings.Container, key, contentLength, stream, contentType, token).ConfigureAwait(false);  
         }
 
-        private async Task DiskWrite(string key, byte[] data)
+        private async Task DiskWrite(string key, byte[] data, CancellationToken token)
         {
             long contentLength = 0;
             MemoryStream stream = new MemoryStream(new byte[0]);
@@ -768,10 +807,10 @@ namespace BlobHelper
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            await DiskWrite(key, contentLength, stream);
+            await DiskWrite(key, contentLength, stream, token);
         }
 
-        private async Task DiskWrite(string key, long contentLength, Stream stream)
+        private async Task DiskWrite(string key, long contentLength, Stream stream, CancellationToken token)
         { 
             int bytesRead = 0;
             long bytesRemaining = contentLength;
@@ -782,17 +821,17 @@ namespace BlobHelper
             {
                 while (bytesRemaining > 0)
                 {
-                    bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
                     if (bytesRead > 0)
                     {
-                        await fs.WriteAsync(buffer, 0, bytesRead);
+                        await fs.WriteAsync(buffer, 0, bytesRead, token).ConfigureAwait(false);
                         bytesRemaining -= bytesRead;
                     }
                 }
             }  
         }
 
-        private async Task S3Write(string key, string contentType, byte[] data)
+        private async Task S3Write(string key, string contentType, byte[] data, CancellationToken token)
         {
             long contentLength = 0;
             MemoryStream stream = new MemoryStream(new byte[0]);
@@ -804,10 +843,10 @@ namespace BlobHelper
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            await S3Write(key, contentType, contentLength, stream);
+            await S3Write(key, contentType, contentLength, stream, token).ConfigureAwait(false);
         }
 
-        private async Task S3Write(string key, string contentType, long contentLength, Stream stream)
+        private async Task S3Write(string key, string contentType, long contentLength, Stream stream, CancellationToken token)
         { 
             PutObjectRequest request = new PutObjectRequest();
 
@@ -828,10 +867,10 @@ namespace BlobHelper
                 request.InputStream = stream;
             }
 
-            PutObjectResponse response = await _S3Client.PutObjectAsync(request); 
+            PutObjectResponse response = await _S3Client.PutObjectAsync(request, token).ConfigureAwait(false); 
         }
          
-        private async Task AzureWrite(string key, string contentType, byte[] data)
+        private async Task AzureWrite(string key, string contentType, byte[] data, CancellationToken token)
         {
             long contentLength = 0;
             MemoryStream stream = new MemoryStream(new byte[0]);
@@ -843,33 +882,33 @@ namespace BlobHelper
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            await AzureWrite(key, contentType, contentLength, stream);
+            await AzureWrite(key, contentType, contentLength, stream, token).ConfigureAwait(false);
         }
 
-        private async Task AzureWrite(string key, string contentType, long contentLength, Stream stream)
+        private async Task AzureWrite(string key, string contentType, long contentLength, Stream stream, CancellationToken token)
         { 
             CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
             blockBlob.Properties.ContentType = contentType;
             OperationContext ctx = new OperationContext();
-            await blockBlob.UploadFromStreamAsync(stream, contentLength);  
+            await blockBlob.UploadFromStreamAsync(stream, contentLength).ConfigureAwait(false);  
         }
 
-        private async Task KomodoWrite(string key, string contentType, byte[] data)
+        private async Task KomodoWrite(string key, string contentType, byte[] data, CancellationToken token)
         {
-            await _Komodo.AddDocument(_KomodoSettings.IndexGUID, key, key, null, null, null, DocType.Unknown, data);
+            await _Komodo.AddDocument(_KomodoSettings.IndexGUID, key, key, null, null, null, DocType.Unknown, data, token).ConfigureAwait(false);
         }
 
-        private async Task KomodoWrite(string key, string contentType, long contentLength, Stream stream)
+        private async Task KomodoWrite(string key, string contentType, long contentLength, Stream stream, CancellationToken token)
         {
             byte[] data = Common.StreamToBytes(stream);
-            await KomodoWrite(key, contentType, data);
+            await KomodoWrite(key, contentType, data, token).ConfigureAwait(false);
         }
 
         #endregion
 
         #region Get-Metadata
 
-        private async Task<BlobMetadata> KvpbaseGetMetadata(string key)
+        private async Task<BlobMetadata> KvpbaseGetMetadata(string key, CancellationToken token)
         { 
             ObjectMetadata objMd = await _Kvpbase.ReadObjectMetadata(_KvpbaseSettings.Container, key);
             if (objMd != null)
@@ -891,7 +930,7 @@ namespace BlobHelper
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<BlobMetadata> DiskGetMetadata(string key)
+        private async Task<BlobMetadata> DiskGetMetadata(string key, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         { 
             string url = DiskGenerateUrl(key);
@@ -906,7 +945,7 @@ namespace BlobHelper
             return md; 
         }
          
-        private async Task<BlobMetadata> S3GetMetadata(string key)
+        private async Task<BlobMetadata> S3GetMetadata(string key, CancellationToken token)
         { 
             GetObjectMetadataRequest request = new GetObjectMetadataRequest();
             request.BucketName = _AwsSettings.Bucket;
@@ -936,7 +975,7 @@ namespace BlobHelper
             }
         }
          
-        private async Task<BlobMetadata> AzureGetMetadata(string key)
+        private async Task<BlobMetadata> AzureGetMetadata(string key, CancellationToken token)
         {  
             CloudBlobContainer container = _AzureBlobClient.GetContainerReference(_AzureSettings.Container);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(key);
@@ -958,7 +997,7 @@ namespace BlobHelper
             return md; 
         }
 
-        private async Task<BlobMetadata> KomodoGetMetadata(string key)
+        private async Task<BlobMetadata> KomodoGetMetadata(string key, CancellationToken token)
         {
             DocumentMetadata dm = await _Komodo.GetDocumentMetadata(_KomodoSettings.IndexGUID, key);
             BlobMetadata md = new BlobMetadata();
@@ -976,7 +1015,7 @@ namespace BlobHelper
 
         #region Enumeration
 
-        private async Task<EnumerationResult> KvpbaseEnumerate(string prefix, string continuationToken)
+        private async Task<EnumerationResult> KvpbaseEnumerate(string prefix, string continuationToken, CancellationToken token)
         {
             int startIndex = 0;
             int count = 1000;
@@ -993,13 +1032,13 @@ namespace BlobHelper
              
             if (String.IsNullOrEmpty(prefix))
             {
-                cmd = await _Kvpbase.EnumerateContainer(_KvpbaseSettings.Container, startIndex, count);
+                cmd = await _Kvpbase.EnumerateContainer(_KvpbaseSettings.Container, startIndex, count, token).ConfigureAwait(false);
             }
             else
             {
                 EnumerationFilter filter = new EnumerationFilter();
                 filter.Prefix = prefix;
-                cmd = await _Kvpbase.EnumerateContainer(filter, _KvpbaseSettings.Container, startIndex, count);
+                cmd = await _Kvpbase.EnumerateContainer(filter, _KvpbaseSettings.Container, startIndex, count, token).ConfigureAwait(false);
             } 
 
             ret.NextContinuationToken = KvpbaseBuildContinuationToken(startIndex + count, count);
@@ -1022,7 +1061,7 @@ namespace BlobHelper
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<EnumerationResult> DiskEnumerate(string prefix, string continuationToken)
+        private async Task<EnumerationResult> DiskEnumerate(string prefix, string continuationToken, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             int startIndex = 0;
@@ -1075,7 +1114,7 @@ namespace BlobHelper
             return ret;
         }
 
-        private async Task<EnumerationResult> S3Enumerate(string prefix, string continuationToken)
+        private async Task<EnumerationResult> S3Enumerate(string prefix, string continuationToken, CancellationToken token)
         { 
             ListObjectsRequest req = new ListObjectsRequest();
             req.BucketName = _AwsSettings.Bucket;
@@ -1083,7 +1122,7 @@ namespace BlobHelper
 
             if (!String.IsNullOrEmpty(continuationToken)) req.Marker = continuationToken;
 
-            ListObjectsResponse resp = await _S3Client.ListObjectsAsync(req);
+            ListObjectsResponse resp = await _S3Client.ListObjectsAsync(req, token).ConfigureAwait(false);
             EnumerationResult ret = new EnumerationResult();
 
             if (resp.S3Objects != null && resp.S3Objects.Count > 0)
@@ -1110,7 +1149,7 @@ namespace BlobHelper
             return ret;
         }
 
-        private async Task<EnumerationResult> AzureEnumerate(string prefix, string continuationToken)
+        private async Task<EnumerationResult> AzureEnumerate(string prefix, string continuationToken, CancellationToken token)
         { 
             BlobContinuationToken bct = null;
             if (!String.IsNullOrEmpty(continuationToken))
@@ -1126,11 +1165,11 @@ namespace BlobHelper
 
             if (!String.IsNullOrEmpty(prefix))
             {
-                segment = await _AzureContainer.ListBlobsSegmentedAsync(prefix, bct);
+                segment = await _AzureContainer.ListBlobsSegmentedAsync(prefix, bct).ConfigureAwait(false);
             }
             else
             {
-                segment = await _AzureContainer.ListBlobsSegmentedAsync(bct);
+                segment = await _AzureContainer.ListBlobsSegmentedAsync(bct).ConfigureAwait(false);
             }
 
             if (segment == null || segment.Results == null || segment.Results.Count() < 1) return ret;
@@ -1167,7 +1206,7 @@ namespace BlobHelper
             return ret;
         }
 
-        private async Task<EnumerationResult> KomodoEnumerate(string prefix, string continuationToken)
+        private async Task<EnumerationResult> KomodoEnumerate(string prefix, string continuationToken, CancellationToken token)
         {
             int startIndex = 0;
             int count = 1000;
@@ -1189,7 +1228,7 @@ namespace BlobHelper
                 eq.Filters.Add(sf);
             }
 
-            Komodo.Sdk.Classes.EnumerationResult ker = await _Komodo.Enumerate(_KomodoSettings.IndexGUID, eq);
+            Komodo.Sdk.Classes.EnumerationResult ker = await _Komodo.Enumerate(_KomodoSettings.IndexGUID, eq, token).ConfigureAwait(false);
             EnumerationResult ret = new EnumerationResult();
             ret.NextContinuationToken = KomodoBuildContinuationToken(startIndex + count, count);
 

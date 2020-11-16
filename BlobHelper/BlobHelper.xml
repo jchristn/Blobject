@@ -264,45 +264,50 @@
             </summary>
             <param name="config">Storage configuration.</param>
         </member>
-        <member name="M:BlobHelper.Blobs.Delete(System.String)">
+        <member name="M:BlobHelper.Blobs.Delete(System.String,System.Threading.CancellationToken)">
             <summary>
             Delete a BLOB by its key.
             </summary>
             <param name="key">Key of the BLOB.</param>
+            <param name="token">Cancellation token to cancel the request.</param>
             <returns>True if successful.</returns>
         </member>
-        <member name="M:BlobHelper.Blobs.Get(System.String)">
+        <member name="M:BlobHelper.Blobs.Get(System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieve a BLOB.
             </summary>
             <param name="key">Key of the BLOB.</param> 
+            <param name="token">Cancellation token to cancel the request.</param>
             <returns>Byte data of the BLOB.</returns>
         </member>
-        <member name="M:BlobHelper.Blobs.GetStream(System.String)">
+        <member name="M:BlobHelper.Blobs.GetStream(System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieve a BLOB.
             </summary>
             <param name="key">Key of the BLOB.</param> 
+            <param name="token">Cancellation token to cancel the request.</param>
             <returns>BLOB data.</returns>
         </member>
-        <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.String)">
+        <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.String,System.Threading.CancellationToken)">
             <summary>
-            Writea  BLOB using a string.
+            Write a BLOB using a string.
             </summary>
             <param name="key">Key of the BLOB.</param>
             <param name="contentType">Content-type of the object.</param>
             <param name="data">BLOB data.</param>
+            <param name="token">Cancellation token to cancel the request.</param>
             <returns></returns>
         </member>
-        <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.Byte[])">
+        <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
             <summary>
             Write a BLOB using a byte array.
             </summary>
             <param name="key">Key of the BLOB.</param>
             <param name="contentType">Content-type of the object.</param>
             <param name="data">BLOB data.</param> 
+            <param name="token">Cancellation token to cancel the request.</param>
         </member>
-        <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.Int64,System.IO.Stream)">
+        <member name="M:BlobHelper.Blobs.Write(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
             <summary>
             Write a BLOB using a stream.
             </summary>
@@ -310,47 +315,39 @@
             <param name="contentType">Content type.</param>
             <param name="contentLength">Content length.</param>
             <param name="stream">Stream containing the data.</param> 
+            <param name="token">Cancellation token to cancel the request.</param>
         </member>
-        <member name="M:BlobHelper.Blobs.Exists(System.String)">
+        <member name="M:BlobHelper.Blobs.Exists(System.String,System.Threading.CancellationToken)">
             <summary>
             Check if a BLOB exists.
             </summary>
             <param name="key">Key of the BLOB.</param>
+            <param name="token">Cancellation token to cancel the request.</param>
             <returns>True if exists.</returns>
         </member>
-        <member name="M:BlobHelper.Blobs.GenerateUrl(System.String)">
+        <member name="M:BlobHelper.Blobs.GenerateUrl(System.String,System.Threading.CancellationToken)">
             <summary>
             Generate a URL for a given object key.
             </summary>
             <param name="key">Object key.</param>
+            <param name="token">Cancellation token to cancel the request.</param>
             <returns>URL.</returns>
         </member>
-        <member name="M:BlobHelper.Blobs.GetMetadata(System.String)">
+        <member name="M:BlobHelper.Blobs.GetMetadata(System.String,System.Threading.CancellationToken)">
             <summary>
             Retrieve BLOB metadata.
             </summary>
             <param name="key">Key of the BLOB.</param> 
+            <param name="token">Cancellation token to cancel the request.</param>
             <returns>BLOB metadata.</returns>
         </member>
-        <member name="M:BlobHelper.Blobs.Enumerate">
-            <summary>
-            Enumerate BLOBs.
-            </summary> 
-            <returns>Enumeration result.</returns>
-        </member>
-        <member name="M:BlobHelper.Blobs.Enumerate(System.String)">
-            <summary>
-            Enumerate BLOBs.
-            </summary> 
-            <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param> 
-            <returns>Enumeration result.</returns>
-        </member>
-        <member name="M:BlobHelper.Blobs.Enumerate(System.String,System.String)">
+        <member name="M:BlobHelper.Blobs.Enumerate(System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Enumerate BLOBs.
             </summary>
             <param name="prefix">Key prefix that must match.</param>
-            <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param> 
+            <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param>
+            <param name="token">Cancellation token to cancel the request.</param> 
             <returns>Enumeration result.</returns>
         </member>
         <member name="T:BlobHelper.DiskSettings">
