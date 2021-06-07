@@ -1302,6 +1302,7 @@ namespace BlobHelper
 
         private string DiskBuildContinuationToken(int start, int count)
         {
+            if (start >= count) return null;
             string ret = start.ToString() + " " + count.ToString();
             byte[] retBytes = Encoding.UTF8.GetBytes(ret);
             return Convert.ToBase64String(retBytes);

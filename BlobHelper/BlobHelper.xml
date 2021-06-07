@@ -119,6 +119,13 @@
             </summary>
             <returns>AWS region endpoint.</returns>
         </member>
+        <member name="M:BlobHelper.AwsSettings.ValidateRegion(System.String)">
+            <summary>
+            Validate a region string.
+            </summary>
+            <param name="region">Region.</param>
+            <returns>True if valid.</returns>
+        </member>
         <member name="T:BlobHelper.AzureSettings">
             <summary>
             Settings when using Microsoft Azure BLOB Storage for storage.
@@ -163,20 +170,27 @@
             Contains content-length (how many bytes to read) and data stream for a given object.
             </summary>
         </member>
-        <member name="F:BlobHelper.BlobData.ContentLength">
+        <member name="P:BlobHelper.BlobData.ContentLength">
             <summary>
             Content-length of the object (how many bytes to read from Data).
             </summary>
         </member>
-        <member name="F:BlobHelper.BlobData.Data">
+        <member name="P:BlobHelper.BlobData.Data">
             <summary>
             Stream containing requested data.
             </summary>
         </member>
         <member name="M:BlobHelper.BlobData.#ctor">
             <summary>
-            Instantiates the object.
+            Instantiate.
             </summary>
+        </member>
+        <member name="M:BlobHelper.BlobData.#ctor(System.Int64,System.IO.Stream)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="contentLength">Content length.</param>
+            <param name="data">Data stream.</param>
         </member>
         <member name="T:BlobHelper.BlobMetadata">
             <summary>
@@ -203,17 +217,17 @@
             ETag of the object.
             </summary>
         </member>
-        <member name="F:BlobHelper.BlobMetadata.CreatedUtc">
+        <member name="P:BlobHelper.BlobMetadata.CreatedUtc">
             <summary>
             Timestamp from when the object was created.
             </summary>
         </member>
-        <member name="F:BlobHelper.BlobMetadata.LastUpdateUtc">
+        <member name="P:BlobHelper.BlobMetadata.LastUpdateUtc">
             <summary>
             Timestamp from when the object was last updated, if available.
             </summary>
         </member>
-        <member name="F:BlobHelper.BlobMetadata.LastAccessUtc">
+        <member name="P:BlobHelper.BlobMetadata.LastAccessUtc">
             <summary>
             Timestamp from when the object was last accessed, if available.
             </summary>
@@ -362,12 +376,12 @@
         </member>
         <member name="M:BlobHelper.DiskSettings.#ctor">
             <summary>
-            Initialize the object.
+            Instantiate.
             </summary>
         </member>
         <member name="M:BlobHelper.DiskSettings.#ctor(System.String)">
             <summary>
-            Initialize the object.
+            Instantiate.
             </summary>
             <param name="directory">The directory where BLOBs should be stored.</param>
         </member>
@@ -376,20 +390,37 @@
             Enumeration results.
             </summary>
         </member>
-        <member name="F:BlobHelper.EnumerationResult.NextContinuationToken">
+        <member name="P:BlobHelper.EnumerationResult.NextContinuationToken">
             <summary>
             Next continuation token to supply in order to continue enumerating from the end of the previous request.
             </summary>
         </member>
-        <member name="F:BlobHelper.EnumerationResult.Blobs">
+        <member name="P:BlobHelper.EnumerationResult.Count">
+            <summary>
+            The number of BLOBs.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EnumerationResult.Bytes">
+            <summary>
+            The total number of bytes represented by the BLOBs.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EnumerationResult.Blobs">
             <summary>
             List of BLOB metadata objects.
             </summary>
         </member>
         <member name="M:BlobHelper.EnumerationResult.#ctor">
             <summary>
-            Instantiates the object.
+            Instantiate the object.
             </summary>
+        </member>
+        <member name="M:BlobHelper.EnumerationResult.#ctor(System.String,System.Collections.Generic.List{BlobHelper.BlobMetadata})">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="continuationToken">Continuation token.</param>
+            <param name="blobs">BLOBs.</param>
         </member>
         <member name="T:BlobHelper.AwsRegion">
             <summary>

@@ -268,9 +268,9 @@ namespace TestNetCore
         {
             try
             {
-                string key = InputString("Key:", null, false);
-                string contentType = InputString("Content type:", "text/plain", true);
-                string data = InputString("Data:", null, true);
+                string key =         InputString("Key          :", null, false);
+                string contentType = InputString("Content type :", "text/plain", true);
+                string data =        InputString("Data         :", null, true);
 
                 byte[] bytes = new byte[0];
                 if (!String.IsNullOrEmpty(data)) bytes = Encoding.UTF8.GetBytes(data);
@@ -319,9 +319,9 @@ namespace TestNetCore
 
         static void UploadBlob()
         {
-            string filename = InputString("Filename:", null, false);
-            string key = InputString("Key:", null, false);
-            string contentType = InputString("Content type:", null, true);
+            string filename =    InputString("Filename     :", null, false);
+            string key =         InputString("Key          :", null, false);
+            string contentType = InputString("Content type :", null, true);
 
             FileInfo fi = new FileInfo(filename);
             long contentLength = fi.Length;
@@ -336,8 +336,8 @@ namespace TestNetCore
 
         static void DownloadBlob()
         {
-            string key = InputString("Key:", null, false);
-            string filename = InputString("Filename:", null, false);
+            string key =      InputString("Key      :", null, false);
+            string filename = InputString("Filename :", null, false);
 
             BlobData blob = _Blobs.GetStream(key).Result;
             using (FileStream fs = new FileStream(filename, FileMode.OpenOrCreate))
@@ -369,7 +369,7 @@ namespace TestNetCore
 
         static void Enumerate()
         { 
-            EnumerationResult result = _Blobs.Enumerate(InputString("Continuation token:", null, true)).Result;
+            EnumerationResult result = _Blobs.Enumerate(InputString("Token:", null, true)).Result;
 
             Console.WriteLine("");
             if (result.Blobs != null && result.Blobs.Count > 0)
@@ -390,14 +390,17 @@ namespace TestNetCore
             if (!String.IsNullOrEmpty(result.NextContinuationToken))
                 Console.WriteLine("Continuation token: " + result.NextContinuationToken);
 
+            Console.WriteLine("");
+            Console.WriteLine("Count: " + result.Count);
+            Console.WriteLine("Bytes: " + result.Bytes);
             Console.WriteLine("");
         }
 
         static void EnumeratePrefix()
         { 
             EnumerationResult result = _Blobs.Enumerate(
-                InputString("Prefix:", null, true),
-                InputString("Continuation token:", null, true)).Result;
+                InputString("Prefix :", null, true),
+                InputString("Token  :", null, true)).Result;
 
             if (result.Blobs != null && result.Blobs.Count > 0)
             {
@@ -416,6 +419,11 @@ namespace TestNetCore
 
             if (!String.IsNullOrEmpty(result.NextContinuationToken))
                 Console.WriteLine("Continuation token: " + result.NextContinuationToken);
+
+            Console.WriteLine("");
+            Console.WriteLine("Count: " + result.Count);
+            Console.WriteLine("Bytes: " + result.Bytes);
+            Console.WriteLine("");
         } 
 
         static void GenerateUrl()

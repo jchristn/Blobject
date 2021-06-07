@@ -10,28 +10,66 @@ namespace BlobHelper
     /// </summary>
     public class BlobData
     {
+        #region Public-Members
+
         /// <summary>
         /// Content-length of the object (how many bytes to read from Data).
         /// </summary>
-        public long ContentLength;
+        public long ContentLength
+        {
+            get
+            {
+                return _ContentLength;
+            }
+            set
+            {
+                if (value < 0) throw new ArgumentException("Content length must be zero or greater.");
+                _ContentLength = value;
+            }
+        }
 
         /// <summary>
         /// Stream containing requested data.
         /// </summary>
-        public Stream Data;
+        public Stream Data { get; set; } = null;
+
+        #endregion
+
+        #region Private-Members
+
+        private long _ContentLength = 0;
+
+        #endregion
+
+        #region Constructors-and-Factories
 
         /// <summary>
-        /// Instantiates the object.
+        /// Instantiate.
         /// </summary>
         public BlobData()
         {
 
         }
 
-        internal BlobData(long contentLength, Stream data)
+        /// <summary>
+        /// Instantiate.
+        /// </summary>
+        /// <param name="contentLength">Content length.</param>
+        /// <param name="data">Data stream.</param>
+        public BlobData(long contentLength, Stream data)
         {
             ContentLength = contentLength;
             Data = data;
         }
+
+        #endregion
+
+        #region Public-Methods
+
+        #endregion
+
+        #region Private-Methods
+
+        #endregion
     }
 }

@@ -2,11 +2,16 @@
 
 ## Current Version
 
+v2.1.1
+
+- Enhancements to ```EnumerationResult```
+- Minor refactor
+
+## Previous Versions
+
 v2.0.4.2
 
 - Retarget to support .NET Standard 2.0, .NET Core 2.0, and .NET Framework 4.6.1
-
-## Previous Versions
 
 v2.0.4
 

@@ -16,22 +16,22 @@ namespace BlobHelper
         /// <summary>
         /// Kvpbase endpoint URL, of the form http://[hostname]:[port]/.
         /// </summary>
-        public string Endpoint { get; set; }
+        public string Endpoint { get; set; } = null;
 
         /// <summary>
         /// Kvpbase user GUID.
         /// </summary>
-        public string UserGuid { get; set; }
+        public string UserGuid { get; set; } = null;
 
         /// <summary>
         /// Kvpbase container.
         /// </summary>
-        public string Container { get; set; }
+        public string Container { get; set; } = null;
 
         /// <summary>
         /// Kvpbase API key.
         /// </summary>
-        public string ApiKey { get; set; }
+        public string ApiKey { get; set; } = null;
 
         #endregion
 

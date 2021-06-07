@@ -59,24 +59,6 @@ namespace BlobHelper
             }
         }
 
-        public static byte[] ObjectToBytes(object obj)
-        {
-            try
-            {
-                if (obj == null) return null;
-                if (obj is byte[]) return (byte[])obj;
-
-                BinaryFormatter bf = new BinaryFormatter();
-                MemoryStream ms = new MemoryStream();
-                bf.Serialize(ms, obj);
-                return ms.ToArray();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         public static byte[] StreamToBytes(Stream input)
         {
             if (input == null) throw new ArgumentNullException(nameof(input));

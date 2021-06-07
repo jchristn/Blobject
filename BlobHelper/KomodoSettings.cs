@@ -16,17 +16,17 @@ namespace BlobHelper
         /// <summary>
         /// Komodo endpoint URL, of the form http://[hostname]:[port]/.
         /// </summary>
-        public string Endpoint { get; set; }
-         
+        public string Endpoint { get; set; } = null;
+
         /// <summary>
         /// Komodo index GUID.
         /// </summary>
-        public string IndexGUID { get; set; }
+        public string IndexGUID { get; set; } = null;
 
         /// <summary>
         /// Komodo API key.
         /// </summary>
-        public string ApiKey { get; set; }
+        public string ApiKey { get; set; } = null;
 
         #endregion
 

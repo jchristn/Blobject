@@ -17,38 +17,38 @@ namespace BlobHelper
         /// Override the AWS S3 endpoint (if using non-Amazon storage), otherwise leave null.
         /// Use the form http://localhost:8000/
         /// </summary>
-        public string Endpoint { get; set; }
+        public string Endpoint { get; set; } = null;
 
         /// <summary>
         /// Enable or disable SSL (only if using non-Amazon storage).
         /// </summary>
-        public bool Ssl { get; set; }
+        public bool Ssl { get; set; } = false;
 
         /// <summary>
         /// AWS S3 access key.
         /// </summary>
-        public string AccessKey { get; set; }
+        public string AccessKey { get; set; } = null;
 
         /// <summary>
         /// AWS S3 secret key.
         /// </summary>
-        public string SecretKey { get; set; }
+        public string SecretKey { get; set; } = null;
 
         /// <summary>
         /// AWS S3 region.
         /// </summary>
-        public AwsRegion Region { get; set; }
+        public AwsRegion Region { get; set; } = AwsRegion.USWest1;
 
         /// <summary>
         /// AWS S3 bucket.
         /// </summary>
-        public string Bucket { get; set; }
+        public string Bucket { get; set; } = null;
 
         /// <summary>
         /// Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.
         /// For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.
         /// </summary>
-        public string BaseUrl { get; set; }
+        public string BaseUrl { get; set; } = null;
 
         #endregion
 
@@ -269,40 +269,43 @@ namespace BlobHelper
             throw new ArgumentException("Unknown region: " + Region.ToString());
         }
 
-        internal bool ValidateRegion(string region)
+        /// <summary>
+        /// Validate a region string.
+        /// </summary>
+        /// <param name="region">Region.</param>
+        /// <returns>True if valid.</returns>
+        public bool ValidateRegion(string region)
         {
-            return ValidRegions().Contains(region);
+            return ValidRegions.Contains(region);
         }
-         
+
         #endregion
 
         #region Private-Methods
 
-        private List<String> ValidRegions()
+        private List<string> ValidRegions = new List<string>
         {
-            List<string> ret = new List<string>();
-            ret.Add("APNortheast1");
-            ret.Add("APNortheast2");
-            ret.Add("APNortheast3");
-            ret.Add("APSoutheast1");
-            ret.Add("APSoutheast2");
-            ret.Add("APSouth1");
-            ret.Add("CACentral1");
-            ret.Add("CNNorth1");
-            ret.Add("EUCentral1");
-            ret.Add("EUNorth1");
-            ret.Add("EUWest1");
-            ret.Add("EUWest2");
-            ret.Add("EUWest3");
-            ret.Add("SAEast1");
-            ret.Add("USEast1");
-            ret.Add("USEast2");
-            ret.Add("USGovCloudEast1");
-            ret.Add("USGovCloudWest1");
-            ret.Add("USWest1");
-            ret.Add("USWest2");
-            return ret;
-        }
+            "APNortheast1",
+            "APNortheast2",
+            "APNortheast3",
+            "APSoutheast1",
+            "APSoutheast2",
+            "APSouth1",
+            "CACentral1",
+            "CNNorth1",
+            "EUCentral1",
+            "EUNorth1",
+            "EUWest1",
+            "EUWest2",
+            "EUWest3",
+            "SAEast1",
+            "USEast1",
+            "USEast2",
+            "USGovCloudEast1",
+            "USGovCloudWest1",
+            "USWest1",
+            "USWest2",
+        };
 
         private AwsRegion GetRegionFromString(string region)
         {

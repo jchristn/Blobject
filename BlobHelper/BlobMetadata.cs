@@ -14,41 +14,54 @@ namespace BlobHelper
         /// <summary>
         /// Object key.
         /// </summary>
-        public string Key { get; set; }
+        public string Key { get; set; } = null;
 
         /// <summary>
         /// Content type for the object.
         /// </summary>
-        public string ContentType { get; set; }
+        public string ContentType { get; set; } = null;
 
         /// <summary>
         /// Content length of the object.
         /// </summary>
-        public long ContentLength { get; set; }
+        public long ContentLength
+        {
+            get
+            {
+                return _ContentLength;
+            }
+            set
+            {
+                if (value < 0) throw new ArgumentException("Content length must be zero or greater.");
+                _ContentLength = value;
+            }
+        }
 
         /// <summary>
         /// ETag of the object.
         /// </summary>
-        public string ETag { get; set; }
+        public string ETag { get; set; } = null;
 
         /// <summary>
         /// Timestamp from when the object was created.
         /// </summary>
-        public DateTime? CreatedUtc = null;
+        public DateTime? CreatedUtc { get; set; } = null;
 
         /// <summary>
         /// Timestamp from when the object was last updated, if available.
         /// </summary>
-        public DateTime? LastUpdateUtc = null;
+        public DateTime? LastUpdateUtc { get; set; } = null;
 
         /// <summary>
         /// Timestamp from when the object was last accessed, if available.
         /// </summary>
-        public DateTime? LastAccessUtc = null;
+        public DateTime? LastAccessUtc { get; set; } = null;
 
         #endregion
 
         #region Private-Members
+
+        private long _ContentLength = 0;
 
         #endregion
 

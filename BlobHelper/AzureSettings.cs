@@ -16,22 +16,22 @@ namespace BlobHelper
         /// <summary>
         /// Microsoft Azure BLOB storage account name (the name of the account in the Azure portal).
         /// </summary>
-        public string AccountName { get; set; }
+        public string AccountName { get; set; } = null;
 
         /// <summary>
         /// Microsoft Azure BLOB storage access key.
         /// </summary>
-        public string AccessKey { get; set; }
+        public string AccessKey { get; set; } = null;
 
         /// <summary>
         /// Microsoft Azure BLOB storage endpoint (primary or secondary from the Azure portal, likely of the form https://[accountname].blob.core.windows.net/.
         /// </summary>
-        public string Endpoint { get; set; }
+        public string Endpoint { get; set; } = null;
 
         /// <summary>
         /// Microsoft Azure BLOB storage container.
         /// </summary>
-        public string Container { get; set; }
+        public string Container { get; set; } = null;
 
         #endregion
 

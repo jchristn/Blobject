@@ -16,7 +16,7 @@ namespace BlobHelper
         /// <summary>
         /// The filesystem directory to use.
         /// </summary>
-        public string Directory { get; set; }
+        public string Directory { get; set; } = null;
 
         #endregion
 
@@ -27,7 +27,7 @@ namespace BlobHelper
         #region Constructors-and-Factories
 
         /// <summary>
-        /// Initialize the object.
+        /// Instantiate.
         /// </summary>
         public DiskSettings()
         {
@@ -35,7 +35,7 @@ namespace BlobHelper
         }
 
         /// <summary>
-        /// Initialize the object.
+        /// Instantiate.
         /// </summary>
         /// <param name="directory">The directory where BLOBs should be stored.</param>
         public DiskSettings(string directory)
