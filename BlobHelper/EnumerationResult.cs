@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace BlobHelper
 {
@@ -13,13 +14,27 @@ namespace BlobHelper
         #region Public-Members
 
         /// <summary>
+        /// Flag indicating if more results are available.
+        /// </summary>
+        [JsonProperty(Order = 0)]
+        public bool HasMore
+        {
+            get
+            {
+                return (!String.IsNullOrEmpty(NextContinuationToken));
+            }
+        }
+
+        /// <summary>
         /// Next continuation token to supply in order to continue enumerating from the end of the previous request.
         /// </summary>
+        [JsonProperty(Order = 1)]
         public string NextContinuationToken { get; set; } = null;
 
         /// <summary>
         /// The number of BLOBs.
         /// </summary>
+        [JsonProperty(Order = 2)]
         public long Count
         {
             get
@@ -31,6 +46,7 @@ namespace BlobHelper
         /// <summary>
         /// The total number of bytes represented by the BLOBs.
         /// </summary>
+        [JsonProperty(Order = 3)]
         public long Bytes
         {
             get
@@ -42,6 +58,7 @@ namespace BlobHelper
         /// <summary>
         /// List of BLOB metadata objects.
         /// </summary>
+        [JsonProperty(Order = 999)]
         public List<BlobMetadata> Blobs
         {
             get

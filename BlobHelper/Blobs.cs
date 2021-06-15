@@ -30,27 +30,27 @@ namespace BlobHelper
 
         #region Private-Members
 
-        private StorageType _StorageType;
-        private AwsSettings _AwsSettings;
-        private AzureSettings _AzureSettings;
-        private DiskSettings _DiskSettings;
-        private KvpbaseSettings _KvpbaseSettings;
-        private KomodoSettings _KomodoSettings;
+        private StorageType _StorageType = StorageType.Disk;
+        private AwsSettings _AwsSettings = null;
+        private AzureSettings _AzureSettings = null;
+        private DiskSettings _DiskSettings = null;
+        private KvpbaseSettings _KvpbaseSettings = null;
+        private KomodoSettings _KomodoSettings = null;
 
-        private AmazonS3Config _S3Config;
-        private IAmazonS3 _S3Client;
-        private Amazon.Runtime.BasicAWSCredentials _S3Credentials;
-        private Amazon.RegionEndpoint _S3Region;
+        private AmazonS3Config _S3Config = null;
+        private IAmazonS3 _S3Client = null;
+        private Amazon.Runtime.BasicAWSCredentials _S3Credentials = null;
+        private Amazon.RegionEndpoint _S3Region = null;
 
-        private StorageCredentials _AzureCredentials;
-        private CloudStorageAccount _AzureAccount;
-        private CloudBlobClient _AzureBlobClient;
-        private CloudBlobContainer _AzureContainer;
+        private StorageCredentials _AzureCredentials = null;
+        private CloudStorageAccount _AzureAccount = null;
+        private CloudBlobClient _AzureBlobClient = null;
+        private CloudBlobContainer _AzureContainer = null;
 
-        private KvpbaseClient _Kvpbase;
+        private KvpbaseClient _Kvpbase = null;
 
-        private KomodoSdk _Komodo;
-         
+        private KomodoSdk _Komodo = null;
+
         private ConcurrentDictionary<string, BlobContinuationToken> _AzureContinuationTokens = new ConcurrentDictionary<string, BlobContinuationToken>();
 
         #endregion

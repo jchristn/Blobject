@@ -390,6 +390,11 @@
             Enumeration results.
             </summary>
         </member>
+        <member name="P:BlobHelper.EnumerationResult.HasMore">
+            <summary>
+            Flag indicating if more results are available.
+            </summary>
+        </member>
         <member name="P:BlobHelper.EnumerationResult.NextContinuationToken">
             <summary>
             Next continuation token to supply in order to continue enumerating from the end of the previous request.

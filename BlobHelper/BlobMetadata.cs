@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace BlobHelper
 {
@@ -14,16 +15,19 @@ namespace BlobHelper
         /// <summary>
         /// Object key.
         /// </summary>
+        [JsonProperty(Order = 0)]
         public string Key { get; set; } = null;
 
         /// <summary>
         /// Content type for the object.
         /// </summary>
+        [JsonProperty(Order = 1)]
         public string ContentType { get; set; } = null;
 
         /// <summary>
         /// Content length of the object.
         /// </summary>
+        [JsonProperty(Order = 2)]
         public long ContentLength
         {
             get
@@ -40,21 +44,25 @@ namespace BlobHelper
         /// <summary>
         /// ETag of the object.
         /// </summary>
+        [JsonProperty(Order = 3)]
         public string ETag { get; set; } = null;
 
         /// <summary>
         /// Timestamp from when the object was created.
         /// </summary>
+        [JsonProperty(Order = 4)]
         public DateTime? CreatedUtc { get; set; } = null;
 
         /// <summary>
         /// Timestamp from when the object was last updated, if available.
         /// </summary>
+        [JsonProperty(Order = 5)]
         public DateTime? LastUpdateUtc { get; set; } = null;
 
         /// <summary>
         /// Timestamp from when the object was last accessed, if available.
         /// </summary>
+        [JsonProperty(Order = 6)]
         public DateTime? LastAccessUtc { get; set; } = null;
 
         #endregion
