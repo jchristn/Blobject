@@ -1282,6 +1282,7 @@ namespace BlobHelper
 
         private string KomodoBuildContinuationToken(long start, int count)
         {
+            if (start >= count) return null;
             return KvpbaseBuildContinuationToken(start, count);
         }
 
