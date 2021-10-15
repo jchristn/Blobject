@@ -550,8 +550,20 @@ namespace BlobHelper
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task DiskDelete(string key, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        { 
-            File.Delete(DiskGenerateUrl(key)); 
+        {
+            string filename = DiskGenerateUrl(key);
+            if (File.Exists(filename))
+            {
+                File.Delete(filename);
+            }
+            else if (Directory.Exists(filename))
+            {
+                Directory.Delete(filename);
+            }
+            else
+            {
+                throw new FileNotFoundException("Could not find file '" + key + "'.");
+            }
         }
 
         private async Task S3Delete(string key, CancellationToken token)
@@ -590,8 +602,20 @@ namespace BlobHelper
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<byte[]> DiskGet(string key, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        { 
-            return File.ReadAllBytes(DiskGenerateUrl(key)); 
+        {
+            string filename = DiskGenerateUrl(key);
+            if (Directory.Exists(filename))
+            {
+                return new byte[0];
+            }
+            else if (File.Exists(filename))
+            {
+                return File.ReadAllBytes(filename);
+            }
+            else
+            {
+                throw new FileNotFoundException("Could not find file '" + key + "'.");
+            }
         }
 
         private async Task<byte[]> S3Get(string key, CancellationToken token)
@@ -658,10 +682,21 @@ namespace BlobHelper
         private async Task<BlobData> DiskGetStream(string key, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         { 
-            string url = DiskGenerateUrl(key);
-            long contentLength = new FileInfo(url).Length;
-            FileStream stream = new FileStream(url, FileMode.Open);
-            return new BlobData(contentLength, stream); 
+            string filename = DiskGenerateUrl(key);
+            if (File.Exists(filename))
+            {
+                long contentLength = new FileInfo(filename).Length;
+                FileStream stream = new FileStream(filename, FileMode.Open);
+                return new BlobData(contentLength, stream);
+            }
+            else if (Directory.Exists(filename))
+            {
+                return new BlobData(0, new MemoryStream());
+            }
+            else
+            {
+                throw new FileNotFoundException("Could not find file '" + key + "'.");
+            }
         }
 
         private async Task<BlobData> S3GetStream(string key, CancellationToken token)
@@ -726,8 +761,20 @@ namespace BlobHelper
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<bool> DiskExists(string key, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        { 
-            return File.Exists(DiskGenerateUrl(key)); 
+        {
+            string filename = DiskGenerateUrl(key);
+            if (File.Exists(filename))
+            {
+                return true;
+            }
+            else if (Directory.Exists(filename))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         private async Task<bool> S3Exists(string key, CancellationToken token)
@@ -811,24 +858,36 @@ namespace BlobHelper
         }
 
         private async Task DiskWrite(string key, long contentLength, Stream stream, CancellationToken token)
-        { 
-            int bytesRead = 0;
-            long bytesRemaining = contentLength;
-            byte[] buffer = new byte[65536];
-            string url = DiskGenerateUrl(key);
+        {
+            string filename = DiskGenerateUrl(key);
 
-            using (FileStream fs = new FileStream(url, FileMode.OpenOrCreate))
+            if (
+                (key.EndsWith("\\") || key.EndsWith("/"))
+                &&
+                contentLength == 0
+               )
             {
-                while (bytesRemaining > 0)
+                Directory.CreateDirectory(filename);
+            }
+            else
+            {
+                int bytesRead = 0;
+                long bytesRemaining = contentLength;
+                byte[] buffer = new byte[65536];
+                
+                using (FileStream fs = new FileStream(filename, FileMode.OpenOrCreate))
                 {
-                    bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
-                    if (bytesRead > 0)
+                    while (bytesRemaining > 0)
                     {
-                        await fs.WriteAsync(buffer, 0, bytesRead, token).ConfigureAwait(false);
-                        bytesRemaining -= bytesRead;
+                        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
+                        if (bytesRead > 0)
+                        {
+                            await fs.WriteAsync(buffer, 0, bytesRead, token).ConfigureAwait(false);
+                            bytesRemaining -= bytesRead;
+                        }
                     }
                 }
-            }  
+            }
         }
 
         private async Task S3Write(string key, string contentType, byte[] data, CancellationToken token)
@@ -933,16 +992,34 @@ namespace BlobHelper
         private async Task<BlobMetadata> DiskGetMetadata(string key, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         { 
-            string url = DiskGenerateUrl(key);
+            string filename = DiskGenerateUrl(key);
 
-            FileInfo fi = new FileInfo(url);
-            BlobMetadata md = new BlobMetadata();
-            md.Key = key;
-            md.ContentLength = fi.Length;
-            md.CreatedUtc = fi.CreationTimeUtc;
-            md.LastAccessUtc = fi.LastAccessTimeUtc;
-            md.LastUpdateUtc = fi.LastWriteTimeUtc;
-            return md; 
+            if (File.Exists(filename))
+            {
+                FileInfo fi = new FileInfo(filename);
+                BlobMetadata md = new BlobMetadata();
+                md.Key = key;
+                md.ContentLength = fi.Length;
+                md.CreatedUtc = fi.CreationTimeUtc;
+                md.LastAccessUtc = fi.LastAccessTimeUtc;
+                md.LastUpdateUtc = fi.LastWriteTimeUtc;
+                return md;
+            }
+            else if (Directory.Exists(filename))
+            {
+                DirectoryInfo di = new DirectoryInfo(filename);
+                BlobMetadata md = new BlobMetadata();
+                md.Key = key;
+                md.ContentLength = 0;
+                md.CreatedUtc = di.CreationTimeUtc;
+                md.LastAccessUtc = di.LastAccessTimeUtc;
+                md.LastUpdateUtc = di.LastWriteTimeUtc;
+                return md;
+            }
+            else
+            {
+                throw new FileNotFoundException("Could not find file '" + key + "'.");
+            }
         }
          
         private async Task<BlobMetadata> S3GetMetadata(string key, CancellationToken token)
@@ -1082,11 +1159,21 @@ namespace BlobHelper
 
             if (!String.IsNullOrEmpty(prefix))
             {
-                files = Directory.EnumerateDirectories(_DiskSettings.Directory, prefix + "*", SearchOption.TopDirectoryOnly);
+                if (Directory.Exists(_DiskSettings.Directory + prefix))
+                {
+                    string tempPrefix = prefix;
+                    tempPrefix = tempPrefix.Replace("\\", "/");
+                    if (!tempPrefix.EndsWith("/")) tempPrefix += "/";
+                    files = Directory.EnumerateFiles(_DiskSettings.Directory, tempPrefix + "*", SearchOption.AllDirectories);
+                }
+                else
+                {
+                    files = Directory.EnumerateFiles(_DiskSettings.Directory, prefix + "*", SearchOption.AllDirectories);
+                }
             }
             else
             {
-                files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.TopDirectoryOnly);
+                files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
             }
 
             files = files.Skip(startIndex).Take(count);
@@ -1098,11 +1185,15 @@ namespace BlobHelper
 
             foreach (string file in files)
             {
-                string key = Path.GetFileName(file);
                 FileInfo fi = new FileInfo(file);
 
+                string filename = file;
+                if (filename.StartsWith(_DiskSettings.Directory)) filename = file.Substring(_DiskSettings.Directory.Length);
+                if (!String.IsNullOrEmpty(filename)) filename = filename.Replace("\\", "/");
+
                 BlobMetadata md = new BlobMetadata();
-                md.Key = key;
+                md.Key = filename;
+
                 md.ContentLength = fi.Length;
                 md.CreatedUtc = fi.CreationTimeUtc;
                 ret.Blobs.Add(md);
@@ -1345,9 +1436,9 @@ namespace BlobHelper
         private string DiskGenerateUrl(string key)
         {
             string dir = _DiskSettings.Directory;
-            while (dir.EndsWith("\\")) dir = dir.Substring(0, dir.Length - 1);
-            while (dir.EndsWith("/")) dir = dir.Substring(0, dir.Length - 1);
             dir = dir.Replace("\\", "/");
+            while (dir.StartsWith("/")) dir = dir.Substring(1);
+            while (dir.EndsWith("/")) dir = dir.Substring(0, dir.Length - 1);
             return dir + "/" + key;
         }
 

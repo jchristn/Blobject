@@ -3,15 +3,15 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.1;net461;net5.0</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>2.1.3</Version>
+    <Version>2.1.4</Version>
     <Authors>Joel Christner</Authors>
     <Description>BLOB storage wrapper for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3, Ceph), Kvpbase, Komodo, and local filesystem written in C#.</Description>
-    <Copyright>(c)2019 Joel Christner</Copyright>
+    <Copyright>(c)2021 Joel Christner</Copyright>
     <PackageProjectUrl>https://github.com/jchristn/BlobHelper</PackageProjectUrl>
     <RepositoryUrl>https://github.com/jchristn/BlobHelper</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageLicenseUrl></PackageLicenseUrl>
-    <PackageReleaseNotes>Dependency update.</PackageReleaseNotes>
+    <PackageReleaseNotes>Dependency update, disk fixes (thank you @teh-random-name!).</PackageReleaseNotes>
     <PackageIconUrl></PackageIconUrl>
     <PackageTags>blob azure storage s3 object rest minio less3 komodo ceph</PackageTags>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
@@ -27,9 +27,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Core" Version="3.7.0.32" />
-    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.0.1" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.1.2" />
+    <PackageReference Include="AWSSDK.Core" Version="3.7.3.22" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.1" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.3.15" />
     <PackageReference Include="Komodo.Sdk" Version="2.0.0" />
     <PackageReference Include="KvpbaseSDK" Version="4.1.2.1" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />

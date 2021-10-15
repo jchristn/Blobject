@@ -2,12 +2,17 @@
 
 ## Current Version
 
+v2.1.4
+
+- Dependency update
+- Disk fixes (thank you @teh-random-name)
+
+## Previous Versions
+
 v2.1.1
 
 - Enhancements to ```EnumerationResult```
 - Minor refactor
-
-## Previous Versions
 
 v2.0.4.2
 
