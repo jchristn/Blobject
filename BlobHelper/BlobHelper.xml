@@ -192,6 +192,17 @@
             <param name="contentLength">Content length.</param>
             <param name="data">Data stream.</param>
         </member>
+        <member name="M:BlobHelper.BlobData.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.BlobData.Dispose(System.Boolean)">
+            <summary>
+            Dispose of resources.
+            </summary>
+            <param name="disposing"></param>
+        </member>
         <member name="T:BlobHelper.BlobMetadata">
             <summary>
             Metadata about a BLOB.

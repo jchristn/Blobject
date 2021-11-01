@@ -8,7 +8,7 @@ namespace BlobHelper
     /// <summary>
     /// Contains content-length (how many bytes to read) and data stream for a given object.
     /// </summary>
-    public class BlobData
+    public class BlobData : IDisposable
     {
         #region Public-Members
 
@@ -36,6 +36,8 @@ namespace BlobHelper
         #endregion
 
         #region Private-Members
+
+        private bool _Disposed = false;
 
         private long _ContentLength = 0;
 
@@ -65,6 +67,38 @@ namespace BlobHelper
         #endregion
 
         #region Public-Methods
+
+        /// <summary>
+        /// Dispose of resources.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Dispose of resources.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_Disposed)
+            {
+                if (disposing)
+                {
+                    if (Data != null)
+                    {
+                        Data.Dispose();
+                    }
+                }
+
+                Data = null;
+
+                _Disposed = true;
+            }
+        }
 
         #endregion
 
