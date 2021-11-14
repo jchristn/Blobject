@@ -954,7 +954,7 @@ namespace BlobHelper
 
         private async Task KomodoWrite(string key, string contentType, byte[] data, CancellationToken token)
         {
-            await _Komodo.AddDocument(_KomodoSettings.IndexGUID, key, key, null, null, null, DocType.Unknown, data, token).ConfigureAwait(false);
+            await _Komodo.AddDocument(_KomodoSettings.IndexGUID, key, key, null, key, DocType.Unknown, data, null, token).ConfigureAwait(false);
         }
 
         private async Task KomodoWrite(string key, string contentType, long contentLength, Stream stream, CancellationToken token)
