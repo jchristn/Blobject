@@ -873,6 +873,12 @@ namespace BlobHelper
             }
             else
             {
+                string dirName = Path.GetDirectoryName(filename);
+                if (!Directory.Exists(dirName))
+                {
+                    Directory.CreateDirectory(dirName);
+                }
+
                 int bytesRead = 0;
                 long bytesRemaining = contentLength;
                 byte[] buffer = new byte[65536];
