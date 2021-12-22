@@ -16,10 +16,9 @@ This project was built to provide a simple interface over external storage to he
 
 Many thanks to @phpfui for adding the original code for BLOB copy functionality!
 
-## New in v2.1.4
+## New in v2.2.0
 
-- Dependency update
-- Disk fixes (thank you @teh-random-name)
+- BlobCopy class to copy objects from one repository to another (thank you @phpfui!)
 
 ## Example Project
 
@@ -135,6 +134,40 @@ BlobMetadata md = await _Blobs.GetMetadata("key");
 EnumerationResult result = await _Blobs.Enumerate();
 // list of BlobMetadata contained in result.Blobs
 // continuation token in result.NextContinuationToken
+```
+
+## Copying BLOBs from Repository to Repository
+
+If you have multiple storage repositories and wish to move BLOBs from one repository to another, use the ```BlobCopy``` class (refer to the ```Test.Copy``` project for a full working example).
+
+Thanks to @phpfui for contributing code and the idea for this enhancement!
+
+```csharp
+Blobs from    = new Blobs(new DiskSettings("./disk1/")); // assume some files are here
+Blobs to      = new Blobs(new DiskSettings("./disk2/"));
+BlobCopy copy = new BlobCopy(from, to);
+CopyStatistics stats = copy.Start();
+/*
+	{
+	  "Success": true,
+	  "Time": {
+	    "Start": "2021-12-22T18:44:42.9098249Z",
+	    "End": "2021-12-22T18:44:42.9379215Z",
+	    "TotalMs": 28.1
+	  },
+	  "ContinuationTokens": 0,
+	  "BlobsEnumerated": 12,
+	  "BytesEnumerated": 1371041,
+	  "BlobsRead": 12,
+	  "BytesRead": 1371041,
+	  "BlobsWritten": 12,
+	  "BytesWritten": 1371041,
+	  "Keys": [
+	    "filename.txt",
+	    ...
+	  ]
+	}
+ */
 ```
 
 ## Version History

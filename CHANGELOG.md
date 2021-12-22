@@ -2,12 +2,16 @@
 
 ## Current Version
 
+v2.2.0
+
+- BlobCopy class to copy objects from one repository to another (thank you @phpfui!)
+
+## Previous Versions
+
 v2.1.4
 
 - Dependency update
 - Disk fixes (thank you @teh-random-name)
-
-## Previous Versions
 
 v2.1.1
 
