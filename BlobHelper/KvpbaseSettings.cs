@@ -9,7 +9,7 @@ namespace BlobHelper
     /// <summary>
     /// Settings when using kvpbase for storage.
     /// </summary>
-    public class KvpbaseSettings
+    public class KvpbaseSettings : BlobSettings
     {
         #region Public-Members
 

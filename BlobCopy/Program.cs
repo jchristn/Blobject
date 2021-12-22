@@ -1,4 +1,4 @@
-﻿namespace ImageStorageCopier
+﻿namespace BlobCopy
 {
     using System;
     using System.Collections.Generic;
@@ -7,11 +7,13 @@
     {
         private static void Main(string[] args)
         {
-            Console.WriteLine("Copy stored objects between servers");
-            Console.WriteLine(String.Empty);
+            Console.WriteLine(
+                "BlobCopy | @phpfui" + Environment.NewLine +
+                "Copy BLOBs from one repository to another" + Environment.NewLine);
+
             var helperFrom = new Server();
             helperFrom.GetInfo("Source Server");
-            if (!helperFrom.valid())
+            if (!helperFrom.IsValid())
             {
                 Console.WriteLine(String.Empty);
                 Console.WriteLine("No Source Server specified, exiting...");
@@ -20,7 +22,7 @@
             Console.WriteLine(String.Empty);
             var helperTo = new Server();
             helperTo.GetInfo("Destination Server");
-            if (!helperTo.valid())
+            if (!helperTo.IsValid())
             {
                 Console.WriteLine(String.Empty);
                 Console.WriteLine("No Destination Server specified, exiting...");
@@ -157,7 +159,7 @@
         public override string ToString()
         {
             var retVal = "Invalid";
-            if (this.valid())
+            if (IsValid())
             {
                 retVal = this.settingType + ": ";
                 foreach (var kvp in this.fieldMap)
@@ -169,7 +171,7 @@
             return retVal;
         }
 
-        public bool valid()
+        public bool IsValid()
         {
             return settingType.Length > 0 && fieldMap.Count > 0;
         }

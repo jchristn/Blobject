@@ -9,7 +9,7 @@ namespace BlobHelper
     /// <summary>
     /// Settings when using AWS S3 for storage.
     /// </summary>
-    public class AwsSettings
+    public class AwsSettings : BlobSettings
     {
         #region Public-Members
 

@@ -12,6 +12,10 @@ If you have any issues or feedback, please file an issue here in Github. We'd lo
 
 This project was built to provide a simple interface over external storage to help support projects that need to work with potentially multiple storage providers.  It is by no means a comprehensive interface, rather, it supports core methods for creation, retrieval, deletion, metadata, and enumeration.
 
+## Contributors
+
+Many thanks to @phpfui for adding the original code for BLOB copy functionality!
+
 ## New in v2.1.4
 
 - Dependency update

@@ -9,7 +9,7 @@ namespace BlobHelper
     /// <summary>
     /// Settings when using Microsoft Azure BLOB Storage for storage.
     /// </summary>
-    public class AzureSettings
+    public class AzureSettings : BlobSettings
     {
         #region Public-Members
 

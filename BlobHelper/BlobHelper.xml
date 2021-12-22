@@ -165,6 +165,40 @@
             <param name="endpoint">The Azure BLOB storage endpoint for the account.</param>
             <param name="container">The container in which BLOBs should be stored.</param>
         </member>
+        <member name="T:BlobHelper.BlobCopy">
+            <summary>
+            BLOB copy.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobCopy.Logger">
+            <summary>
+            Method to invoke to send log messages.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.BlobCopy.#ctor(BlobHelper.Blobs,BlobHelper.Blobs,System.String)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="copyFrom">Settings of the repository from which objects should be copied.</param>
+            <param name="copyTo">Settings of the repository to which objects should be copied.</param>
+            <param name="prefix">Prefix of the objects that should be copied.</param>
+        </member>
+        <member name="M:BlobHelper.BlobCopy.#ctor(BlobHelper.BlobSettings,BlobHelper.BlobSettings,System.String)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="copyFrom">Settings of the repository from which objects should be copied.</param>
+            <param name="copyTo">Settings of the repository to which objects should be copied.</param>
+            <param name="prefix">Prefix of the objects that should be copied.</param>
+        </member>
+        <member name="M:BlobHelper.BlobCopy.Start(System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Start the copy operation.
+            </summary>
+            <param name="stopAfter">Stop after this many objects have been copied.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Copy statistics.</returns>
+        </member>
         <member name="T:BlobHelper.BlobData">
             <summary>
             Contains content-length (how many bytes to read) and data stream for a given object.
@@ -374,6 +408,76 @@
             <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param>
             <param name="token">Cancellation token to cancel the request.</param> 
             <returns>Enumeration result.</returns>
+        </member>
+        <member name="T:BlobHelper.BlobSettings">
+            <summary>
+            BLOB storage settings.
+            </summary>
+        </member>
+        <member name="T:BlobHelper.CopyStatistics">
+            <summary>
+            BLOB copy statistics.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.Success">
+            <summary>
+            Flag indicating if the operation was successful.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.Time">
+            <summary>
+            Timestamps from the copy operation.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.Exception">
+            <summary>
+            Exception, if any was encountered.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.ContinuationTokens">
+            <summary>
+            Number of continuation tokens used.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BlobsEnumerated">
+            <summary>
+            Number of BLOBs enumerated.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BytesEnumerated">
+            <summary>
+            Number of bytes enumerated.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BlobsRead">
+            <summary>
+            Number of BLOBs read.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BytesRead">
+            <summary>
+            Number of bytes read.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BlobsWritten">
+            <summary>
+            Number of BLOBs written.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BytesWritten">
+            <summary>
+            Number of bytes written.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.Keys">
+            <summary>
+            Keys copied.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.CopyStatistics.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
         </member>
         <member name="T:BlobHelper.DiskSettings">
             <summary>
@@ -649,6 +753,31 @@
             <param name="userGuid">GUID of the user.</param>
             <param name="container">Container in which BLOBs should be stored.</param>
             <param name="apiKey">API key with read, write, and delete permissions.</param>
+        </member>
+        <member name="T:BlobHelper.Timestamps">
+            <summary>
+            Object used to measure start, end, and total time associated with an operation.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.Timestamps.Start">
+            <summary>
+            The time at which the operation started.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.Timestamps.End">
+            <summary>
+            The time at which the operation ended.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.Timestamps.TotalMs">
+            <summary>
+            The total number of milliseconds that transpired between Start and End.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.Timestamps.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
         </member>
     </members>
 </doc>

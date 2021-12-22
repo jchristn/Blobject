@@ -9,7 +9,7 @@ namespace BlobHelper
     /// <summary>
     /// Settings when using local filesystem for storage.
     /// </summary>
-    public class DiskSettings
+    public class DiskSettings : BlobSettings
     {
         #region Public-Members
 

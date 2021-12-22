@@ -9,7 +9,7 @@ namespace BlobHelper
     /// <summary>
     /// Settings when using Komodo for storage.
     /// </summary>
-    public class KomodoSettings
+    public class KomodoSettings : BlobSettings
     {
         #region Public-Members
 

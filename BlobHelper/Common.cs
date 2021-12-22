@@ -217,5 +217,59 @@ namespace BlobHelper
 
             return json;
         }
+
+        public static double TotalMsFrom(DateTime start)
+        {
+            try
+            {
+                DateTime end = DateTime.Now;
+                return TotalMsBetween(start, end);
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        public static double TotalMsBetween(DateTime start, DateTime end)
+        {
+            try
+            {
+                start = start.ToUniversalTime();
+                end = end.ToUniversalTime();
+                TimeSpan total = end - start;
+                return total.TotalMilliseconds;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        public static bool IsLaterThanNow(DateTime? dt)
+        {
+            try
+            {
+                DateTime curr = Convert.ToDateTime(dt);
+                return Common.IsLaterThanNow(curr);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public static bool IsLaterThanNow(DateTime dt)
+        {
+            if (DateTime.Compare(dt, DateTime.Now) > 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
     }
 }
