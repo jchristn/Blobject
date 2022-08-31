@@ -1445,7 +1445,7 @@ namespace BlobHelper
         {
             string dir = _DiskSettings.Directory;
             dir = dir.Replace("\\", "/");
-            while (dir.StartsWith("/")) dir = dir.Substring(1);
+            dir = dir.Replace("//", "/");
             while (dir.EndsWith("/")) dir = dir.Substring(0, dir.Length - 1);
             return dir + "/" + key;
         }
