@@ -5,8 +5,6 @@ using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace BlobHelper
 {
@@ -189,35 +187,6 @@ namespace BlobHelper
             }
         }
 
-        public static string SerializeJson(object obj, bool pretty)
-        {
-            if (obj == null) return null;
-            string json;
-
-            if (pretty)
-            {
-                json = JsonConvert.SerializeObject(
-                  obj,
-                  Newtonsoft.Json.Formatting.Indented,
-                  new JsonSerializerSettings
-                  {
-                      NullValueHandling = NullValueHandling.Ignore,
-                      DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                  });
-            }
-            else
-            {
-                json = JsonConvert.SerializeObject(obj,
-                  new JsonSerializerSettings
-                  {
-                      NullValueHandling = NullValueHandling.Ignore,
-                      DateTimeZoneHandling = DateTimeZoneHandling.Utc
-                  });
-            }
-
-            return json;
-        }
-
         public static double TotalMsFrom(DateTime start)
         {
             try
@@ -270,6 +239,5 @@ namespace BlobHelper
                 return false;
             }
         }
-
     }
 }
