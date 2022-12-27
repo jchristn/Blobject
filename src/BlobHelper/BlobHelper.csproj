@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.1;netcoreapp3.1;net461;net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;netcoreapp3.1;net461;net5.0;net6.0;net7.0</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>2.2.4.1</Version>
+    <Version>2.3.0</Version>
     <Authors>Joel Christner</Authors>
     <Description>BLOB storage wrapper for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3, Ceph), Kvpbase, Komodo, and local filesystem written in C#.</Description>
     <Copyright>(c)2022 Joel Christner</Copyright>
@@ -60,11 +60,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Core" Version="3.7.12.29" />
+    <PackageReference Include="AWSSDK.Core" Version="3.7.103.6" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.2" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.9.47" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.101.44" />
     <PackageReference Include="Komodo.Sdk" Version="3.1.0.2" />
-    <PackageReference Include="KvpbaseSDK" Version="4.1.3.1" />
+    <PackageReference Include="KvpbaseSDK" Version="4.1.3.2" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
   </ItemGroup>

@@ -16,9 +16,9 @@ This project was built to provide a simple interface over external storage to he
 
 Many thanks to @phpfui for adding the original code for BLOB copy functionality!
 
-## New in v2.2.0
+## New in v2.3.0
 
-- BlobCopy class to copy objects from one repository to another (thank you @phpfui!)
+- Dependency update
 
 ## Example Project
 
