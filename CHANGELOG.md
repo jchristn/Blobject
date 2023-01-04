@@ -2,9 +2,9 @@
 
 ## Current Version
 
-v2.3.0
+v2.3.x
 
-- Dependency update
+- Dependency update and bugfixes
 
 ## Previous Versions
 

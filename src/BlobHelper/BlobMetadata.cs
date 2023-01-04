@@ -104,10 +104,10 @@ namespace BlobHelper
                 "   Created        : " + CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
 
             if (LastUpdateUtc != null) ret +=
-                "   Last Update    : " + CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
+                "   Last Update    : " + LastUpdateUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
 
             if (LastAccessUtc != null) ret +=
-                "   Last Access    : " + CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
+                "   Last Access    : " + LastAccessUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
 
             return ret; 
         }
