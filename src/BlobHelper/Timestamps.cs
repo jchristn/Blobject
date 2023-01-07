@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Newtonsoft.Json;
 
 namespace BlobHelper
 {
@@ -15,7 +14,6 @@ namespace BlobHelper
         /// <summary>
         /// The time at which the operation started.
         /// </summary>
-        [JsonProperty(Order = 1)]
         public DateTime? Start
         {
             get
@@ -51,7 +49,6 @@ namespace BlobHelper
         /// <summary>
         /// The time at which the operation ended.
         /// </summary>
-        [JsonProperty(Order = 2)]
         public DateTime? End
         {
             get
@@ -86,7 +83,6 @@ namespace BlobHelper
         /// <summary>
         /// The total number of milliseconds that transpired between Start and End.
         /// </summary>
-        [JsonProperty(Order = 3)]
         public double? TotalMs
         {
             get

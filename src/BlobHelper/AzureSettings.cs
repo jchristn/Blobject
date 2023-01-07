@@ -14,6 +14,11 @@ namespace BlobHelper
         #region Public-Members
 
         /// <summary>
+        /// Enable or disable SSL (only if using non-Azure storage).
+        /// </summary>
+        public bool Ssl { get; set; } = true;
+
+        /// <summary>
         /// Microsoft Azure BLOB storage account name (the name of the account in the Azure portal).
         /// </summary>
         public string AccountName { get; set; } = null;

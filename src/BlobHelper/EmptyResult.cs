@@ -6,27 +6,11 @@ using System.Text;
 namespace BlobHelper
 {
     /// <summary>
-    /// Enumeration results.
+    /// Results from a container empty operation. 
     /// </summary>
-    public class EnumerationResult
+    public class EmptyResult
     {
         #region Public-Members
-
-        /// <summary>
-        /// Flag indicating if more results are available.
-        /// </summary>
-        public bool HasMore
-        {
-            get
-            {
-                return (!String.IsNullOrEmpty(NextContinuationToken));
-            }
-        }
-
-        /// <summary>
-        /// Next continuation token to supply in order to continue enumerating from the end of the previous request.
-        /// </summary>
-        public string NextContinuationToken { get; set; } = null;
 
         /// <summary>
         /// The number of BLOBs.
@@ -79,19 +63,8 @@ namespace BlobHelper
         /// <summary>
         /// Instantiate the object.
         /// </summary>
-        public EnumerationResult()
+        public EmptyResult()
         {
-        }
-
-        /// <summary>
-        /// Instantiate.
-        /// </summary>
-        /// <param name="continuationToken">Continuation token.</param>
-        /// <param name="blobs">BLOBs.</param>
-        public EnumerationResult(string continuationToken, List<BlobMetadata> blobs)
-        {
-            NextContinuationToken = continuationToken;
-            if (blobs != null) Blobs = blobs;
         }
 
         #endregion

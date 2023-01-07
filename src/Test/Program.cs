@@ -5,8 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BlobHelper;
+using GetSomeInput;
 
-namespace TestNetCore
+namespace Test
 {
     class Program
     {
@@ -26,7 +27,7 @@ namespace TestNetCore
             bool runForever = true;
             while (runForever)
             { 
-                string cmd = InputString("Command [? for help]:", null, false);
+                string cmd = Inputty.GetString("Command [? for help]:", null, false);
                 switch (cmd)
                 {
                     case "?":
@@ -61,6 +62,9 @@ namespace TestNetCore
                     case "exists":
                         BlobExists();
                         break;
+                    case "empty":
+                        ContainerEmpty();
+                        break;
                     case "md":
                         BlobMetadata();
                         break;
@@ -82,7 +86,7 @@ namespace TestNetCore
             bool runForever = true;
             while (runForever)
             {
-                string storageType = InputString("Storage type [aws azure disk kvp komodo]:", "disk", false);
+                string storageType = Inputty.GetString("Storage type [aws azure disk kvp komodo]:", "disk", false);
                 switch (storageType)
                 {
                     case "aws":
@@ -118,128 +122,59 @@ namespace TestNetCore
             {
                 case StorageType.AwsS3:
                     Console.WriteLine("For S3-compatible storage, endpoint should be of the form http://[hostname]:[port]/");
-                    string endpoint = InputString("Endpoint   :", null, true);
+                    string endpoint = Inputty.GetString("Endpoint   :", null, true);
 
                     if (String.IsNullOrEmpty(endpoint))
                     {
                         _AwsSettings = new AwsSettings( 
-                           InputString("Access key :", null, false),
-                           InputString("Secret key :", null, false),
-                           InputString("Region     :", "USWest1", false),
-                           InputString("Bucket     :", null, false) 
+                           Inputty.GetString("Access key :", null, false),
+                           Inputty.GetString("Secret key :", null, false),
+                           Inputty.GetString("Region     :", "USWest1", false),
+                           Inputty.GetString("Bucket     :", null, false) 
                            ); 
                     }
                     else
                     {
                         _AwsSettings = new AwsSettings(
                             endpoint,
-                            InputBoolean("SSL        :", true),
-                            InputString("Access key :", null, false),
-                            InputString("Secret key :", null, false),
-                            InputString("Region     :", "USWest1", false),
-                            InputString("Bucket     :", null, false),
-                            InputString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
+                            Inputty.GetBoolean("SSL        :", true),
+                            Inputty.GetString("Access key :", null, false),
+                            Inputty.GetString("Secret key :", null, false),
+                            Inputty.GetString("Region     :", "USWest1", false),
+                            Inputty.GetString("Bucket     :", null, false),
+                            Inputty.GetString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
                             );
                     }
                     _Blobs = new Blobs(_AwsSettings);
                     break;
                 case StorageType.Azure:
                     _AzureSettings = new AzureSettings(
-                        InputString("Account name :", null, false),
-                        InputString("Access key   :", null, false),
-                        InputString("Endpoint URL :", null, false),
-                        InputString("Container    :", null, false));
+                        Inputty.GetString("Account name :", null, false),
+                        Inputty.GetString("Access key   :", null, false),
+                        Inputty.GetString("Endpoint URL :", null, false),
+                        Inputty.GetString("Container    :", null, false));
                     _Blobs = new Blobs(_AzureSettings);
                     break;
                 case StorageType.Disk:
                     _DiskSettings = new DiskSettings(
-                        InputString("Directory :", null, false));
+                        Inputty.GetString("Directory :", null, false));
                     _Blobs = new Blobs(_DiskSettings);
                     break;
                 case StorageType.Komodo:
                     _KomodoSettings = new KomodoSettings(
-                        InputString("Endpoint URL :", "http://localhost:9090/", false),
-                        InputString("Index GUID   :", "default", false),
-                        InputString("API key      :", "default", false));
+                        Inputty.GetString("Endpoint URL :", "http://localhost:9090/", false),
+                        Inputty.GetString("Index GUID   :", "default", false),
+                        Inputty.GetString("API key      :", "default", false));
                     _Blobs = new Blobs(_KomodoSettings);
                     break;
                 case StorageType.Kvpbase:
                     _KvpbaseSettings = new KvpbaseSettings(
-                        InputString("Endpoint URL :", "http://localhost:8000/", false),
-                        InputString("User GUID    :", "default", false),
-                        InputString("Container    :", "default", true),
-                        InputString("API key      :", "default", false));
+                        Inputty.GetString("Endpoint URL :", "http://localhost:8000/", false),
+                        Inputty.GetString("User GUID    :", "default", false),
+                        Inputty.GetString("Container    :", "default", true),
+                        Inputty.GetString("API key      :", "default", false));
                     _Blobs = new Blobs(_KvpbaseSettings);
                     break;
-            }
-        }
-
-        static string InputString(string question, string defaultAnswer, bool allowNull)
-        {
-            while (true)
-            {
-                Console.Write(question);
-
-                if (!String.IsNullOrEmpty(defaultAnswer))
-                {
-                    Console.Write(" [" + defaultAnswer + "]");
-                }
-
-                Console.Write(" ");
-
-                string userInput = Console.ReadLine();
-
-                if (String.IsNullOrEmpty(userInput))
-                {
-                    if (!String.IsNullOrEmpty(defaultAnswer)) return defaultAnswer;
-                    if (allowNull) return null;
-                    else continue;
-                }
-
-                return userInput;
-            }
-        }
-
-        static bool InputBoolean(string question, bool yesDefault)
-        {
-            Console.Write(question);
-
-            if (yesDefault) Console.Write(" [Y/n]? ");
-            else Console.Write(" [y/N]? ");
-
-            string userInput = Console.ReadLine();
-
-            if (String.IsNullOrEmpty(userInput))
-            {
-                if (yesDefault) return true;
-                return false;
-            }
-
-            userInput = userInput.ToLower();
-
-            if (yesDefault)
-            {
-                if (
-                    (String.Compare(userInput, "n") == 0)
-                    || (String.Compare(userInput, "no") == 0)
-                   )
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            else
-            {
-                if (
-                    (String.Compare(userInput, "y") == 0)
-                    || (String.Compare(userInput, "yes") == 0)
-                   )
-                {
-                    return true;
-                }
-
-                return false;
             }
         }
 
@@ -257,6 +192,7 @@ namespace TestNetCore
             Console.WriteLine("  upload       Upload a BLOB from a file");
             Console.WriteLine("  download     Download a BLOB from a file");
             Console.WriteLine("  exists       Check if a BLOB exists");
+            Console.WriteLine("  empty        Empty the container (destructive)");
             Console.WriteLine("  md           Retrieve BLOB metadata");
             Console.WriteLine("  enum         Enumerate a bucket");
             Console.WriteLine("  enumpfx      Enumerate a bucket by object prefix");
@@ -268,9 +204,9 @@ namespace TestNetCore
         {
             try
             {
-                string key =         InputString("Key          :", null, false);
-                string contentType = InputString("Content type :", "text/plain", true);
-                string data =        InputString("Data         :", null, true);
+                string key =         Inputty.GetString("Key          :", null, false);
+                string contentType = Inputty.GetString("Content type :", "text/plain", true);
+                string data =        Inputty.GetString("Data         :", null, true);
 
                 byte[] bytes = new byte[0];
                 if (!String.IsNullOrEmpty(data)) bytes = Encoding.UTF8.GetBytes(data);
@@ -286,7 +222,7 @@ namespace TestNetCore
 
         static void ReadBlob()
         {
-            byte[] data = _Blobs.Get(InputString("Key:", null, false)).Result;
+            byte[] data = _Blobs.Get(Inputty.GetString("Key:", null, false)).Result;
             if (data != null && data.Length > 0)
             {
                 Console.WriteLine(Encoding.UTF8.GetString(data));
@@ -295,7 +231,7 @@ namespace TestNetCore
 
         static void ReadBlobStream()
         {
-            BlobData data = _Blobs.GetStream(InputString("Key:", null, false)).Result;
+            BlobData data = _Blobs.GetStream(Inputty.GetString("Key:", null, false)).Result;
             if (data != null)
             {
                 Console.WriteLine("Length: " + data.ContentLength);
@@ -309,19 +245,27 @@ namespace TestNetCore
 
         static void DeleteBlob()
         {
-            _Blobs.Delete(InputString("Key:", null, false)).Wait();
+            _Blobs.Delete(Inputty.GetString("Key:", null, false)).Wait();
         }
 
         static void BlobExists()
         {
-            Console.WriteLine(_Blobs.Exists(InputString("Key:", null, false)).Result);
+            Console.WriteLine(_Blobs.Exists(Inputty.GetString("Key:", null, false)).Result);
+        }
+
+        static void ContainerEmpty()
+        {
+            bool accept = Inputty.GetBoolean("Delete all objects in the container?", false);
+            if (!accept) return;
+
+            _Blobs.Empty().Wait();
         }
 
         static void UploadBlob()
         {
-            string filename =    InputString("Filename     :", null, false);
-            string key =         InputString("Key          :", null, false);
-            string contentType = InputString("Content type :", null, true);
+            string filename =    Inputty.GetString("Filename     :", null, false);
+            string key =         Inputty.GetString("Key          :", null, false);
+            string contentType = Inputty.GetString("Content type :", null, true);
 
             FileInfo fi = new FileInfo(filename);
             long contentLength = fi.Length;
@@ -336,8 +280,8 @@ namespace TestNetCore
 
         static void DownloadBlob()
         {
-            string key =      InputString("Key      :", null, false);
-            string filename = InputString("Filename :", null, false);
+            string key =      Inputty.GetString("Key      :", null, false);
+            string filename = Inputty.GetString("Filename :", null, false);
 
             BlobData blob = _Blobs.GetStream(key).Result;
             using (FileStream fs = new FileStream(filename, FileMode.OpenOrCreate))
@@ -362,14 +306,14 @@ namespace TestNetCore
 
         static void BlobMetadata()
         {
-            BlobMetadata md = _Blobs.GetMetadata(InputString("Key:", null, false)).Result;
+            BlobMetadata md = _Blobs.GetMetadata(Inputty.GetString("Key:", null, false)).Result;
             Console.WriteLine("");
             Console.WriteLine(md.ToString());
         }
 
         static void Enumerate()
         { 
-            EnumerationResult result = _Blobs.Enumerate(InputString("Token:", null, true)).Result;
+            EnumerationResult result = _Blobs.Enumerate(Inputty.GetString("Token:", null, true)).Result;
 
             Console.WriteLine("");
             if (result.Blobs != null && result.Blobs.Count > 0)
@@ -399,8 +343,8 @@ namespace TestNetCore
         static void EnumeratePrefix()
         { 
             EnumerationResult result = _Blobs.Enumerate(
-                InputString("Prefix :", null, true),
-                InputString("Token  :", null, true)).Result;
+                Inputty.GetString("Prefix :", null, true),
+                Inputty.GetString("Token  :", null, true)).Result;
 
             if (result.Blobs != null && result.Blobs.Count > 0)
             {
@@ -429,7 +373,7 @@ namespace TestNetCore
         static void GenerateUrl()
         {
             Console.WriteLine(_Blobs.GenerateUrl(
-                InputString("Key:", "hello.txt", false)));
+                Inputty.GetString("Key:", "hello.txt", false)));
         }
 
         private static byte[] ReadToEnd(Stream stream)

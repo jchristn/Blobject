@@ -131,6 +131,11 @@
             Settings when using Microsoft Azure BLOB Storage for storage.
             </summary>
         </member>
+        <member name="P:BlobHelper.AzureSettings.Ssl">
+            <summary>
+            Enable or disable SSL (only if using non-Azure storage).
+            </summary>
+        </member>
         <member name="P:BlobHelper.AzureSettings.AccountName">
             <summary>
             Microsoft Azure BLOB storage account name (the name of the account in the Azure portal).
@@ -341,7 +346,7 @@
         </member>
         <member name="M:BlobHelper.Blobs.GetStream(System.String,System.Threading.CancellationToken)">
             <summary>
-            Retrieve a BLOB.
+            Retrieve a BLOB.  Be sure to dispose of the stream.
             </summary>
             <param name="key">Key of the BLOB.</param> 
             <param name="token">Cancellation token to cancel the request.</param>
@@ -408,6 +413,21 @@
             <param name="continuationToken">Continuation token to use if issuing a subsequent enumeration request.</param>
             <param name="token">Cancellation token to cancel the request.</param> 
             <returns>Enumeration result.</returns>
+        </member>
+        <member name="M:BlobHelper.Blobs.Empty(System.Threading.CancellationToken)">
+            <summary>
+            Empty all BLOBs from the container.  Note: this is a destructive operation!
+            </summary>
+            <param name="token">Cancellation token to cancel the request.</param> 
+            <returns>Empty result.</returns>
+        </member>
+        <member name="M:BlobHelper.Blobs.WriteMany(System.Collections.Generic.List{BlobHelper.WriteRequest},System.Threading.CancellationToken)">
+            <summary>
+            Write multiple BLOBs.
+            </summary>
+            <param name="objects">Objects to write.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Task.</returns>
         </member>
         <member name="T:BlobHelper.BlobSettings">
             <summary>
@@ -479,6 +499,12 @@
             Instantiate.
             </summary>
         </member>
+        <member name="M:BlobHelper.CopyStatistics.ToString">
+            <summary>
+            Produce a human-readable string representation of the object.
+            </summary>
+            <returns></returns>
+        </member>
         <member name="T:BlobHelper.DiskSettings">
             <summary>
             Settings when using local filesystem for storage.
@@ -499,6 +525,31 @@
             Instantiate.
             </summary>
             <param name="directory">The directory where BLOBs should be stored.</param>
+        </member>
+        <member name="T:BlobHelper.EmptyResult">
+            <summary>
+            Results from a container empty operation. 
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EmptyResult.Count">
+            <summary>
+            The number of BLOBs.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EmptyResult.Bytes">
+            <summary>
+            The total number of bytes represented by the BLOBs.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EmptyResult.Blobs">
+            <summary>
+            List of BLOB metadata objects.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.EmptyResult.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
         </member>
         <member name="T:BlobHelper.EnumerationResult">
             <summary>
@@ -754,6 +805,43 @@
             <param name="container">Container in which BLOBs should be stored.</param>
             <param name="apiKey">API key with read, write, and delete permissions.</param>
         </member>
+        <member name="T:BlobHelper.SerializationHelper">
+            <summary>
+            Serialization helper.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.SerializationHelper.CopyObject``1(``0)">
+            <summary>
+            Copy an object.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="source">Source object.</param>
+            <returns>Copy.</returns>
+        </member>
+        <member name="M:BlobHelper.SerializationHelper.SerializeJson(System.Object,System.Boolean)">
+            <summary>
+            Serialize JSON.
+            </summary>
+            <param name="obj">Object.</param>
+            <param name="pretty">Pretty print.</param>
+            <returns>JSON string.</returns>
+        </member>
+        <member name="M:BlobHelper.SerializationHelper.DeserializeJson``1(System.String)">
+            <summary>
+            Deserialize JSON. 
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="json">JSON string.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:BlobHelper.SerializationHelper.DeserializeJson``1(System.Byte[])">
+            <summary>
+            Deserialize JSON. 
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="data">JSON data.</param>
+            <returns>Instance.</returns>
+        </member>
         <member name="T:BlobHelper.Timestamps">
             <summary>
             Object used to measure start, end, and total time associated with an operation.
@@ -778,6 +866,58 @@
             <summary>
             Instantiate the object.
             </summary>
+        </member>
+        <member name="T:BlobHelper.WriteRequest">
+            <summary>
+            Write request object, used when writing many objects.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.WriteRequest.Key">
+            <summary>
+            Object key.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.WriteRequest.ContentType">
+            <summary>
+            Content type for the object.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.WriteRequest.ContentLength">
+            <summary>
+            Content-length of the object (how many bytes to read from DataStream).
+            </summary>
+        </member>
+        <member name="P:BlobHelper.WriteRequest.DataStream">
+            <summary>
+            Stream containing requested data.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.WriteRequest.Data">
+            <summary>
+            Bytes containing requested data.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.WriteRequest.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.WriteRequest.#ctor(System.String,System.String,System.Byte[])">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="key">Object key.</param>
+            <param name="contentType">Content type.</param>
+            <param name="data">Data.</param>
+        </member>
+        <member name="M:BlobHelper.WriteRequest.#ctor(System.String,System.String,System.Int64,System.IO.Stream)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="key">Object key.</param>
+            <param name="contentType">Content type.</param>
+            <param name="contentLength">Content length.</param>
+            <param name="stream">Stream containing the data.</param> 
         </member>
     </members>
 </doc>

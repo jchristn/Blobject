@@ -8,12 +8,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks; 
-using KvpbaseSDK; 
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Auth;
-using Microsoft.WindowsAzure.Storage.Blob;
+using KvpbaseSDK;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Komodo.Sdk;
 using Komodo.Sdk.Classes;
 
@@ -42,16 +41,13 @@ namespace BlobHelper
         private Amazon.Runtime.BasicAWSCredentials _S3Credentials = null;
         private Amazon.RegionEndpoint _S3Region = null;
 
-        private StorageCredentials _AzureCredentials = null;
-        private CloudStorageAccount _AzureAccount = null;
-        private CloudBlobClient _AzureBlobClient = null;
-        private CloudBlobContainer _AzureContainer = null;
+        private string _AzureConnectionString = null;
+        private BlobServiceClient _AzureBlobClient = null;
+        private BlobContainerClient _AzureContainerClient = null;
 
         private KvpbaseClient _Kvpbase = null;
 
         private KomodoSdk _Komodo = null;
-
-        private ConcurrentDictionary<string, BlobContinuationToken> _AzureContinuationTokens = new ConcurrentDictionary<string, BlobContinuationToken>();
 
         #endregion
 
@@ -203,7 +199,7 @@ namespace BlobHelper
         }
 
         /// <summary>
-        /// Retrieve a BLOB.
+        /// Retrieve a BLOB.  Be sure to dispose of the stream.
         /// </summary>
         /// <param name="key">Key of the BLOB.</param> 
         /// <param name="token">Cancellation token to cancel the request.</param>
@@ -449,7 +445,7 @@ namespace BlobHelper
                 return null;
             }
         }
-         
+
         /// <summary>
         /// Enumerate BLOBs.
         /// </summary>
@@ -473,6 +469,80 @@ namespace BlobHelper
                         return KomodoEnumerate(prefix, continuationToken, token);
                     case StorageType.Kvpbase:
                         return KvpbaseEnumerate(prefix, continuationToken, token);
+                    default:
+                        throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Empty all BLOBs from the container.  Note: this is a destructive operation!
+        /// </summary>
+        /// <param name="token">Cancellation token to cancel the request.</param> 
+        /// <returns>Empty result.</returns>
+        public Task<EmptyResult> Empty(CancellationToken token = default)
+        {
+            try
+            {
+                switch (_StorageType)
+                {
+                    case StorageType.AwsS3:
+                        return S3Empty(token);
+                    case StorageType.Azure:
+                        return AzureEmpty(token);
+                    case StorageType.Disk:
+                        return DiskEmpty(token);
+                    case StorageType.Komodo:
+                        return KomodoEmpty(token);
+                    case StorageType.Kvpbase:
+                        return KvpbaseEmpty(token);
+                    default:
+                        throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Write multiple BLOBs.
+        /// </summary>
+        /// <param name="objects">Objects to write.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Task.</returns>
+        public Task WriteMany(List<WriteRequest> objects, CancellationToken token = default)
+        {
+            if (objects == null) throw new ArgumentNullException(nameof(objects));
+            if (objects.Count < 1) return Task.CompletedTask;
+
+            try
+            {
+                switch (_StorageType)
+                {
+                    case StorageType.AwsS3:
+                        return S3WriteMany(objects, token);
+                    case StorageType.Azure:
+                        return AzureWriteMany(objects, token);
+                    case StorageType.Disk:
+                        return DiskWriteMany(objects, token);
+                    case StorageType.Komodo:
+                        return KomodoWriteMany(objects, token);
+                    case StorageType.Kvpbase:
+                        return KvpbaseWriteMany(objects, token);
                     default:
                         throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
                 }
@@ -523,10 +593,9 @@ namespace BlobHelper
                     }
                     break;
                 case StorageType.Azure:
-                    _AzureCredentials = new StorageCredentials(_AzureSettings.AccountName, _AzureSettings.AccessKey);
-                    _AzureAccount = new CloudStorageAccount(_AzureCredentials, true);
-                    _AzureBlobClient = new CloudBlobClient(new Uri(_AzureSettings.Endpoint), _AzureCredentials);
-                    _AzureContainer = _AzureBlobClient.GetContainerReference(_AzureSettings.Container);
+                    _AzureConnectionString = GetAzureConnectionString();
+                    _AzureBlobClient = new BlobServiceClient(_AzureConnectionString);
+                    _AzureContainerClient = new BlobContainerClient(_AzureConnectionString, _AzureSettings.Container);
                     break;
                 case StorageType.Disk: 
                     if (!Directory.Exists(_DiskSettings.Directory)) Directory.CreateDirectory(_DiskSettings.Directory);
@@ -541,6 +610,20 @@ namespace BlobHelper
                     throw new ArgumentException("Unknown storage type: " + _StorageType.ToString());
             }    
         }
+
+        #region Misc
+
+        private string GetAzureConnectionString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("DefaultEndpointsProtocol=" + (_AzureSettings.Ssl ? "https" : "http") + ";");
+            sb.Append("AccountName=" + _AzureSettings.AccountName + ";");
+            sb.Append("AccountKey=" + _AzureSettings.AccessKey + ";");
+            sb.Append("BlobEndpoint=" + _AzureSettings.Endpoint);
+            return sb.ToString();
+        }
+
+        #endregion
 
         #region Delete
 
@@ -580,10 +663,10 @@ namespace BlobHelper
         }
 
         private async Task AzureDelete(string key, CancellationToken token)
-        { 
-            CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
-            OperationContext ctx = new OperationContext();
-            await blockBlob.DeleteAsync(DeleteSnapshotsOption.None, null, null, ctx, token).ConfigureAwait(false); 
+        {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            BlobClient bc = new BlobClient(_AzureConnectionString, _AzureSettings.Container, key);
+            await bc.DeleteIfExistsAsync(DeleteSnapshotsOption.None, null, token).ConfigureAwait(false);
         }
          
         private async Task KomodoDelete(string key, CancellationToken token)
@@ -629,39 +712,60 @@ namespace BlobHelper
             };
 
             using (GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false))
-            using (Stream responseStream = response.ResponseStream)
-            using (StreamReader reader = new StreamReader(responseStream))
             {
-                if (response.ContentLength > 0)
+                using (Stream responseStream = response.ResponseStream)
                 {
-                    // first copy the stream
-                    byte[] data = new byte[response.ContentLength];
+                    using (StreamReader reader = new StreamReader(responseStream))
+                    {
+                        if (response.ContentLength > 0)
+                        {
+                            // first copy the stream
+                            byte[] data = new byte[response.ContentLength];
 
-                    Stream bodyStream = response.ResponseStream;
-                    data = Common.StreamToBytes(bodyStream);
+                            Stream bodyStream = response.ResponseStream;
+                            data = Common.StreamToBytes(bodyStream);
 
-                    int statusCode = (int)response.HttpStatusCode;
-                    return data;
+                            int statusCode = (int)response.HttpStatusCode;
+                            return data;
+                        }
+                        else
+                        {
+                            throw new IOException("Unable to read object.");
+                        }
+                    }
                 }
-                else
-                {
-                    throw new IOException("Unable to read object.");
-                }
-            } 
+            }
         }
 
         private async Task<byte[]> AzureGet(string key, CancellationToken token)
         {
-            byte[] data = null;
-             
-            CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
-            OperationContext ctx = new OperationContext();
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            BlobClient bc = new BlobClient(_AzureConnectionString, _AzureSettings.Container, key);
+            byte[] buff = new byte[4096];
+            byte[] ret = null;
 
-            MemoryStream stream = new MemoryStream();
-            await blockBlob.DownloadToStreamAsync(stream).ConfigureAwait(false);
-            stream.Seek(0, SeekOrigin.Begin);
-            data = Common.StreamToBytes(stream);
-            return data; 
+            int totalRead = 0;
+
+            using (Stream str = await bc.OpenReadAsync(new BlobOpenReadOptions(false), token).ConfigureAwait(false))
+            {
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    while (true)
+                    {
+                        int read = await str.ReadAsync(buff, 0, buff.Length, token).ConfigureAwait(false);
+                        if (read > 0)
+                        {
+                            await ms.WriteAsync(buff, 0, read, token).ConfigureAwait(false);
+                            totalRead += read;
+                        }
+                        else break;
+                    }
+
+                    ret = ms.ToArray();
+                }
+            }
+
+            return ret;
         }
 
         private async Task<byte[]> KomodoGet(string key, CancellationToken token)
@@ -727,19 +831,14 @@ namespace BlobHelper
         }
          
         private async Task<BlobData> AzureGetStream(string key, CancellationToken token)
-        {  
-            CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
-            blockBlob.FetchAttributesAsync().Wait();
+        {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            BlobClient bc = new BlobClient(_AzureConnectionString, _AzureSettings.Container, key);
+            byte[] buff = new byte[4096];
 
-            BlobData ret = new BlobData();
-            ret.ContentLength = blockBlob.Properties.Length;
-
-            MemoryStream stream = new MemoryStream();
-            await blockBlob.DownloadToStreamAsync(stream).ConfigureAwait(false);
-
-            ret.Data = stream;
-            stream.Seek(0, SeekOrigin.Begin);
-            return ret; 
+            BlobMetadata md = await AzureGetMetadata(key, token).ConfigureAwait(false);
+            BlobData bd = new BlobData(md.ContentLength, bc.OpenRead(new BlobOpenReadOptions(false)));
+            return bd;
         }
 
         private async Task<BlobData> KomodoGetStream(string key, CancellationToken token)
@@ -803,8 +902,16 @@ namespace BlobHelper
         }
 
         private async Task<bool> AzureExists(string key, CancellationToken token)
-        { 
-            return await _AzureBlobClient.GetContainerReference(_AzureSettings.Container).GetBlockBlobReference(key).ExistsAsync().ConfigureAwait(false); 
+        {
+            try
+            {
+                BlobMetadata md = await GetMetadata(key);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private async Task<bool> KomodoExists(string key, CancellationToken token)
@@ -856,7 +963,7 @@ namespace BlobHelper
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            await DiskWrite(key, contentLength, stream, token);
+            await DiskWrite(key, contentLength, stream, token).ConfigureAwait(false);
         }
 
         private async Task DiskWrite(string key, long contentLength, Stream stream, CancellationToken token)
@@ -939,25 +1046,49 @@ namespace BlobHelper
          
         private async Task AzureWrite(string key, string contentType, byte[] data, CancellationToken token)
         {
-            long contentLength = 0;
-            MemoryStream stream = new MemoryStream(new byte[0]);
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            BlobClient bc = new BlobClient(_AzureConnectionString, _AzureSettings.Container, key);
 
-            if (data != null && data.Length > 0)
+            using (Stream str = await bc.OpenWriteAsync(true, null, token).ConfigureAwait(false))
             {
-                contentLength = data.Length;
-                stream = new MemoryStream(data);
-                stream.Seek(0, SeekOrigin.Begin);
+                await str.WriteAsync(data, 0, data.Length, token).ConfigureAwait(false);
             }
 
-            await AzureWrite(key, contentType, contentLength, stream, token).ConfigureAwait(false);
+            await bc.SetHttpHeadersAsync(new BlobHttpHeaders() { ContentType = contentType }, null, token).ConfigureAwait(false);
+            return;
         }
 
         private async Task AzureWrite(string key, string contentType, long contentLength, Stream stream, CancellationToken token)
-        { 
-            CloudBlockBlob blockBlob = _AzureContainer.GetBlockBlobReference(key);
-            blockBlob.Properties.ContentType = contentType;
-            OperationContext ctx = new OperationContext();
-            await blockBlob.UploadFromStreamAsync(stream, contentLength).ConfigureAwait(false);  
+        {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            if (contentLength < 0) throw new ArgumentException("Content length must be zero or greater.");
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
+            if (!stream.CanRead) throw new IOException("Cannot read from supplied stream.");
+            if (stream.CanSeek && stream.Length == stream.Position) stream.Seek(0, SeekOrigin.Begin);
+
+            BlobClient bc = new BlobClient(_AzureConnectionString, _AzureSettings.Container, key);
+            byte[] buff = new byte[4096];
+
+            using (Stream str = await bc.OpenWriteAsync(true, null, token).ConfigureAwait(false))
+            {
+                int read = 0;
+
+                while (true)
+                {
+                    read = await stream.ReadAsync(buff, 0, buff.Length, token).ConfigureAwait(false);
+                    if (read > 0)
+                    {
+                        await str.WriteAsync(buff, 0, read, token).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            await bc.SetHttpHeadersAsync(new BlobHttpHeaders() { ContentType = contentType }, null, token).ConfigureAwait(false);
+            return;
         }
 
         private async Task KomodoWrite(string key, string contentType, byte[] data, CancellationToken token)
@@ -973,11 +1104,90 @@ namespace BlobHelper
 
         #endregion
 
+        #region Write-Many
+
+        private async Task KvpbaseWriteMany(List<WriteRequest> objects, CancellationToken token)
+        {
+            foreach (WriteRequest obj in objects)
+            {
+                if (obj.Data != null)
+                {
+                    await KvpbaseWrite(obj.Key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
+                }
+                else
+                {
+                    await KvpbaseWrite(obj.Key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private async Task DiskWriteMany(List<WriteRequest> objects, CancellationToken token)
+        {
+            foreach (WriteRequest obj in objects)
+            {
+                if (obj.Data != null)
+                {
+                    await DiskWrite(obj.Key, obj.Data, token).ConfigureAwait(false);
+                }
+                else
+                {
+                    await DiskWrite(obj.Key, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private async Task S3WriteMany(List<WriteRequest> objects, CancellationToken token)
+        {
+            foreach (WriteRequest obj in objects)
+            {
+                if (obj.Data != null)
+                {
+                    await S3Write(obj.Key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
+                }
+                else
+                {
+                    await S3Write(obj.Key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private async Task AzureWriteMany(List<WriteRequest> objects, CancellationToken token)
+        {
+            foreach (WriteRequest obj in objects)
+            {
+                if (obj.Data != null)
+                {
+                    await AzureWrite(obj.Key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
+                }
+                else
+                {
+                    await AzureWrite(obj.Key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private async Task KomodoWriteMany(List<WriteRequest> objects, CancellationToken token)
+        {
+            foreach (WriteRequest obj in objects)
+            {
+                if (obj.Data != null)
+                {
+                    await KomodoWrite(obj.Key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
+                }
+                else
+                {
+                    await KomodoWrite(obj.Key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
+                }
+            }
+        }
+
+        #endregion
+
         #region Get-Metadata
 
         private async Task<BlobMetadata> KvpbaseGetMetadata(string key, CancellationToken token)
         { 
-            ObjectMetadata objMd = await _Kvpbase.ReadObjectMetadata(_KvpbaseSettings.Container, key);
+            ObjectMetadata objMd = await _Kvpbase.ReadObjectMetadata(_KvpbaseSettings.Container, key, token).ConfigureAwait(false);
             if (objMd != null)
             {
                 BlobMetadata md = new BlobMetadata();
@@ -1036,7 +1246,7 @@ namespace BlobHelper
             request.BucketName = _AwsSettings.Bucket;
             request.Key = key;
 
-            GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request);
+            GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request, token).ConfigureAwait(false);
 
             if (response.ContentLength > 0)
             {
@@ -1061,30 +1271,26 @@ namespace BlobHelper
         }
          
         private async Task<BlobMetadata> AzureGetMetadata(string key, CancellationToken token)
-        {  
-            CloudBlobContainer container = _AzureBlobClient.GetContainerReference(_AzureSettings.Container);
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(key);
-            await blockBlob.FetchAttributesAsync();
+        {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            BlobClient bc = new BlobClient(_AzureConnectionString, _AzureSettings.Container, key);
+            byte[] buff = new byte[4096];
 
+            BlobProperties bp = await bc.GetPropertiesAsync(null, token).ConfigureAwait(false);
             BlobMetadata md = new BlobMetadata();
+            md.ETag = bp.ETag.ToString();
+            md.ContentLength = bp.ContentLength;
+            md.CreatedUtc = bp.CreatedOn.DateTime;
+            md.LastUpdateUtc = bp.LastModified.DateTime;
+            md.LastAccessUtc = bp.LastAccessed.DateTime;
+            md.ContentType = bp.ContentType;
             md.Key = key;
-            md.ContentLength = blockBlob.Properties.Length;
-            md.ContentType = blockBlob.Properties.ContentType;
-            md.ETag = blockBlob.Properties.ETag;
-            md.CreatedUtc = blockBlob.Properties.Created.Value.UtcDateTime;
-            md.LastUpdateUtc = blockBlob.Properties.LastModified.Value.UtcDateTime;
-
-            if (!String.IsNullOrEmpty(md.ETag))
-            {
-                while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
-            }
-
-            return md; 
+            return md;
         }
 
         private async Task<BlobMetadata> KomodoGetMetadata(string key, CancellationToken token)
         {
-            DocumentMetadata dm = await _Komodo.GetDocumentMetadata(_KomodoSettings.IndexGUID, key);
+            DocumentMetadata dm = await _Komodo.GetDocumentMetadata(_KomodoSettings.IndexGUID, key, token).ConfigureAwait(false);
             BlobMetadata md = new BlobMetadata();
             md.ContentLength = dm.SourceRecord.ContentLength;
             md.ContentType = dm.SourceRecord.ContentType;
@@ -1249,60 +1455,34 @@ namespace BlobHelper
         }
 
         private async Task<EnumerationResult> AzureEnumerate(string prefix, string continuationToken, CancellationToken token)
-        { 
-            BlobContinuationToken bct = null;
-            if (!String.IsNullOrEmpty(continuationToken))
+        {
+            List<BlobMetadata> mds = new List<BlobMetadata>();
+
+            var pages = _AzureContainerClient.GetBlobsAsync(BlobTraits.None, BlobStates.None, prefix, token).AsPages(continuationToken, 5000).ConfigureAwait(false);
+
+            await foreach (var page in pages)
             {
-                if (!AzureGetContinuationToken(continuationToken, out bct))
+                continuationToken = page.ContinuationToken;
+
+                foreach (BlobItem item in page.Values)
                 {
-                    throw new IOException("Unable to find continuation token.");
-                }
-            }
-
-            BlobResultSegment segment = null;
-            EnumerationResult ret = new EnumerationResult();
-
-            if (!String.IsNullOrEmpty(prefix))
-            {
-                segment = await _AzureContainer.ListBlobsSegmentedAsync(prefix, bct).ConfigureAwait(false);
-            }
-            else
-            {
-                segment = await _AzureContainer.ListBlobsSegmentedAsync(bct).ConfigureAwait(false);
-            }
-
-            if (segment == null || segment.Results == null || segment.Results.Count() < 1) return ret;
-
-            foreach (IListBlobItem item in segment.Results)
-            {
-                if (item.GetType() == typeof(CloudBlockBlob))
-                {
-                    CloudBlockBlob blob = (CloudBlockBlob)item;
                     BlobMetadata md = new BlobMetadata();
-                    md.Key = blob.Name;
-                    md.ETag = blob.Properties.ETag;
-                    md.ContentType = blob.Properties.ContentType;
-                    md.ContentLength = blob.Properties.Length;
-                    md.CreatedUtc = blob.Properties.Created.Value.DateTime;
-
-                    if (!String.IsNullOrEmpty(md.ETag))
-                    {
-                        while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
-                    }
-
-                    ret.Blobs.Add(md);
+                    md.ETag = item.Properties.ETag.ToString();
+                    md.ContentLength = (item.Properties.ContentLength != null ? Convert.ToInt64(item.Properties.ContentLength) : 0);
+                    md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime : DateTime.UtcNow;
+                    md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime : DateTime.UtcNow;
+                    md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime : DateTime.UtcNow;
+                    md.ContentType = item.Properties.ContentType;
+                    md.Key = item.Name;
+                    mds.Add(md);
                 }
+
+                break;
             }
 
-            if (segment.ContinuationToken != null)
-            {
-                ret.NextContinuationToken = Guid.NewGuid().ToString();
-                AzureStoreContinuationToken(ret.NextContinuationToken, segment.ContinuationToken);
-            }
+            EnumerationResult er = new EnumerationResult(continuationToken, mds);
 
-            if (!String.IsNullOrEmpty(continuationToken)) AzureRemoveContinuationToken(continuationToken);
-
-            return ret;
+            return er;
         }
 
         private async Task<EnumerationResult> KomodoEnumerate(string prefix, string continuationToken, CancellationToken token)
@@ -1328,6 +1508,7 @@ namespace BlobHelper
             }
 
             Komodo.Sdk.Classes.EnumerationResult ker = await _Komodo.Enumerate(_KomodoSettings.IndexGUID, eq, token).ConfigureAwait(false);
+            
             EnumerationResult ret = new EnumerationResult();
             ret.NextContinuationToken = KomodoBuildContinuationToken(startIndex + count, count);
 
@@ -1346,6 +1527,150 @@ namespace BlobHelper
             }
 
             return ret;
+        }
+
+        #endregion
+
+        #region Empty
+
+        private async Task<EmptyResult> KvpbaseEmpty(CancellationToken token)
+        {
+            EmptyResult er = new EmptyResult();
+
+            string continuationToken = null;
+
+            while (true)
+            {
+                EnumerationResult result = await KvpbaseEnumerate(null, null, token).ConfigureAwait(false);
+                continuationToken = result.NextContinuationToken;
+
+                if (result.Blobs != null && result.Blobs.Count > 0)
+                {
+                    foreach (BlobMetadata md in result.Blobs)
+                    {
+                        await KvpbaseDelete(md.Key, token).ConfigureAwait(false);
+                        er.Blobs.Add(md);
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return er;
+        }
+
+        private async Task<EmptyResult> DiskEmpty(CancellationToken token)
+        {
+            EmptyResult er = new EmptyResult();
+
+            string continuationToken = null;
+
+            while (true)
+            {
+                EnumerationResult result = await DiskEnumerate(null, null, token).ConfigureAwait(false);
+                continuationToken = result.NextContinuationToken;
+
+                if (result.Blobs != null && result.Blobs.Count > 0)
+                {
+                    foreach (BlobMetadata md in result.Blobs)
+                    {
+                        await DiskDelete(md.Key, token).ConfigureAwait(false);
+                        er.Blobs.Add(md);
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return er;
+        }
+
+        private async Task<EmptyResult> S3Empty(CancellationToken token)
+        {
+            EmptyResult er = new EmptyResult();
+
+            string continuationToken = null;
+
+            while (true)
+            {
+                EnumerationResult result = await S3Enumerate(null, null, token).ConfigureAwait(false);
+                continuationToken = result.NextContinuationToken;
+
+                if (result.Blobs != null && result.Blobs.Count > 0)
+                {
+                    foreach (BlobMetadata md in result.Blobs)
+                    {
+                        await S3Delete(md.Key, token).ConfigureAwait(false);
+                        er.Blobs.Add(md);
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return er;
+        }
+
+        private async Task<EmptyResult> AzureEmpty(CancellationToken token)
+        {
+            EmptyResult er = new EmptyResult();
+
+            string continuationToken = null;
+
+            while (true)
+            {
+                EnumerationResult result = await AzureEnumerate(null, null, token).ConfigureAwait(false);
+                continuationToken = result.NextContinuationToken;
+
+                if (result.Blobs != null && result.Blobs.Count > 0)
+                {
+                    foreach (BlobMetadata md in result.Blobs)
+                    {
+                        await AzureDelete(md.Key, token).ConfigureAwait(false);
+                        er.Blobs.Add(md);
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return er;
+        }
+
+        private async Task<EmptyResult> KomodoEmpty(CancellationToken token)
+        {
+            EmptyResult er = new EmptyResult();
+
+            string continuationToken = null;
+
+            while (true)
+            {
+                EnumerationResult result = await KomodoEnumerate(null, null, token).ConfigureAwait(false);
+                continuationToken = result.NextContinuationToken;
+
+                if (result.Blobs != null && result.Blobs.Count > 0)
+                {
+                    foreach (BlobMetadata md in result.Blobs)
+                    {
+                        await KomodoDelete(md.Key, token).ConfigureAwait(false);
+                        er.Blobs.Add(md);
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return er;
         }
 
         #endregion
@@ -1406,22 +1731,6 @@ namespace BlobHelper
             string ret = start.ToString() + " " + count.ToString();
             byte[] retBytes = Encoding.UTF8.GetBytes(ret);
             return Convert.ToBase64String(retBytes);
-        }
-
-        private void AzureStoreContinuationToken(string guid, BlobContinuationToken token)
-        {
-            _AzureContinuationTokens.TryAdd(guid, token);
-        }
-
-        private bool AzureGetContinuationToken(string guid, out BlobContinuationToken token)
-        {
-            return _AzureContinuationTokens.TryGetValue(guid, out token);
-        }
-
-        private void AzureRemoveContinuationToken(string guid)
-        {
-            BlobContinuationToken token = null;
-            _AzureContinuationTokens.TryRemove(guid, out token);
         }
 
         #endregion

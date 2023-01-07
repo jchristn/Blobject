@@ -1,72 +1,68 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using BlobHelper;
 using GetSomeInput;
 
-namespace Test.Copy
+namespace Test.WriteMany
 {
     class Program
     {
-        static Blobs _From;
-        static Blobs _To;
+        static StorageType _StorageType;
+        static Blobs _Blobs;
+        static AwsSettings _AwsSettings;
+        static AzureSettings _AzureSettings;
+        static DiskSettings _DiskSettings;
+        static KomodoSettings _KomodoSettings;
+        static KvpbaseSettings _KvpbaseSettings;
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Provide storage settings for the source");
-            _From = InitializeClient();
-            Console.WriteLine("Provide storage settings for the destination:");
-            _To   = InitializeClient();
+            SetStorageType();
+            InitializeClient();
 
-            bool runForever = true;
-            while (runForever)
+            int count = Inputty.GetInteger("Count:", 1000, true, false);
+
+            List<WriteRequest> writes = new List<WriteRequest>();
+            for (int i = 0; i < count; i++)
             {
-                string cmd = Inputty.GetString("Command [? for help]:", null, false);
-                switch (cmd)
-                {
-                    case "?":
-                        Menu();
-                        break;
-                    case "q":
-                        runForever = false;
-                        break;
-                    case "c":
-                    case "cls":
-                    case "clear":
-                        Console.Clear();
-                        break;
-                    case "go":
-                        StartCopy();
-                        break;
-                }
+                string guid = Guid.NewGuid().ToString();
+                writes.Add(new WriteRequest(guid, "application/octet-stream", Encoding.UTF8.GetBytes(guid)));
             }
+
+            Console.WriteLine("Performing " + count + " write(s)");
+            _Blobs.WriteMany(writes).Wait();
         }
 
-        static Blobs InitializeClient()
+        static void SetStorageType()
         {
-            StorageType storageType = StorageType.Disk;
             bool runForever = true;
             while (runForever)
             {
-                string str = Inputty.GetString("Storage type [aws azure disk kvp komodo]:", "disk", false);
-                switch (str)
+                string storageType = Inputty.GetString("Storage type [aws azure disk kvp komodo]:", "disk", false);
+                switch (storageType)
                 {
                     case "aws":
-                        storageType = StorageType.AwsS3;
+                        _StorageType = StorageType.AwsS3;
                         runForever = false;
                         break;
                     case "azure":
-                        storageType = StorageType.Azure;
+                        _StorageType = StorageType.Azure;
                         runForever = false;
                         break;
                     case "disk":
-                        storageType = StorageType.Disk;
+                        _StorageType = StorageType.Disk;
                         runForever = false;
                         break;
                     case "komodo":
-                        storageType = StorageType.Komodo;
+                        _StorageType = StorageType.Komodo;
                         runForever = false;
                         break;
                     case "kvp":
-                        storageType = StorageType.Kvpbase;
+                        _StorageType = StorageType.Kvpbase;
                         runForever = false;
                         break;
                     default:
@@ -74,16 +70,19 @@ namespace Test.Copy
                         break;
                 }
             }
+        }
 
-            switch (storageType)
+        static void InitializeClient()
+        {
+            switch (_StorageType)
             {
                 case StorageType.AwsS3:
                     Console.WriteLine("For S3-compatible storage, endpoint should be of the form http://[hostname]:[port]/");
                     string endpoint = Inputty.GetString("Endpoint   :", null, true);
-                    AwsSettings aws = null;
+
                     if (String.IsNullOrEmpty(endpoint))
                     {
-                        aws = new AwsSettings(
+                        _AwsSettings = new AwsSettings(
                            Inputty.GetString("Access key :", null, false),
                            Inputty.GetString("Secret key :", null, false),
                            Inputty.GetString("Region     :", "USWest1", false),
@@ -92,7 +91,7 @@ namespace Test.Copy
                     }
                     else
                     {
-                        aws = new AwsSettings(
+                        _AwsSettings = new AwsSettings(
                             endpoint,
                             Inputty.GetBoolean("SSL        :", true),
                             Inputty.GetString("Access key :", null, false),
@@ -102,59 +101,36 @@ namespace Test.Copy
                             Inputty.GetString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
                             );
                     }
-                    return new Blobs(aws);
+                    _Blobs = new Blobs(_AwsSettings);
+                    break;
                 case StorageType.Azure:
-                    AzureSettings azure = new AzureSettings(
+                    _AzureSettings = new AzureSettings(
                         Inputty.GetString("Account name :", null, false),
                         Inputty.GetString("Access key   :", null, false),
                         Inputty.GetString("Endpoint URL :", null, false),
                         Inputty.GetString("Container    :", null, false));
-                    return new Blobs(azure);
+                    _Blobs = new Blobs(_AzureSettings);
+                    break;
                 case StorageType.Disk:
-                    DiskSettings disk = new DiskSettings(
+                    _DiskSettings = new DiskSettings(
                         Inputty.GetString("Directory :", null, false));
-                    return new Blobs(disk);
+                    _Blobs = new Blobs(_DiskSettings);
+                    break;
                 case StorageType.Komodo:
-                    KomodoSettings komodo = new KomodoSettings(
+                    _KomodoSettings = new KomodoSettings(
                         Inputty.GetString("Endpoint URL :", "http://localhost:9090/", false),
                         Inputty.GetString("Index GUID   :", "default", false),
                         Inputty.GetString("API key      :", "default", false));
-                    return new Blobs(komodo);
+                    _Blobs = new Blobs(_KomodoSettings);
+                    break;
                 case StorageType.Kvpbase:
-                    KvpbaseSettings kvpbase = new KvpbaseSettings(
+                    _KvpbaseSettings = new KvpbaseSettings(
                         Inputty.GetString("Endpoint URL :", "http://localhost:8000/", false),
                         Inputty.GetString("User GUID    :", "default", false),
                         Inputty.GetString("Container    :", "default", true),
                         Inputty.GetString("API key      :", "default", false));
-                    return new Blobs(kvpbase);
-                default:
-                    throw new ArgumentException("Unknown storage type: '" + storageType + "'.");
-            }
-        }
-
-        static void Menu()
-        {
-            Console.WriteLine("");
-            Console.WriteLine("Available commands:");
-            Console.WriteLine("  ?            Help, this menu");
-            Console.WriteLine("  cls          Clear the screen");
-            Console.WriteLine("  q            Quit");
-            Console.WriteLine("  go           Perform the copy operation");
-            Console.WriteLine("");
-        }
-
-        static void StartCopy()
-        {
-            string prefix = Inputty.GetString("Prefix:", null, true);
-            BlobCopy copy = new BlobCopy(_From, _To, prefix);
-            CopyStatistics stats = copy.Start().Result;
-            if (stats == null)
-            {
-                Console.WriteLine("(null)");
-            }
-            else
-            {
-                Console.WriteLine(stats.ToString());
+                    _Blobs = new Blobs(_KvpbaseSettings);
+                    break;
             }
         }
     }

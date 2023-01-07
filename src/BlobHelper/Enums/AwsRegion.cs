@@ -4,10 +4,6 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
- 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Converters;
 
 namespace BlobHelper
 {
@@ -18,7 +14,6 @@ namespace BlobHelper
     /// <summary>
     /// AWS region.
     /// </summary>
-    [JsonConverter(typeof(StringEnumConverter))]
     public enum AwsRegion
     {
         /// <summary>

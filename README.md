@@ -16,9 +16,14 @@ This project was built to provide a simple interface over external storage to he
 
 Many thanks to @phpfui for adding the original code for BLOB copy functionality!
 
-## New in v2.3.x
+## New in v4.0.x
 
-- Dependency update and bugfixes
+- Migrated from deprecated ```Microsoft.WindowsAzure.Storage``` to ```Azure.Storage.Blobs```
+- Removed ```Newtonsoft.Json``` dependency
+- Add targeting for ```net48```
+- Fixed issues where certain operations were not using ```CancellationToken```
+- Added ```Empty``` API, which is a destructive API to delete all objects in the container
+- Validated ```WriteMany``` and ```Empty``` on all storage providers
 
 ## Example Project
 

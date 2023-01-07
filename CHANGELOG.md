@@ -2,11 +2,20 @@
 
 ## Current Version
 
+v4.0.x
+
+- Migrated from deprecated ```Microsoft.WindowsAzure.Storage``` to ```Azure.Storage.Blobs```
+- Removed ```Newtonsoft.Json``` dependency
+- Add targeting for ```net48```
+- Fixed issues where certain operations were not using ```CancellationToken```
+- Added ```Empty``` API, which is a destructive API to delete all objects in the container
+- Validated ```WriteMany``` and ```Empty``` on all storage providers
+
+## Previous Versions
+
 v2.3.x
 
 - Dependency update and bugfixes
-
-## Previous Versions
 
 v2.2.0
 
