@@ -24,6 +24,7 @@ Many thanks to @phpfui for adding the original code for BLOB copy functionality!
 - Fixed issues where certain operations were not using ```CancellationToken```
 - Added ```Empty``` API, which is a destructive API to delete all objects in the container
 - Validated ```WriteMany``` and ```Empty``` on all storage providers
+- Added ```EuWest2```, thank you @DanielHarman
 
 ## Example Project
 
