@@ -250,6 +250,8 @@ namespace BlobHelper
                     return Amazon.RegionEndpoint.EUNorth1;
                 case AwsRegion.EUWest1:
                     return Amazon.RegionEndpoint.EUWest1;
+                case AwsRegion.EUWest2:
+                    return Amazon.RegionEndpoint.EUWest2;
                 case AwsRegion.SAEast1:
                     return Amazon.RegionEndpoint.SAEast1;
                 case AwsRegion.USEast1:
