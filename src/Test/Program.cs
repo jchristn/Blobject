@@ -312,8 +312,11 @@ namespace Test
         }
 
         static void Enumerate()
-        { 
-            EnumerationResult result = _Blobs.Enumerate(Inputty.GetString("Token:", null, true)).Result;
+        {
+            string prefix = Inputty.GetString("Prefix :", null, true);
+            string token = Inputty.GetString("Token  :", null, true);
+
+            EnumerationResult result = _Blobs.Enumerate(prefix, token).Result;
 
             Console.WriteLine("");
             if (result.Blobs != null && result.Blobs.Count > 0)

@@ -1366,9 +1366,6 @@ namespace BlobHelper
                 }
             }
 
-            long maxIndex = startIndex + count;
-
-            long currCount = 0;
             IEnumerable<string> files = null;
 
             if (!String.IsNullOrEmpty(prefix))
@@ -1390,12 +1387,13 @@ namespace BlobHelper
                 files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
             }
 
+            long totalFiles = files.Count();
             files = files.Skip(startIndex).Take(count);
 
             EnumerationResult ret = new EnumerationResult();
             if (files.Count() < 1) return ret;
 
-            ret.NextContinuationToken = DiskBuildContinuationToken(startIndex + count, count);
+            ret.NextContinuationToken = DiskBuildContinuationToken(startIndex + count, count, totalFiles);
 
             foreach (string file in files)
             {
@@ -1412,7 +1410,6 @@ namespace BlobHelper
                 md.CreatedUtc = fi.CreationTimeUtc;
                 ret.Blobs.Add(md);
 
-                currCount++;
                 continue;
             }
 
@@ -1725,9 +1722,9 @@ namespace BlobHelper
             return true;
         }
 
-        private string DiskBuildContinuationToken(int start, int count)
+        private string DiskBuildContinuationToken(int start, int count, long totalFiles)
         {
-            if (start >= count) return null;
+            if ((start + count) > totalFiles) return null;
             string ret = start.ToString() + " " + count.ToString();
             byte[] retBytes = Encoding.UTF8.GetBytes(ret);
             return Convert.ToBase64String(retBytes);
