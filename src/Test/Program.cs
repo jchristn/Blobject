@@ -208,7 +208,7 @@ namespace Test
                 string contentType = Inputty.GetString("Content type :", "text/plain", true);
                 string data =        Inputty.GetString("Data         :", null, true);
 
-                byte[] bytes = new byte[0];
+                byte[] bytes = Array.Empty<byte>();
                 if (!String.IsNullOrEmpty(data)) bytes = Encoding.UTF8.GetBytes(data);
                 _Blobs.Write(key, contentType, bytes).Wait();
 
