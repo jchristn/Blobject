@@ -691,7 +691,7 @@ namespace BlobHelper
             string filename = DiskGenerateUrl(key);
             if (Directory.Exists(filename))
             {
-                return new byte[0];
+                return Array.Empty<byte>();
             }
             else if (File.Exists(filename))
             {
@@ -824,7 +824,7 @@ namespace BlobHelper
             else
             {
                 ret.ContentLength = 0;
-                ret.Data = new MemoryStream(new byte[0]);
+                ret.Data = new MemoryStream(Array.Empty<byte>());
             }
 
             return ret; 
@@ -934,7 +934,7 @@ namespace BlobHelper
         private async Task KvpbaseWrite(string key, string contentType, byte[] data, CancellationToken token)
         {
             long contentLength = 0;
-            MemoryStream stream = new MemoryStream(new byte[0]);
+            MemoryStream stream = new MemoryStream(Array.Empty<byte>());
 
             if (data != null && data.Length > 0)
             {
@@ -954,7 +954,7 @@ namespace BlobHelper
         private async Task DiskWrite(string key, byte[] data, CancellationToken token)
         {
             long contentLength = 0;
-            MemoryStream stream = new MemoryStream(new byte[0]);
+            MemoryStream stream = new MemoryStream(Array.Empty<byte>());
 
             if (data != null && data.Length > 0)
             {
@@ -1008,7 +1008,7 @@ namespace BlobHelper
         private async Task S3Write(string key, string contentType, byte[] data, CancellationToken token)
         {
             long contentLength = 0;
-            MemoryStream stream = new MemoryStream(new byte[0]);
+            MemoryStream stream = new MemoryStream(Array.Empty<byte>());
 
             if (data != null && data.Length > 0)
             {
@@ -1030,7 +1030,7 @@ namespace BlobHelper
                 request.Key = key;
                 request.ContentType = contentType;
                 request.UseChunkEncoding = false;
-                request.InputStream = new MemoryStream(new byte[0]);
+                request.InputStream = new MemoryStream(Array.Empty<byte>());
             }
             else
             {

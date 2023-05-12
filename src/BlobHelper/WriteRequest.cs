@@ -76,7 +76,7 @@ namespace BlobHelper
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
-            if (data == null) data = new byte[0];
+            if (data == null) data = Array.Empty<byte>();
 
             Key = key;
             ContentType = contentType;
