@@ -15,17 +15,12 @@ This project was built to provide a simple interface over external storage to he
 ## Contributors
 
 - @phpfui for adding the original code for BLOB copy functionality
-- @Revazashvili for fixes related to byte array instantiation and Azure
+- @Revazashvili for fixes related to byte array instantiation, Azure, and refactoring
 
-## New in v4.0.x
+## New in v4.1.x
 
-- Migrated from deprecated ```Microsoft.WindowsAzure.Storage``` to ```Azure.Storage.Blobs```
-- Removed ```Newtonsoft.Json``` dependency
-- Add targeting for ```net48```
-- Fixed issues where certain operations were not using ```CancellationToken```
-- Added ```Empty``` API, which is a destructive API to delete all objects in the container
-- Validated ```WriteMany``` and ```Empty``` on all storage providers
-- Added ```EuWest2```, thank you @DanielHarman
+- Refactor recommendation by @Revazashvili to interface and implementation
+- Minor class name change; ```Blobs``` becomes ```BlobClient```
 
 ## Example Project
 
@@ -41,7 +36,7 @@ AwsSettings settings = new AwsSettings(
 	AwsRegion.USWest1,
 	bucket);
 
-Blobs blobs = new Blobs(settings); 
+BlobClient blobs = new BlobClient(settings); 
 ```
 
 ## Getting Started - AWS S3 Compatible Storage (Minio, Less3, etc)
@@ -58,7 +53,7 @@ AwsSettings settings = new AwsSettings(
 	baseUrl        // i.e. http://localhost:8000/{bucket}/{key}
 	);
 
-Blobs blobs = new Blobs(settings); 
+BlobClient blobs = new BlobClient(settings); 
 ```
 
 ## Getting Started - Azure
@@ -71,7 +66,7 @@ AzureSettings settings = new AzureSettings(
 	"https://[accountName].blob.core.windows.net/", 
 	containerName);
 
-Blobs blobs = new Blobs(settings); 
+BlobClient blobs = new BlobClient(settings); 
 ```
 
 ## Getting Started - Komodo
@@ -83,7 +78,7 @@ KomodoSettings settings = new KomodoSettings(
 	indexGuid, 
 	apiKey);
 
-Blobs blobs = new Blobs(settings); 
+BlobClient blobs = new BlobClient(settings); 
 ```
 
 ## Getting Started - Kvpbase
@@ -96,7 +91,7 @@ KvpbaseSettings settings = new KvpbaseSettings(
 	containerName, 
 	apiKey);
 
-Blobs blobs = new Blobs(settings); 
+BlobClient blobs = new BlobClient(settings); 
 ```
 
 ## Getting Started - Disk
@@ -105,7 +100,7 @@ using BlobHelper;
 
 DiskSettings settings = new DiskSettings("blobs"); 
 
-Blobs blobs = new Blobs(settings);
+BlobClient blobs = new BlobClient(settings);
 ```
 
 ## Getting Started (Byte Arrays for Smaller Objects)

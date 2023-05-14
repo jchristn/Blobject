@@ -6,8 +6,8 @@ namespace Test.Copy
 {
     class Program
     {
-        static Blobs _From;
-        static Blobs _To;
+        static BlobClient _From;
+        static BlobClient _To;
 
         static void Main(string[] args)
         {
@@ -40,7 +40,7 @@ namespace Test.Copy
             }
         }
 
-        static Blobs InitializeClient()
+        static BlobClient InitializeClient()
         {
             StorageType storageType = StorageType.Disk;
             bool runForever = true;
@@ -102,31 +102,31 @@ namespace Test.Copy
                             Inputty.GetString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
                             );
                     }
-                    return new Blobs(aws);
+                    return new BlobClient(aws);
                 case StorageType.Azure:
                     AzureSettings azure = new AzureSettings(
                         Inputty.GetString("Account name :", null, false),
                         Inputty.GetString("Access key   :", null, false),
                         Inputty.GetString("Endpoint URL :", null, false),
                         Inputty.GetString("Container    :", null, false));
-                    return new Blobs(azure);
+                    return new BlobClient(azure);
                 case StorageType.Disk:
                     DiskSettings disk = new DiskSettings(
                         Inputty.GetString("Directory :", null, false));
-                    return new Blobs(disk);
+                    return new BlobClient(disk);
                 case StorageType.Komodo:
                     KomodoSettings komodo = new KomodoSettings(
                         Inputty.GetString("Endpoint URL :", "http://localhost:9090/", false),
                         Inputty.GetString("Index GUID   :", "default", false),
                         Inputty.GetString("API key      :", "default", false));
-                    return new Blobs(komodo);
+                    return new BlobClient(komodo);
                 case StorageType.Kvpbase:
                     KvpbaseSettings kvpbase = new KvpbaseSettings(
                         Inputty.GetString("Endpoint URL :", "http://localhost:8000/", false),
                         Inputty.GetString("User GUID    :", "default", false),
                         Inputty.GetString("Container    :", "default", true),
                         Inputty.GetString("API key      :", "default", false));
-                    return new Blobs(kvpbase);
+                    return new BlobClient(kvpbase);
                 default:
                     throw new ArgumentException("Unknown storage type: '" + storageType + "'.");
             }

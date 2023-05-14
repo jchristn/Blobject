@@ -29,8 +29,8 @@ namespace BlobHelper
         private StorageType _CopyToStorageType = StorageType.Disk;
         private string _Prefix = null;
 
-        private Blobs _From = null;
-        private Blobs _To = null;
+        private BlobClient _From = null;
+        private BlobClient _To = null;
 
         #endregion
 
@@ -42,7 +42,7 @@ namespace BlobHelper
         /// <param name="copyFrom">Settings of the repository from which objects should be copied.</param>
         /// <param name="copyTo">Settings of the repository to which objects should be copied.</param>
         /// <param name="prefix">Prefix of the objects that should be copied.</param>
-        public BlobCopy(Blobs copyFrom, Blobs copyTo, string prefix = null)
+        public BlobCopy(BlobClient copyFrom, BlobClient copyTo, string prefix = null)
         {
             if (copyFrom == null) throw new ArgumentNullException(nameof(copyFrom));
             if (copyTo == null) throw new ArgumentNullException(nameof(copyTo));
@@ -72,19 +72,19 @@ namespace BlobHelper
             switch (_CopyFromStorageType)
             {
                 case StorageType.AwsS3:
-                    _From = new Blobs((AwsSettings)_CopyFrom);
+                    _From = new BlobClient((AwsSettings)_CopyFrom);
                     break;
                 case StorageType.Azure:
-                    _From = new Blobs((AzureSettings)_CopyFrom);
+                    _From = new BlobClient((AzureSettings)_CopyFrom);
                     break;
                 case StorageType.Disk:
-                    _From = new Blobs((DiskSettings)_CopyFrom);
+                    _From = new BlobClient((DiskSettings)_CopyFrom);
                     break;
                 case StorageType.Komodo:
-                    _From = new Blobs((KomodoSettings)_CopyFrom);
+                    _From = new BlobClient((KomodoSettings)_CopyFrom);
                     break;
                 case StorageType.Kvpbase:
-                    _From = new Blobs((KvpbaseSettings)_CopyFrom);
+                    _From = new BlobClient((KvpbaseSettings)_CopyFrom);
                     break;
                 default:
                     throw new ArgumentException("Unknown storage type in 'copyFrom'.");
@@ -93,19 +93,19 @@ namespace BlobHelper
             switch (_CopyToStorageType)
             {
                 case StorageType.AwsS3:
-                    _To = new Blobs((AwsSettings)_CopyTo);
+                    _To = new BlobClient((AwsSettings)_CopyTo);
                     break;
                 case StorageType.Azure:
-                    _To = new Blobs((AzureSettings)_CopyTo);
+                    _To = new BlobClient((AzureSettings)_CopyTo);
                     break;
                 case StorageType.Disk:
-                    _To = new Blobs((DiskSettings)_CopyTo);
+                    _To = new BlobClient((DiskSettings)_CopyTo);
                     break;
                 case StorageType.Komodo:
-                    _To = new Blobs((KomodoSettings)_CopyTo);
+                    _To = new BlobClient((KomodoSettings)_CopyTo);
                     break;
                 case StorageType.Kvpbase:
-                    _To = new Blobs((KvpbaseSettings)_CopyTo);
+                    _To = new BlobClient((KvpbaseSettings)_CopyTo);
                     break;
                 default:
                     throw new ArgumentException("Unknown storage type in 'copyTo'.");

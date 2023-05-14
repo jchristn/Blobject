@@ -2,6 +2,13 @@
 
 ## Current Version
 
+v4.1.x
+
+- Refactor recommendation by @Revazashvili to interface and implementation
+- Minor class name change; ```Blobs``` becomes ```BlobClient```
+
+## Previous Versions
+
 v4.0.x
 
 - Migrated from deprecated ```Microsoft.WindowsAzure.Storage``` to ```Azure.Storage.Blobs```
@@ -11,8 +18,6 @@ v4.0.x
 - Added ```Empty``` API, which is a destructive API to delete all objects in the container
 - Validated ```WriteMany``` and ```Empty``` on all storage providers
 - Added ```EuWest2```, thank you @DanielHarman
-
-## Previous Versions
 
 v2.3.x
 

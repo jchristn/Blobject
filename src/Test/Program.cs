@@ -12,7 +12,7 @@ namespace Test
     class Program
     {
         static StorageType _StorageType;
-        static Blobs _Blobs;
+        static BlobClient _Blobs;
         static AwsSettings _AwsSettings;
         static AzureSettings _AzureSettings;
         static DiskSettings _DiskSettings;
@@ -145,7 +145,7 @@ namespace Test
                             Inputty.GetString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
                             );
                     }
-                    _Blobs = new Blobs(_AwsSettings);
+                    _Blobs = new BlobClient(_AwsSettings);
                     break;
                 case StorageType.Azure:
                     _AzureSettings = new AzureSettings(
@@ -153,19 +153,19 @@ namespace Test
                         Inputty.GetString("Access key   :", null, false),
                         Inputty.GetString("Endpoint URL :", null, false),
                         Inputty.GetString("Container    :", null, false));
-                    _Blobs = new Blobs(_AzureSettings);
+                    _Blobs = new BlobClient(_AzureSettings);
                     break;
                 case StorageType.Disk:
                     _DiskSettings = new DiskSettings(
                         Inputty.GetString("Directory :", null, false));
-                    _Blobs = new Blobs(_DiskSettings);
+                    _Blobs = new BlobClient(_DiskSettings);
                     break;
                 case StorageType.Komodo:
                     _KomodoSettings = new KomodoSettings(
                         Inputty.GetString("Endpoint URL :", "http://localhost:9090/", false),
                         Inputty.GetString("Index GUID   :", "default", false),
                         Inputty.GetString("API key      :", "default", false));
-                    _Blobs = new Blobs(_KomodoSettings);
+                    _Blobs = new BlobClient(_KomodoSettings);
                     break;
                 case StorageType.Kvpbase:
                     _KvpbaseSettings = new KvpbaseSettings(
@@ -173,7 +173,7 @@ namespace Test
                         Inputty.GetString("User GUID    :", "default", false),
                         Inputty.GetString("Container    :", "default", true),
                         Inputty.GetString("API key      :", "default", false));
-                    _Blobs = new Blobs(_KvpbaseSettings);
+                    _Blobs = new BlobClient(_KvpbaseSettings);
                     break;
             }
         }
