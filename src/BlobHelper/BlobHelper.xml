@@ -4,172 +4,6 @@
         <name>BlobHelper</name>
     </assembly>
     <members>
-        <member name="T:BlobHelper.AwsSettings">
-            <summary>
-            Settings when using AWS S3 for storage.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AwsSettings.Endpoint">
-            <summary>
-            Override the AWS S3 endpoint (if using non-Amazon storage), otherwise leave null.
-            Use the form http://localhost:8000/
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AwsSettings.Ssl">
-            <summary>
-            Enable or disable SSL (only if using non-Amazon storage).
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AwsSettings.AccessKey">
-            <summary>
-            AWS S3 access key.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AwsSettings.SecretKey">
-            <summary>
-            AWS S3 secret key.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AwsSettings.Region">
-            <summary>
-            AWS S3 region.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AwsSettings.Bucket">
-            <summary>
-            AWS S3 bucket.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AwsSettings.BaseUrl">
-            <summary>
-            Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.
-            For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.AwsSettings.#ctor">
-            <summary>
-            Initialize the object.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,BlobHelper.AwsRegion,System.String)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
-            <param name="region">AWS region.</param>
-            <param name="bucket">Bucket in which to store BLOBs.</param>
-        </member>
-        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,System.String,System.String)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
-            <param name="region">AWS region.</param>
-            <param name="bucket">Bucket in which to store BLOBs.</param>
-        </member>
-        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,BlobHelper.AwsRegion,System.String,System.Boolean)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
-            <param name="region">AWS region.</param>
-            <param name="bucket">Bucket in which to store BLOBs.</param>
-            <param name="ssl">Enable or disable SSL.</param>
-        </member>
-        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,System.String,System.String,System.Boolean)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
-            <param name="region">AWS region.</param>
-            <param name="bucket">Bucket in which to store BLOBs.</param>
-            <param name="ssl">Enable or disable SSL.</param> 
-        </member>
-        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,BlobHelper.AwsRegion,System.String,System.String)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
-            <param name="ssl">Enable or disable SSL.</param>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
-            <param name="region">AWS region.</param>
-            <param name="bucket">Bucket in which to store BLOBs.</param>
-            <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
-        </member>
-        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,System.String,System.String,System.String)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
-            <param name="ssl">Enable or disable SSL.</param>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
-            <param name="region">AWS region.</param>
-            <param name="bucket">Bucket in which to store BLOBs.</param>
-            <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
-        </member>
-        <member name="M:BlobHelper.AwsSettings.GetAwsRegionEndpoint">
-            <summary>
-            Retrieve AWS region endpoint.
-            </summary>
-            <returns>AWS region endpoint.</returns>
-        </member>
-        <member name="M:BlobHelper.AwsSettings.ValidateRegion(System.String)">
-            <summary>
-            Validate a region string.
-            </summary>
-            <param name="region">Region.</param>
-            <returns>True if valid.</returns>
-        </member>
-        <member name="T:BlobHelper.AzureSettings">
-            <summary>
-            Settings when using Microsoft Azure BLOB Storage for storage.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AzureSettings.Ssl">
-            <summary>
-            Enable or disable SSL (only if using non-Azure storage).
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AzureSettings.AccountName">
-            <summary>
-            Microsoft Azure BLOB storage account name (the name of the account in the Azure portal).
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AzureSettings.AccessKey">
-            <summary>
-            Microsoft Azure BLOB storage access key.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AzureSettings.Endpoint">
-            <summary>
-            Microsoft Azure BLOB storage endpoint (primary or secondary from the Azure portal, likely of the form https://[accountname].blob.core.windows.net/.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.AzureSettings.Container">
-            <summary>
-            Microsoft Azure BLOB storage container.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.AzureSettings.#ctor">
-            <summary>
-            Initialize the object.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.AzureSettings.#ctor(System.String,System.String,System.String,System.String)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="accountName">The account name.</param>
-            <param name="accessKey">The access key with which to access Azure BLOB storage.</param>
-            <param name="endpoint">The Azure BLOB storage endpoint for the account.</param>
-            <param name="container">The container in which BLOBs should be stored.</param>
-        </member>
         <member name="T:BlobHelper.BlobClient">
             <summary>
             BLOB storage client.
@@ -339,100 +173,6 @@
             <param name="stopAfter">Stop after this many objects have been copied.</param>
             <param name="token">Cancellation token.</param>
             <returns>Copy statistics.</returns>
-        </member>
-        <member name="T:BlobHelper.BlobData">
-            <summary>
-            Contains content-length (how many bytes to read) and data stream for a given object.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.BlobData.ContentLength">
-            <summary>
-            Content-length of the object (how many bytes to read from Data).
-            </summary>
-        </member>
-        <member name="P:BlobHelper.BlobData.Data">
-            <summary>
-            Stream containing requested data.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.BlobData.#ctor">
-            <summary>
-            Instantiate.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.BlobData.#ctor(System.Int64,System.IO.Stream)">
-            <summary>
-            Instantiate.
-            </summary>
-            <param name="contentLength">Content length.</param>
-            <param name="data">Data stream.</param>
-        </member>
-        <member name="M:BlobHelper.BlobData.Dispose">
-            <summary>
-            Dispose of resources.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.BlobData.Dispose(System.Boolean)">
-            <summary>
-            Dispose of resources.
-            </summary>
-            <param name="disposing"></param>
-        </member>
-        <member name="T:BlobHelper.BlobMetadata">
-            <summary>
-            Metadata about a BLOB.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.BlobMetadata.Key">
-            <summary>
-            Object key.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.BlobMetadata.ContentType">
-            <summary>
-            Content type for the object.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.BlobMetadata.ContentLength">
-            <summary>
-            Content length of the object.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.BlobMetadata.ETag">
-            <summary>
-            ETag of the object.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.BlobMetadata.CreatedUtc">
-            <summary>
-            Timestamp from when the object was created.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.BlobMetadata.LastUpdateUtc">
-            <summary>
-            Timestamp from when the object was last updated, if available.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.BlobMetadata.LastAccessUtc">
-            <summary>
-            Timestamp from when the object was last accessed, if available.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.BlobMetadata.#ctor">
-            <summary>
-            Instantiate the object.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.BlobMetadata.ToString">
-            <summary>
-            Create a human-readable string of the object.
-            </summary>
-            <returns>String.</returns>
-        </member>
-        <member name="T:BlobHelper.BlobSettings">
-            <summary>
-            BLOB storage settings.
-            </summary>
         </member>
         <member name="T:BlobHelper.AwsS3BlobClient">
             <inheritdoc />
@@ -764,165 +504,6 @@
         <member name="M:BlobHelper.KvpbaseBlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="T:BlobHelper.CopyStatistics">
-            <summary>
-            BLOB copy statistics.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.Success">
-            <summary>
-            Flag indicating if the operation was successful.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.Time">
-            <summary>
-            Timestamps from the copy operation.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.Exception">
-            <summary>
-            Exception, if any was encountered.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.ContinuationTokens">
-            <summary>
-            Number of continuation tokens used.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.BlobsEnumerated">
-            <summary>
-            Number of BLOBs enumerated.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.BytesEnumerated">
-            <summary>
-            Number of bytes enumerated.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.BlobsRead">
-            <summary>
-            Number of BLOBs read.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.BytesRead">
-            <summary>
-            Number of bytes read.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.BlobsWritten">
-            <summary>
-            Number of BLOBs written.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.BytesWritten">
-            <summary>
-            Number of bytes written.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.CopyStatistics.Keys">
-            <summary>
-            Keys copied.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.CopyStatistics.#ctor">
-            <summary>
-            Instantiate.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.CopyStatistics.ToString">
-            <summary>
-            Produce a human-readable string representation of the object.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="T:BlobHelper.DiskSettings">
-            <summary>
-            Settings when using local filesystem for storage.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.DiskSettings.Directory">
-            <summary>
-            The filesystem directory to use.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.DiskSettings.#ctor">
-            <summary>
-            Instantiate.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.DiskSettings.#ctor(System.String)">
-            <summary>
-            Instantiate.
-            </summary>
-            <param name="directory">The directory where BLOBs should be stored.</param>
-        </member>
-        <member name="T:BlobHelper.EmptyResult">
-            <summary>
-            Results from a container empty operation. 
-            </summary>
-        </member>
-        <member name="P:BlobHelper.EmptyResult.Count">
-            <summary>
-            The number of BLOBs.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.EmptyResult.Bytes">
-            <summary>
-            The total number of bytes represented by the BLOBs.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.EmptyResult.Blobs">
-            <summary>
-            List of BLOB metadata objects.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.EmptyResult.#ctor">
-            <summary>
-            Instantiate the object.
-            </summary>
-        </member>
-        <member name="T:BlobHelper.EnumerationResult">
-            <summary>
-            Enumeration results.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.EnumerationResult.HasMore">
-            <summary>
-            Flag indicating if more results are available.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.EnumerationResult.NextContinuationToken">
-            <summary>
-            Next continuation token to supply in order to continue enumerating from the end of the previous request.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.EnumerationResult.Count">
-            <summary>
-            The number of BLOBs.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.EnumerationResult.Bytes">
-            <summary>
-            The total number of bytes represented by the BLOBs.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.EnumerationResult.Blobs">
-            <summary>
-            List of BLOB metadata objects.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.EnumerationResult.#ctor">
-            <summary>
-            Instantiate the object.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.EnumerationResult.#ctor(System.String,System.Collections.Generic.List{BlobHelper.BlobMetadata})">
-            <summary>
-            Instantiate.
-            </summary>
-            <param name="continuationToken">Continuation token.</param>
-            <param name="blobs">BLOBs.</param>
-        </member>
         <member name="T:BlobHelper.AwsRegion">
             <summary>
             AWS region.
@@ -1063,6 +644,539 @@
             Kvpbase Storage Server.
             </summary>
         </member>
+        <member name="T:BlobHelper.SerializationHelper">
+            <summary>
+            Serialization helper.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.SerializationHelper.CopyObject``1(``0)">
+            <summary>
+            Copy an object.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="source">Source object.</param>
+            <returns>Copy.</returns>
+        </member>
+        <member name="M:BlobHelper.SerializationHelper.SerializeJson(System.Object,System.Boolean)">
+            <summary>
+            Serialize JSON.
+            </summary>
+            <param name="obj">Object.</param>
+            <param name="pretty">Pretty print.</param>
+            <returns>JSON string.</returns>
+        </member>
+        <member name="M:BlobHelper.SerializationHelper.DeserializeJson``1(System.String)">
+            <summary>
+            Deserialize JSON. 
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="json">JSON string.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:BlobHelper.SerializationHelper.DeserializeJson``1(System.Byte[])">
+            <summary>
+            Deserialize JSON. 
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="data">JSON data.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="T:BlobHelper.Timestamps">
+            <summary>
+            Object used to measure start, end, and total time associated with an operation.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.Timestamps.Start">
+            <summary>
+            The time at which the operation started.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.Timestamps.End">
+            <summary>
+            The time at which the operation ended.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.Timestamps.TotalMs">
+            <summary>
+            The total number of milliseconds that transpired between Start and End.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.Timestamps.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
+        </member>
+        <member name="T:BlobHelper.BlobData">
+            <summary>
+            Contains content-length (how many bytes to read) and data stream for a given object.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobData.ContentLength">
+            <summary>
+            Content-length of the object (how many bytes to read from Data).
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobData.Data">
+            <summary>
+            Stream containing requested data.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.BlobData.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.BlobData.#ctor(System.Int64,System.IO.Stream)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="contentLength">Content length.</param>
+            <param name="data">Data stream.</param>
+        </member>
+        <member name="M:BlobHelper.BlobData.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.BlobData.Dispose(System.Boolean)">
+            <summary>
+            Dispose of resources.
+            </summary>
+            <param name="disposing"></param>
+        </member>
+        <member name="T:BlobHelper.BlobMetadata">
+            <summary>
+            Metadata about a BLOB.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.Key">
+            <summary>
+            Object key.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.ContentType">
+            <summary>
+            Content type for the object.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.ContentLength">
+            <summary>
+            Content length of the object.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.ETag">
+            <summary>
+            ETag of the object.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.CreatedUtc">
+            <summary>
+            Timestamp from when the object was created.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.LastUpdateUtc">
+            <summary>
+            Timestamp from when the object was last updated, if available.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.BlobMetadata.LastAccessUtc">
+            <summary>
+            Timestamp from when the object was last accessed, if available.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.BlobMetadata.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.BlobMetadata.ToString">
+            <summary>
+            Create a human-readable string of the object.
+            </summary>
+            <returns>String.</returns>
+        </member>
+        <member name="T:BlobHelper.CopyStatistics">
+            <summary>
+            BLOB copy statistics.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.Success">
+            <summary>
+            Flag indicating if the operation was successful.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.Time">
+            <summary>
+            Timestamps from the copy operation.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.Exception">
+            <summary>
+            Exception, if any was encountered.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.ContinuationTokens">
+            <summary>
+            Number of continuation tokens used.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BlobsEnumerated">
+            <summary>
+            Number of BLOBs enumerated.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BytesEnumerated">
+            <summary>
+            Number of bytes enumerated.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BlobsRead">
+            <summary>
+            Number of BLOBs read.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BytesRead">
+            <summary>
+            Number of bytes read.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BlobsWritten">
+            <summary>
+            Number of BLOBs written.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.BytesWritten">
+            <summary>
+            Number of bytes written.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.CopyStatistics.Keys">
+            <summary>
+            Keys copied.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.CopyStatistics.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.CopyStatistics.ToString">
+            <summary>
+            Produce a human-readable string representation of the object.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:BlobHelper.EmptyResult">
+            <summary>
+            Results from a container empty operation. 
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EmptyResult.Count">
+            <summary>
+            The number of BLOBs.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EmptyResult.Bytes">
+            <summary>
+            The total number of bytes represented by the BLOBs.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EmptyResult.Blobs">
+            <summary>
+            List of BLOB metadata objects.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.EmptyResult.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
+        </member>
+        <member name="T:BlobHelper.EnumerationResult">
+            <summary>
+            Enumeration results.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EnumerationResult.HasMore">
+            <summary>
+            Flag indicating if more results are available.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EnumerationResult.NextContinuationToken">
+            <summary>
+            Next continuation token to supply in order to continue enumerating from the end of the previous request.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EnumerationResult.Count">
+            <summary>
+            The number of BLOBs.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EnumerationResult.Bytes">
+            <summary>
+            The total number of bytes represented by the BLOBs.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.EnumerationResult.Blobs">
+            <summary>
+            List of BLOB metadata objects.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.EnumerationResult.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.EnumerationResult.#ctor(System.String,System.Collections.Generic.List{BlobHelper.BlobMetadata})">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="continuationToken">Continuation token.</param>
+            <param name="blobs">BLOBs.</param>
+        </member>
+        <member name="T:BlobHelper.WriteRequest">
+            <summary>
+            Write request object, used when writing many objects.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.WriteRequest.Key">
+            <summary>
+            Object key.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.WriteRequest.ContentType">
+            <summary>
+            Content type for the object.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.WriteRequest.ContentLength">
+            <summary>
+            Content-length of the object (how many bytes to read from DataStream).
+            </summary>
+        </member>
+        <member name="P:BlobHelper.WriteRequest.DataStream">
+            <summary>
+            Stream containing requested data.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.WriteRequest.Data">
+            <summary>
+            Bytes containing requested data.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.WriteRequest.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.WriteRequest.#ctor(System.String,System.String,System.Byte[])">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="key">Object key.</param>
+            <param name="contentType">Content type.</param>
+            <param name="data">Data.</param>
+        </member>
+        <member name="M:BlobHelper.WriteRequest.#ctor(System.String,System.String,System.Int64,System.IO.Stream)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="key">Object key.</param>
+            <param name="contentType">Content type.</param>
+            <param name="contentLength">Content length.</param>
+            <param name="stream">Stream containing the data.</param> 
+        </member>
+        <member name="T:BlobHelper.AwsSettings">
+            <summary>
+            Settings when using AWS S3 for storage.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.Endpoint">
+            <summary>
+            Override the AWS S3 endpoint (if using non-Amazon storage), otherwise leave null.
+            Use the form http://localhost:8000/
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.Ssl">
+            <summary>
+            Enable or disable SSL (only if using non-Amazon storage).
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.AccessKey">
+            <summary>
+            AWS S3 access key.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.SecretKey">
+            <summary>
+            AWS S3 secret key.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.Region">
+            <summary>
+            AWS S3 region.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.Bucket">
+            <summary>
+            AWS S3 bucket.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AwsSettings.BaseUrl">
+            <summary>
+            Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.
+            For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,BlobHelper.AwsRegion,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,BlobHelper.AwsRegion,System.String,System.Boolean)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="ssl">Enable or disable SSL.</param> 
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,BlobHelper.AwsRegion,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.GetAwsRegionEndpoint">
+            <summary>
+            Retrieve AWS region endpoint.
+            </summary>
+            <returns>AWS region endpoint.</returns>
+        </member>
+        <member name="M:BlobHelper.AwsSettings.ValidateRegion(System.String)">
+            <summary>
+            Validate a region string.
+            </summary>
+            <param name="region">Region.</param>
+            <returns>True if valid.</returns>
+        </member>
+        <member name="T:BlobHelper.AzureSettings">
+            <summary>
+            Settings when using Microsoft Azure BLOB Storage for storage.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AzureSettings.Ssl">
+            <summary>
+            Enable or disable SSL (only if using non-Azure storage).
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AzureSettings.AccountName">
+            <summary>
+            Microsoft Azure BLOB storage account name (the name of the account in the Azure portal).
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AzureSettings.AccessKey">
+            <summary>
+            Microsoft Azure BLOB storage access key.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AzureSettings.Endpoint">
+            <summary>
+            Microsoft Azure BLOB storage endpoint (primary or secondary from the Azure portal, likely of the form https://[accountname].blob.core.windows.net/.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.AzureSettings.Container">
+            <summary>
+            Microsoft Azure BLOB storage container.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.AzureSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.AzureSettings.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accountName">The account name.</param>
+            <param name="accessKey">The access key with which to access Azure BLOB storage.</param>
+            <param name="endpoint">The Azure BLOB storage endpoint for the account.</param>
+            <param name="container">The container in which BLOBs should be stored.</param>
+        </member>
+        <member name="T:BlobHelper.BlobSettings">
+            <summary>
+            BLOB storage settings.
+            </summary>
+        </member>
+        <member name="T:BlobHelper.DiskSettings">
+            <summary>
+            Settings when using local filesystem for storage.
+            </summary>
+        </member>
+        <member name="P:BlobHelper.DiskSettings.Directory">
+            <summary>
+            The filesystem directory to use.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.DiskSettings.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:BlobHelper.DiskSettings.#ctor(System.String)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="directory">The directory where BLOBs should be stored.</param>
+        </member>
         <member name="T:BlobHelper.KomodoSettings">
             <summary>
             Settings when using Komodo for storage.
@@ -1134,120 +1248,6 @@
             <param name="userGuid">GUID of the user.</param>
             <param name="container">Container in which BLOBs should be stored.</param>
             <param name="apiKey">API key with read, write, and delete permissions.</param>
-        </member>
-        <member name="T:BlobHelper.SerializationHelper">
-            <summary>
-            Serialization helper.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.SerializationHelper.CopyObject``1(``0)">
-            <summary>
-            Copy an object.
-            </summary>
-            <typeparam name="T">Type.</typeparam>
-            <param name="source">Source object.</param>
-            <returns>Copy.</returns>
-        </member>
-        <member name="M:BlobHelper.SerializationHelper.SerializeJson(System.Object,System.Boolean)">
-            <summary>
-            Serialize JSON.
-            </summary>
-            <param name="obj">Object.</param>
-            <param name="pretty">Pretty print.</param>
-            <returns>JSON string.</returns>
-        </member>
-        <member name="M:BlobHelper.SerializationHelper.DeserializeJson``1(System.String)">
-            <summary>
-            Deserialize JSON. 
-            </summary>
-            <typeparam name="T">Type.</typeparam>
-            <param name="json">JSON string.</param>
-            <returns>Instance.</returns>
-        </member>
-        <member name="M:BlobHelper.SerializationHelper.DeserializeJson``1(System.Byte[])">
-            <summary>
-            Deserialize JSON. 
-            </summary>
-            <typeparam name="T">Type.</typeparam>
-            <param name="data">JSON data.</param>
-            <returns>Instance.</returns>
-        </member>
-        <member name="T:BlobHelper.Timestamps">
-            <summary>
-            Object used to measure start, end, and total time associated with an operation.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.Timestamps.Start">
-            <summary>
-            The time at which the operation started.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.Timestamps.End">
-            <summary>
-            The time at which the operation ended.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.Timestamps.TotalMs">
-            <summary>
-            The total number of milliseconds that transpired between Start and End.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.Timestamps.#ctor">
-            <summary>
-            Instantiate the object.
-            </summary>
-        </member>
-        <member name="T:BlobHelper.WriteRequest">
-            <summary>
-            Write request object, used when writing many objects.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.WriteRequest.Key">
-            <summary>
-            Object key.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.WriteRequest.ContentType">
-            <summary>
-            Content type for the object.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.WriteRequest.ContentLength">
-            <summary>
-            Content-length of the object (how many bytes to read from DataStream).
-            </summary>
-        </member>
-        <member name="P:BlobHelper.WriteRequest.DataStream">
-            <summary>
-            Stream containing requested data.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.WriteRequest.Data">
-            <summary>
-            Bytes containing requested data.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.WriteRequest.#ctor">
-            <summary>
-            Instantiate.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.WriteRequest.#ctor(System.String,System.String,System.Byte[])">
-            <summary>
-            Instantiate.
-            </summary>
-            <param name="key">Object key.</param>
-            <param name="contentType">Content type.</param>
-            <param name="data">Data.</param>
-        </member>
-        <member name="M:BlobHelper.WriteRequest.#ctor(System.String,System.String,System.Int64,System.IO.Stream)">
-            <summary>
-            Instantiate.
-            </summary>
-            <param name="key">Object key.</param>
-            <param name="contentType">Content type.</param>
-            <param name="contentLength">Content length.</param>
-            <param name="stream">Stream containing the data.</param> 
         </member>
     </members>
 </doc>
