@@ -120,7 +120,7 @@ namespace BlobHelper
             else
             {
                 ret.ContentLength = 0;
-                ret.Data = new MemoryStream(new byte[0]);
+                ret.Data = new MemoryStream(Array.Empty<byte>());
             }
 
             return ret;
@@ -168,7 +168,7 @@ namespace BlobHelper
         public async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             long contentLength = 0;
-            MemoryStream stream = new MemoryStream(new byte[0]);
+            MemoryStream stream = new MemoryStream(Array.Empty<byte>());
 
             if (data != null && data.Length > 0)
             {
@@ -191,7 +191,7 @@ namespace BlobHelper
                 request.Key = key;
                 request.ContentType = contentType;
                 request.UseChunkEncoding = false;
-                request.InputStream = new MemoryStream(new byte[0]);
+                request.InputStream = new MemoryStream(Array.Empty<byte>());
             }
             else
             {

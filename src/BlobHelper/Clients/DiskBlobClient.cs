@@ -44,7 +44,7 @@ namespace BlobHelper
             string filename = GenerateUrl(key);
             if (Directory.Exists(filename))
             {
-                return new byte[0];
+                return Array.Empty<byte>();
             }
             else if (File.Exists(filename))
             {
@@ -120,7 +120,7 @@ namespace BlobHelper
         public async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             long contentLength = 0;
-            MemoryStream stream = new MemoryStream(new byte[0]);
+            MemoryStream stream = new MemoryStream(Array.Empty<byte>());
 
             if (data != null && data.Length > 0)
             {

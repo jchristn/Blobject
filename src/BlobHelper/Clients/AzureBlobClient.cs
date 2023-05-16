@@ -82,7 +82,7 @@ namespace BlobHelper
             byte[] buff = new byte[4096];
 
             BlobMetadata md = await GetMetadataAsync(key, token).ConfigureAwait(false);
-            BlobData bd = new BlobData(md.ContentLength, bc.OpenRead(new BlobOpenReadOptions(false)));
+            BlobData bd = new BlobData(md.ContentLength, await bc.OpenReadAsync(new BlobOpenReadOptions(false), token).ConfigureAwait(false));
             return bd;
         }
 
