@@ -14,10 +14,27 @@ namespace BlobHelper
     {
         #region Public-Members
 
+        /// <summary>
+        /// Buffer size to use when reading from a stream.
+        /// </summary>
+        public int StreamBufferSize
+        {
+            get
+            {
+                return _StreamBufferSize;
+            }
+            set
+            {
+                if (value < 1) throw new ArgumentOutOfRangeException(nameof(StreamBufferSize));
+                _StreamBufferSize = value;
+            }
+        }
+
         #endregion
 
         #region Private-Members
 
+        private int _StreamBufferSize = 65536;
         private readonly AzureSettings _AzureSettings;
         private readonly string _AzureConnectionString;
         private readonly BlobContainerClient _AzureContainerClient;
@@ -47,7 +64,7 @@ namespace BlobHelper
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = new Azure.Storage.Blobs.BlobClient(_AzureConnectionString, _AzureSettings.Container, key);
-            byte[] buff = new byte[4096];
+            byte[] buff = new byte[_StreamBufferSize];
             byte[] ret = null;
 
             int totalRead = 0;
@@ -79,8 +96,6 @@ namespace BlobHelper
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = new Azure.Storage.Blobs.BlobClient(_AzureConnectionString, _AzureSettings.Container, key);
-            byte[] buff = new byte[4096];
-
             BlobMetadata md = await GetMetadataAsync(key, token).ConfigureAwait(false);
             BlobData bd = new BlobData(md.ContentLength, await bc.OpenReadAsync(new BlobOpenReadOptions(false), token).ConfigureAwait(false));
             return bd;
@@ -91,8 +106,6 @@ namespace BlobHelper
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = new Azure.Storage.Blobs.BlobClient(_AzureConnectionString, _AzureSettings.Container, key);
-            byte[] buff = new byte[4096];
-
             BlobProperties bp = await bc.GetPropertiesAsync(null, token).ConfigureAwait(false);
             BlobMetadata md = new BlobMetadata();
             md.ETag = bp.ETag.ToString();
@@ -137,22 +150,27 @@ namespace BlobHelper
             if (stream.CanSeek && stream.Length == stream.Position) stream.Seek(0, SeekOrigin.Begin);
 
             Azure.Storage.Blobs.BlobClient bc = new Azure.Storage.Blobs.BlobClient(_AzureConnectionString, _AzureSettings.Container, key);
-            byte[] buff = new byte[4096];
+            byte[] buff = new byte[_StreamBufferSize];
+            int read = 0;
+            long bytesRemaining = contentLength;
 
             using (Stream str = await bc.OpenWriteAsync(true, null, token).ConfigureAwait(false))
             {
-                int read = 0;
-
-                while (true)
+                while (bytesRemaining > 0)
                 {
-                    read = await stream.ReadAsync(buff, 0, buff.Length, token).ConfigureAwait(false);
-                    if (read > 0)
+                    if (bytesRemaining >= _StreamBufferSize)
                     {
-                        await str.WriteAsync(buff, 0, read, token).ConfigureAwait(false);
+                        read = await stream.ReadAsync(buff, 0, _StreamBufferSize, token).ConfigureAwait(false);
                     }
                     else
                     {
-                        break;
+                        read = await stream.ReadAsync(buff, 0, (int)bytesRemaining, token).ConfigureAwait(false);
+                    }
+
+                    if (read > 0)
+                    {
+                        await str.WriteAsync(buff, 0, read, token).ConfigureAwait(false);
+                        bytesRemaining -= read;
                     }
                 }
             }

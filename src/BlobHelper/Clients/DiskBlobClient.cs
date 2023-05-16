@@ -14,10 +14,27 @@ namespace BlobHelper
     {
         #region Public-Members
 
+        /// <summary>
+        /// Buffer size to use when reading from a stream.
+        /// </summary>
+        public int StreamBufferSize
+        {
+            get
+            {
+                return _StreamBufferSize;
+            }
+            set
+            {
+                if (value < 1) throw new ArgumentOutOfRangeException(nameof(StreamBufferSize));
+                _StreamBufferSize = value;
+            }
+        }
+
         #endregion
 
         #region Private-Members
 
+        private int _StreamBufferSize = 65536;
         private readonly DiskSettings _DiskSettings = null;
 
         #endregion
@@ -31,6 +48,8 @@ namespace BlobHelper
         public DiskBlobClient(DiskSettings diskSettings)
         {
             _DiskSettings = diskSettings;
+
+            if (!Directory.Exists(diskSettings.Directory)) Directory.CreateDirectory(diskSettings.Directory);
         }
 
         #endregion
@@ -153,19 +172,27 @@ namespace BlobHelper
                     Directory.CreateDirectory(dirName);
                 }
 
-                int bytesRead = 0;
+                int read = 0;
                 long bytesRemaining = contentLength;
-                byte[] buffer = new byte[65536];
+                byte[] buffer = new byte[_StreamBufferSize];
 
                 using (FileStream fs = new FileStream(filename, FileMode.OpenOrCreate))
                 {
                     while (bytesRemaining > 0)
                     {
-                        bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
-                        if (bytesRead > 0)
+                        if (bytesRemaining >= _StreamBufferSize)
                         {
-                            await fs.WriteAsync(buffer, 0, bytesRead, token).ConfigureAwait(false);
-                            bytesRemaining -= bytesRead;
+                            read = await stream.ReadAsync(buffer, 0, _StreamBufferSize, token).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            read = await stream.ReadAsync(buffer, 0, (int)bytesRemaining, token).ConfigureAwait(false);
+                        }
+
+                        if (read > 0)
+                        {
+                            await fs.WriteAsync(buffer, 0, read, token).ConfigureAwait(false);
+                            bytesRemaining -= read;
                         }
                     }
                 }

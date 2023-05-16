@@ -222,6 +222,11 @@
         <member name="T:BlobHelper.AzureBlobClient">
             <inheritdoc />
         </member>
+        <member name="P:BlobHelper.AzureBlobClient.StreamBufferSize">
+            <summary>
+            Buffer size to use when reading from a stream.
+            </summary>
+        </member>
         <member name="M:BlobHelper.AzureBlobClient.#ctor(BlobHelper.AzureSettings)">
             <summary>
             Initializes a new instance of the <see cref="T:BlobHelper.AzureBlobClient"/> class.
@@ -266,6 +271,11 @@
         </member>
         <member name="T:BlobHelper.DiskBlobClient">
             <inheritdoc />
+        </member>
+        <member name="P:BlobHelper.DiskBlobClient.StreamBufferSize">
+            <summary>
+            Buffer size to use when reading from a stream.
+            </summary>
         </member>
         <member name="M:BlobHelper.DiskBlobClient.#ctor(BlobHelper.DiskSettings)">
             <summary>
