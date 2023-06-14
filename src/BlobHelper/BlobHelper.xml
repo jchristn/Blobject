@@ -544,6 +544,16 @@
             APSoutheast2 region.
             </summary>
         </member>
+        <member name="F:BlobHelper.AwsRegion.APSoutheast3">
+            <summary>
+            APSoutheast3 region.
+            </summary>
+        </member>
+        <member name="F:BlobHelper.AwsRegion.APSoutheast4">
+            <summary>
+            APSoutheast4 region.
+            </summary>
+        </member>
         <member name="F:BlobHelper.AwsRegion.APSouth1">
             <summary>
             APSouth1 region.
