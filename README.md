@@ -16,6 +16,7 @@ This project was built to provide a simple interface over external storage to he
 
 - @phpfui for adding the original code for BLOB copy functionality
 - @Revazashvili for fixes related to byte array instantiation, Azure, and refactoring
+- @courtzzz for keeping the region list updated
 
 ## New in v4.1.x
 
