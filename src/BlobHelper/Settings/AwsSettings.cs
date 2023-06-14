@@ -240,6 +240,10 @@ namespace BlobHelper
                     return Amazon.RegionEndpoint.APSoutheast1;
                 case AwsRegion.APSoutheast2:
                     return Amazon.RegionEndpoint.APSoutheast2;
+                case AwsRegion.APSoutheast3:
+                    return Amazon.RegionEndpoint.APSoutheast3;
+                case AwsRegion.APSoutheast4:
+                    return Amazon.RegionEndpoint.APSoutheast4;
                 case AwsRegion.CACentral1:
                     return Amazon.RegionEndpoint.CACentral1;
                 case AwsRegion.CNNorth1:
@@ -321,6 +325,10 @@ namespace BlobHelper
                     return AwsRegion.APSoutheast1;
                 case "APSoutheast2":
                     return AwsRegion.APSoutheast2;
+                case "APSoutheast3":
+                    return AwsRegion.APSoutheast3;
+                case "APSoutheast4":
+                    return AwsRegion.APSoutheast4;
                 case "CACentral1":
                     return AwsRegion.CACentral1;
                 case "CNNorth1":

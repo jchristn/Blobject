@@ -366,6 +366,10 @@ namespace BlobHelper
                     return "ap-southeast-1";
                 case AwsRegion.APSoutheast2:
                     return "ap-southeast-2";
+                case AwsRegion.APSoutheast3:
+                    return "ap-southeast-3";
+                case AwsRegion.APSoutheast4:
+                    return "ap-southeast-4";
                 case AwsRegion.CACentral1:
                     return "ca-central-1";
                 case AwsRegion.CNNorth1:

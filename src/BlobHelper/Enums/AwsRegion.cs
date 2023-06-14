@@ -42,6 +42,16 @@ namespace BlobHelper
         [EnumMember(Value = "APSoutheast2")]
         APSoutheast2,
         /// <summary>
+        /// APSoutheast3 region.
+        /// </summary>
+        [EnumMember(Value = "APSoutheast3")]
+        APSoutheast3,
+        /// <summary>
+        /// APSoutheast4 region.
+        /// </summary>
+        [EnumMember(Value = "APSoutheast4")]
+        APSoutheast4,
+        /// <summary>
         /// APSouth1 region.
         /// </summary>
         [EnumMember(Value = "APSouth1")]
