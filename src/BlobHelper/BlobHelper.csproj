@@ -5,7 +5,7 @@
     <TargetFrameworks>netstandard2.1;netcoreapp3.1;net461;net48;net6.0;net7.0</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>4.1.2</Version>
+    <Version>4.1.3</Version>
     <Authors>Joel Christner</Authors>
     <Description>BLOB storage wrapper for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3, Ceph), Kvpbase, Komodo, and local filesystem written in C#.</Description>
     <Copyright>(c)2023 Joel Christner</Copyright>
@@ -18,6 +18,10 @@
     <PackageTags>blob azure storage s3 object rest minio less3 komodo ceph</PackageTags>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageIcon>blobhelper.png</PackageIcon>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>C:\Code\Misc\BlobHelper-4.1\BlobHelper.snk</AssemblyOriginatorKeyFile>
+    <Title>BlobHelper</Title>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.1|AnyCPU'">
@@ -71,6 +75,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="Assets\blobhelper.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
