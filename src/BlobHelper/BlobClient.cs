@@ -60,26 +60,6 @@ namespace BlobHelper
             _BlobClient = new DiskBlobClient(config);
         }
 
-        /// <summary>
-        /// Instantiate the object for Kvpbase strorage.
-        /// </summary>
-        /// <param name="config">Storage configuration.</param>
-        public BlobClient(KvpbaseSettings config)
-        {
-            if (config == null) throw new ArgumentNullException(nameof(config));
-            _BlobClient = new KvpbaseBlobClient(config);
-        }
-
-        /// <summary>
-        /// Instantiate the object for a Komodo index.
-        /// </summary>
-        /// <param name="config">Storage configuration.</param>
-        public BlobClient(KomodoSettings config)
-        {
-            if (config == null) throw new ArgumentNullException(nameof(config));
-            _BlobClient = new KomodoBlobClient(config);
-        }
-
         #endregion
 
         #region Public-Methods

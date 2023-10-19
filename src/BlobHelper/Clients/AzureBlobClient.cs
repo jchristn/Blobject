@@ -10,7 +10,7 @@ using Azure.Storage.Blobs.Models;
 namespace BlobHelper
 {
     /// <inheritdoc />
-    public class AzureBlobClient : IBlobClient
+    public class AzureBlobClient : IBlobClient, IDisposable
     {
         #region Public-Members
 
@@ -35,9 +35,10 @@ namespace BlobHelper
         #region Private-Members
 
         private int _StreamBufferSize = 65536;
-        private readonly AzureSettings _AzureSettings;
-        private readonly string _AzureConnectionString;
-        private readonly BlobContainerClient _AzureContainerClient;
+        private bool _Disposed = false;
+        private AzureSettings _AzureSettings = null;
+        private string _AzureConnectionString = null;
+        private BlobContainerClient _AzureContainerClient = null;
 
         #endregion
 
@@ -58,6 +59,31 @@ namespace BlobHelper
         #endregion
 
         #region Public-Methods
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        /// <param name="disposing">Disposing.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_Disposed)
+            {
+                _AzureSettings = null;
+                _AzureConnectionString = null;
+                _AzureContainerClient = null;
+                _Disposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
 
         /// <inheritdoc />
         public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
@@ -221,11 +247,11 @@ namespace BlobHelper
         public string GenerateUrl(string key, CancellationToken token = default)
         {
             return "https://" +
-                   _AzureSettings.AccountName +
-                   ".blob.core.windows.net/" +
-                   _AzureSettings.Container +
-                   "/" +
-                   key;
+                _AzureSettings.AccountName +
+                ".blob.core.windows.net/" +
+                _AzureSettings.Container +
+                "/" +
+                key;
         }
 
         /// <inheritdoc />

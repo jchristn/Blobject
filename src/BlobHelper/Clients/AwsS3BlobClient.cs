@@ -11,7 +11,7 @@ using Azure.Storage.Blobs;
 namespace BlobHelper
 {
     /// <inheritdoc />
-    public class AwsS3BlobClient : IBlobClient
+    public class AwsS3BlobClient : IBlobClient, IDisposable
     {
         #region Public-Members
 
@@ -19,8 +19,9 @@ namespace BlobHelper
 
         #region Private-Members
 
-        private readonly AwsSettings _AwsSettings = null;
-        private readonly AmazonS3Client _S3Client = null;
+        private AwsSettings _AwsSettings = null;
+        private AmazonS3Client _S3Client = null;
+        private bool _Disposed = false;
 
         #endregion
 
@@ -60,12 +61,36 @@ namespace BlobHelper
                 _S3Client = new AmazonS3Client(s3Credentials, s3Config);
             }
         }
-        /// <inheritdoc />
-
+        
         #endregion
 
         #region Public-Methods
 
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        /// <param name="disposing">Disposing.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_Disposed)
+            {
+                _AwsSettings = null;
+                _S3Client = null;
+                _Disposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <inheritdoc />
         public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
             GetObjectRequest request = new GetObjectRequest
@@ -85,11 +110,13 @@ namespace BlobHelper
                             // first copy the stream
                             byte[] data = new byte[response.ContentLength];
 
-                            Stream bodyStream = response.ResponseStream;
-                            data = Common.StreamToBytes(bodyStream);
+                            using (Stream bodyStream = response.ResponseStream)
+                            {
+                                data = Common.StreamToBytes(bodyStream);
 
-                            int statusCode = (int)response.HttpStatusCode;
-                            return data;
+                                int statusCode = (int)response.HttpStatusCode;
+                                return data;
+                            }
                         }
                         else
                         {
@@ -109,21 +136,24 @@ namespace BlobHelper
                 Key = key,
             };
 
-            GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false);
-            BlobData ret = new BlobData();
-
-            if (response.ContentLength > 0)
+            using (GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false))
             {
-                ret.ContentLength = response.ContentLength;
-                ret.Data = response.ResponseStream;
-            }
-            else
-            {
-                ret.ContentLength = 0;
-                ret.Data = new MemoryStream(Array.Empty<byte>());
-            }
+                BlobData ret = new BlobData();
 
-            return ret;
+                if (response.ContentLength > 0)
+                {
+                    ret.ContentLength = response.ContentLength;
+                    await response.ResponseStream.CopyToAsync(ret.Data);
+                    ret.Data.Seek(0, SeekOrigin.Begin);
+                }
+                else
+                {
+                    ret.ContentLength = 0;
+                    ret.Data = new MemoryStream(Array.Empty<byte>());
+                }
+
+                return ret;
+            }
         }
 
         /// <inheritdoc />
@@ -168,16 +198,23 @@ namespace BlobHelper
         public async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             long contentLength = 0;
-            MemoryStream stream = new MemoryStream(Array.Empty<byte>());
-
             if (data != null && data.Length > 0)
             {
-                contentLength = data.Length;
-                stream = new MemoryStream(data);
-                stream.Seek(0, SeekOrigin.Begin);
+                using (MemoryStream stream = new MemoryStream(data))
+                {
+                    contentLength = data.Length;
+                    stream.Seek(0, SeekOrigin.Begin);
+                    await WriteAsync(key, contentType, contentLength, stream, token).ConfigureAwait(false);
+                }
             }
-
-            await WriteAsync(key, contentType, contentLength, stream, token).ConfigureAwait(false);
+            else
+            {
+                using (MemoryStream stream = new MemoryStream(Array.Empty<byte>()))
+                {
+                    contentLength = 0;
+                    await WriteAsync(key, contentType, contentLength, stream, token).ConfigureAwait(false);
+                }
+            }
         }
 
         /// <inheritdoc />
@@ -202,7 +239,7 @@ namespace BlobHelper
                 request.InputStream = stream;
             }
 
-            PutObjectResponse response = await _S3Client.PutObjectAsync(request, token).ConfigureAwait(false);
+            await _S3Client.PutObjectAsync(request, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -230,7 +267,7 @@ namespace BlobHelper
                 Key = key
             };
 
-            DeleteObjectResponse response = await _S3Client.DeleteObjectAsync(request, token).ConfigureAwait(false);
+            await _S3Client.DeleteObjectAsync(request, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -252,7 +289,7 @@ namespace BlobHelper
                 if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
                     return false;
 
-                //status wasn't not found, so throw the exception
+                // status wasn't not found, so throw the exception
                 throw;
             }
         }
@@ -326,7 +363,7 @@ namespace BlobHelper
 
             while (true)
             {
-                EnumerationResult result = await EnumerateAsync(null, null, token).ConfigureAwait(false);
+                EnumerationResult result = await EnumerateAsync(null, continuationToken, token).ConfigureAwait(false);
                 continuationToken = result.NextContinuationToken;
 
                 if (result.Blobs != null && result.Blobs.Count > 0)

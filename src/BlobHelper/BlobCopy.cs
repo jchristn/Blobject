@@ -9,7 +9,7 @@ namespace BlobHelper
     /// <summary>
     /// BLOB copy.
     /// </summary>
-    public class BlobCopy
+    public class BlobCopy : IDisposable
     {
         #region Public-Members
 
@@ -31,6 +31,7 @@ namespace BlobHelper
 
         private BlobClient _From = null;
         private BlobClient _To = null;
+        private bool _Disposed = false;
 
         #endregion
 
@@ -80,12 +81,6 @@ namespace BlobHelper
                 case StorageType.Disk:
                     _From = new BlobClient((DiskSettings)_CopyFrom);
                     break;
-                case StorageType.Komodo:
-                    _From = new BlobClient((KomodoSettings)_CopyFrom);
-                    break;
-                case StorageType.Kvpbase:
-                    _From = new BlobClient((KvpbaseSettings)_CopyFrom);
-                    break;
                 default:
                     throw new ArgumentException("Unknown storage type in 'copyFrom'.");
             }
@@ -101,12 +96,6 @@ namespace BlobHelper
                 case StorageType.Disk:
                     _To = new BlobClient((DiskSettings)_CopyTo);
                     break;
-                case StorageType.Komodo:
-                    _To = new BlobClient((KomodoSettings)_CopyTo);
-                    break;
-                case StorageType.Kvpbase:
-                    _To = new BlobClient((KvpbaseSettings)_CopyTo);
-                    break;
                 default:
                     throw new ArgumentException("Unknown storage type in 'copyTo'.");
             }
@@ -117,6 +106,34 @@ namespace BlobHelper
         #endregion
 
         #region Public-Methods
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        /// <param name="disposing">Disposing.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_Disposed)
+            {
+                _CopyFrom = null;
+                _CopyTo = null;
+                _Prefix = null;
+
+                _From = null;
+                _To = null;
+                _Disposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         /// Start the copy operation.
@@ -207,27 +224,11 @@ namespace BlobHelper
 
         #region Private-Methods
 
-        private bool IsSettings(object val)
-        {
-            if (val is AwsSettings
-                || val is AzureSettings 
-                || val is DiskSettings
-                || val is KomodoSettings
-                || val is KvpbaseSettings)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         private StorageType GetStorageType(object val)
         {
             if (val is AwsSettings) return StorageType.AwsS3;
             else if (val is AzureSettings) return StorageType.Azure;
             else if (val is DiskSettings) return StorageType.Disk;
-            else if (val is KomodoSettings) return StorageType.Komodo;
-            else if (val is KvpbaseSettings) return StorageType.Kvpbase;
             else throw new ArgumentException("Unknown storage type.");
         }
 

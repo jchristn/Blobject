@@ -7,7 +7,7 @@ namespace BlobHelper
     /// <summary>
     /// Metadata about a BLOB.
     /// </summary>
-    public class BlobMetadata
+    public class BlobMetadata : IDisposable
     {
         #region Public-Members
 
@@ -62,6 +62,7 @@ namespace BlobHelper
         #region Private-Members
 
         private long _ContentLength = 0;
+        private bool _Disposed = false;
 
         #endregion
 
@@ -102,6 +103,35 @@ namespace BlobHelper
                 "   Last Access    : " + LastAccessUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
 
             return ret; 
+        }
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        /// <param name="disposing">Disposing.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_Disposed)
+            {
+                Key = null;
+                ContentType = null;
+                ETag = null;
+                CreatedUtc = null;
+                LastUpdateUtc = null;
+                LastAccessUtc = null;
+
+                _Disposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion

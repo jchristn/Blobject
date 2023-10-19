@@ -114,19 +114,6 @@ namespace Test.Copy
                     DiskSettings disk = new DiskSettings(
                         Inputty.GetString("Directory :", null, false));
                     return new BlobClient(disk);
-                case StorageType.Komodo:
-                    KomodoSettings komodo = new KomodoSettings(
-                        Inputty.GetString("Endpoint URL :", "http://localhost:9090/", false),
-                        Inputty.GetString("Index GUID   :", "default", false),
-                        Inputty.GetString("API key      :", "default", false));
-                    return new BlobClient(komodo);
-                case StorageType.Kvpbase:
-                    KvpbaseSettings kvpbase = new KvpbaseSettings(
-                        Inputty.GetString("Endpoint URL :", "http://localhost:8000/", false),
-                        Inputty.GetString("User GUID    :", "default", false),
-                        Inputty.GetString("Container    :", "default", true),
-                        Inputty.GetString("API key      :", "default", false));
-                    return new BlobClient(kvpbase);
                 default:
                     throw new ArgumentException("Unknown storage type: '" + storageType + "'.");
             }

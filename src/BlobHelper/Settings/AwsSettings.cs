@@ -282,14 +282,14 @@ namespace BlobHelper
         /// <returns>True if valid.</returns>
         public bool ValidateRegion(string region)
         {
-            return ValidRegions.Contains(region);
+            return _ValidRegions.Contains(region);
         }
 
         #endregion
 
         #region Private-Methods
 
-        private List<string> ValidRegions = new List<string>
+        private List<string> _ValidRegions = new List<string>
         {
             "APNortheast1",
             "APNortheast2",

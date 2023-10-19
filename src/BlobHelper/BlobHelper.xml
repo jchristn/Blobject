@@ -27,18 +27,6 @@
             </summary>
             <param name="config">Storage configuration.</param>
         </member>
-        <member name="M:BlobHelper.BlobClient.#ctor(BlobHelper.KvpbaseSettings)">
-            <summary>
-            Instantiate the object for Kvpbase strorage.
-            </summary>
-            <param name="config">Storage configuration.</param>
-        </member>
-        <member name="M:BlobHelper.BlobClient.#ctor(BlobHelper.KomodoSettings)">
-            <summary>
-            Instantiate the object for a Komodo index.
-            </summary>
-            <param name="config">Storage configuration.</param>
-        </member>
         <member name="M:BlobHelper.BlobClient.Delete(System.String,System.Threading.CancellationToken)">
             <summary>
             Delete a BLOB by its key.
@@ -166,6 +154,17 @@
             <param name="copyTo">Settings of the repository to which objects should be copied.</param>
             <param name="prefix">Prefix of the objects that should be copied.</param>
         </member>
+        <member name="M:BlobHelper.BlobCopy.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:BlobHelper.BlobCopy.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
         <member name="M:BlobHelper.BlobCopy.Start(System.Int32,System.Threading.CancellationToken)">
             <summary>
             Start the copy operation.
@@ -182,6 +181,17 @@
             Initializes a new instance of the <see cref="T:BlobHelper.AwsS3BlobClient"/> class.
             </summary>
             <param name="awsSettings">Settings for <see cref="T:BlobHelper.AwsS3BlobClient"/>.</param>
+        </member>
+        <member name="M:BlobHelper.AwsS3BlobClient.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:BlobHelper.AwsS3BlobClient.Dispose">
+            <summary>
+            Dispose.
+            </summary>
         </member>
         <member name="M:BlobHelper.AwsS3BlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
@@ -233,6 +243,17 @@
             </summary>
             <param name="azureSettings">Settings for <see cref="T:BlobHelper.AzureBlobClient"/>.</param>
         </member>
+        <member name="M:BlobHelper.AzureBlobClient.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:BlobHelper.AzureBlobClient.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
         <member name="M:BlobHelper.AzureBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
@@ -282,6 +303,17 @@
             Initializes a new instance of the <see cref="T:BlobHelper.DiskBlobClient"/> class.
             </summary>
             <param name="diskSettings">Settings for <see cref="T:BlobHelper.DiskBlobClient"/>.</param>
+        </member>
+        <member name="M:BlobHelper.DiskBlobClient.Dispose(System.Boolean)">
+            <summary>
+            Disposed.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:BlobHelper.DiskBlobClient.Dispose">
+            <summary>
+            Dispose.
+            </summary>
         </member>
         <member name="M:BlobHelper.DiskBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
@@ -423,96 +455,6 @@
             </summary>
             <param name="token">The cancellation token.</param>
             <returns>A task representing the asynchronous operation.</returns>
-        </member>
-        <member name="T:BlobHelper.KomodoBlobClient">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.#ctor(BlobHelper.KomodoSettings)">
-            <summary>
-            Initializes a new instance of the <see cref="T:BlobHelper.KomodoBlobClient"/> class.
-            </summary>
-            <param name="komodoSettings">Settings for <see cref="T:BlobHelper.KomodoBlobClient"/>.</param>
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.GetStreamAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.WriteManyAsync(System.Collections.Generic.List{BlobHelper.WriteRequest},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.EnumerateAsync(System.String,System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KomodoBlobClient.EmptyAsync(System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="T:BlobHelper.KvpbaseBlobClient">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.#ctor(BlobHelper.KvpbaseSettings)">
-            <summary>
-            Initializes a new instance of the <see cref="T:BlobHelper.KvpbaseBlobClient"/> class.
-            </summary>
-            <param name="kvpbaseSettings">Settings for <see cref="T:BlobHelper.KvpbaseBlobClient"/>.</param>
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.GetStreamAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.WriteManyAsync(System.Collections.Generic.List{BlobHelper.WriteRequest},System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.EnumerateAsync(System.String,System.String,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:BlobHelper.KvpbaseBlobClient.EmptyAsync(System.Threading.CancellationToken)">
-            <inheritdoc />
         </member>
         <member name="T:BlobHelper.AwsRegion">
             <summary>
@@ -815,6 +757,17 @@
             </summary>
             <returns>String.</returns>
         </member>
+        <member name="M:BlobHelper.BlobMetadata.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:BlobHelper.BlobMetadata.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
         <member name="T:BlobHelper.CopyStatistics">
             <summary>
             BLOB copy statistics.
@@ -952,6 +905,17 @@
             </summary>
             <param name="continuationToken">Continuation token.</param>
             <param name="blobs">BLOBs.</param>
+        </member>
+        <member name="M:BlobHelper.EnumerationResult.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:BlobHelper.EnumerationResult.Dispose">
+            <summary>
+            Dispose.
+            </summary>
         </member>
         <member name="T:BlobHelper.WriteRequest">
             <summary>
@@ -1196,78 +1160,6 @@
             Instantiate.
             </summary>
             <param name="directory">The directory where BLOBs should be stored.</param>
-        </member>
-        <member name="T:BlobHelper.KomodoSettings">
-            <summary>
-            Settings when using Komodo for storage.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.KomodoSettings.Endpoint">
-            <summary>
-            Komodo endpoint URL, of the form http://[hostname]:[port]/.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.KomodoSettings.IndexGUID">
-            <summary>
-            Komodo index GUID.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.KomodoSettings.ApiKey">
-            <summary>
-            Komodo API key.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.KomodoSettings.#ctor">
-            <summary>
-            Initialize the object.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.KomodoSettings.#ctor(System.String,System.String,System.String)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="endpoint">Komodo endpoint, i.e. http://localhost:8000/</param>
-            <param name="indexGuid">GUID of the index.</param>
-            <param name="apiKey">API key with read, write, and delete permissions.</param>
-        </member>
-        <member name="T:BlobHelper.KvpbaseSettings">
-            <summary>
-            Settings when using kvpbase for storage.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.KvpbaseSettings.Endpoint">
-            <summary>
-            Kvpbase endpoint URL, of the form http://[hostname]:[port]/.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.KvpbaseSettings.UserGuid">
-            <summary>
-            Kvpbase user GUID.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.KvpbaseSettings.Container">
-            <summary>
-            Kvpbase container.
-            </summary>
-        </member>
-        <member name="P:BlobHelper.KvpbaseSettings.ApiKey">
-            <summary>
-            Kvpbase API key.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.KvpbaseSettings.#ctor">
-            <summary>
-            Initialize the object.
-            </summary>
-        </member>
-        <member name="M:BlobHelper.KvpbaseSettings.#ctor(System.String,System.String,System.String,System.String)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="endpoint">Kvpbase endpoint, i.e. http://localhost:8000/</param>
-            <param name="userGuid">GUID of the user.</param>
-            <param name="container">Container in which BLOBs should be stored.</param>
-            <param name="apiKey">API key with read, write, and delete permissions.</param>
         </member>
     </members>
 </doc>

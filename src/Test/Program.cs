@@ -16,8 +16,6 @@ namespace Test
         static AwsSettings _AwsSettings;
         static AzureSettings _AzureSettings;
         static DiskSettings _DiskSettings;
-        static KomodoSettings _KomodoSettings;
-        static KvpbaseSettings _KvpbaseSettings;
 
         static void Main(string[] args)
         {
@@ -160,21 +158,8 @@ namespace Test
                         Inputty.GetString("Directory :", null, false));
                     _Blobs = new BlobClient(_DiskSettings);
                     break;
-                case StorageType.Komodo:
-                    _KomodoSettings = new KomodoSettings(
-                        Inputty.GetString("Endpoint URL :", "http://localhost:9090/", false),
-                        Inputty.GetString("Index GUID   :", "default", false),
-                        Inputty.GetString("API key      :", "default", false));
-                    _Blobs = new BlobClient(_KomodoSettings);
-                    break;
-                case StorageType.Kvpbase:
-                    _KvpbaseSettings = new KvpbaseSettings(
-                        Inputty.GetString("Endpoint URL :", "http://localhost:8000/", false),
-                        Inputty.GetString("User GUID    :", "default", false),
-                        Inputty.GetString("Container    :", "default", true),
-                        Inputty.GetString("API key      :", "default", false));
-                    _Blobs = new BlobClient(_KvpbaseSettings);
-                    break;
+                default:
+                    throw new ArgumentException("Unknown storage type: '" + _StorageType + "'.");
             }
         }
 

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace BlobHelper
 {
     /// <inheritdoc />
-    public class DiskBlobClient : IBlobClient
+    public class DiskBlobClient : IBlobClient, IDisposable
     {
         #region Public-Members
 
@@ -35,7 +35,8 @@ namespace BlobHelper
         #region Private-Members
 
         private int _StreamBufferSize = 65536;
-        private readonly DiskSettings _DiskSettings = null;
+        private bool _Disposed = false;
+        private DiskSettings _DiskSettings = null;
 
         #endregion
 
@@ -55,6 +56,29 @@ namespace BlobHelper
         #endregion
 
         #region Public-Methods
+
+        /// <summary>
+        /// Disposed.
+        /// </summary>
+        /// <param name="disposing">Disposing.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_Disposed)
+            {
+                _DiskSettings = null;
+                _Disposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
 
         /// <inheritdoc />
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously

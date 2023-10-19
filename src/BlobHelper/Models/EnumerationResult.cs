@@ -8,7 +8,7 @@ namespace BlobHelper
     /// <summary>
     /// Enumeration results.
     /// </summary>
-    public class EnumerationResult
+    public class EnumerationResult : IDisposable
     {
         #region Public-Members
 
@@ -71,6 +71,7 @@ namespace BlobHelper
         #region Private-Members
 
         private List<BlobMetadata> _Blobs = new List<BlobMetadata>();
+        private bool _Disposed = false;
 
         #endregion
 
@@ -97,6 +98,31 @@ namespace BlobHelper
         #endregion
 
         #region Public-Methods
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        /// <param name="disposing">Disposing.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_Disposed)
+            {
+                NextContinuationToken = null;
+                Blobs = null;
+
+                _Disposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
 
         #endregion
 
