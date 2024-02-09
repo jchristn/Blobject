@@ -341,6 +341,9 @@ namespace BlobHelper
 
                 md.ContentLength = fi.Length;
                 md.CreatedUtc = fi.CreationTimeUtc;
+                md.LastAccessUtc = fi.LastAccessTimeUtc;
+                md.LastUpdateUtc = fi.LastWriteTimeUtc;
+
                 ret.Blobs.Add(md);
 
                 continue;

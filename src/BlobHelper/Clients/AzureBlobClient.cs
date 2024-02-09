@@ -270,9 +270,9 @@ namespace BlobHelper
                     BlobMetadata md = new BlobMetadata();
                     md.ETag = item.Properties.ETag.ToString();
                     md.ContentLength = (item.Properties.ContentLength != null ? Convert.ToInt64(item.Properties.ContentLength) : 0);
-                    md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime : DateTime.UtcNow;
-                    md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime : DateTime.UtcNow;
-                    md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime : DateTime.UtcNow;
+                    md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+                    md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+                    md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
                     md.ContentType = item.Properties.ContentType;
                     md.Key = item.Name;
                     mds.Add(md);
