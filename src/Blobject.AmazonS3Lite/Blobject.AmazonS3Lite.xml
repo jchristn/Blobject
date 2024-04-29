@@ -1,0 +1,154 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Blobject.AmazonS3Lite</name>
+    </assembly>
+    <members>
+        <member name="T:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.Logger">
+            <summary>
+            Method to invoke to send log messages.
+            </summary>
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.#ctor(Blobject.AmazonS3Lite.AwsSettings)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient"/> class.
+            </summary>
+            <param name="awsSettings">Settings for <see cref="T:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient"/>.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.GetStreamAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.WriteManyAsync(System.Collections.Generic.List{Blobject.Core.WriteRequest},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.EnumerateAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.EmptyAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Blobject.AmazonS3Lite.AwsSettings">
+            <summary>
+            Settings when using AWS S3 for storage.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AwsSettings.Endpoint">
+            <summary>
+            Override the AWS S3 endpoint (if using non-Amazon storage), otherwise leave null.
+            Use the form http://localhost:8000/
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AwsSettings.Ssl">
+            <summary>
+            Enable or disable SSL (only if using non-Amazon storage).
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AwsSettings.AccessKey">
+            <summary>
+            AWS S3 access key.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AwsSettings.SecretKey">
+            <summary>
+            AWS S3 secret key.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AwsSettings.Region">
+            <summary>
+            AWS S3 region.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AwsSettings.Bucket">
+            <summary>
+            AWS S3 bucket.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AwsSettings.BaseUrl">
+            <summary>
+            Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.
+            For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AwsSettings.RequestStyle">
+            <summary>
+            Request style.
+            Virtual-hosted style URLs are of the form http://{bucket}.{hostname}:{port}/{key}.
+            Path-style URLs are of the form http://{hostname}:{port}/{bucket}/{key}.
+            </summary>
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AwsSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AwsSettings.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AwsSettings.#ctor(System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
+        </member>
+    </members>
+</doc>

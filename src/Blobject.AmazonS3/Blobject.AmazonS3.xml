@@ -1,0 +1,311 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Blobject.AmazonS3</name>
+    </assembly>
+    <members>
+        <member name="T:Blobject.AmazonS3.AmazonS3BlobClient">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.AmazonS3.AmazonS3BlobClient.Logger">
+            <summary>
+            Method to invoke to send log messages.
+            </summary>
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.#ctor(Blobject.AmazonS3.AwsSettings)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Blobject.AmazonS3.AmazonS3BlobClient"/> class.
+            </summary>
+            <param name="awsSettings">Settings for <see cref="T:Blobject.AmazonS3.AmazonS3BlobClient"/>.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.GetStreamAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.WriteManyAsync(System.Collections.Generic.List{Blobject.Core.WriteRequest},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.EnumerateAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.EmptyAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Blobject.AmazonS3.AwsRegion">
+            <summary>
+            AWS region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.APNortheast1">
+            <summary>
+            APNortheast1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.APNortheast2">
+            <summary>
+            APNortheast2 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.APNortheast3">
+            <summary>
+            APNortheast3 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.APSoutheast1">
+            <summary>
+            APSoutheast1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.APSoutheast2">
+            <summary>
+            APSoutheast2 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.APSoutheast3">
+            <summary>
+            APSoutheast3 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.APSoutheast4">
+            <summary>
+            APSoutheast4 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.APSouth1">
+            <summary>
+            APSouth1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.CACentral1">
+            <summary>
+            CACentral1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.CNNorth1">
+            <summary>
+            CNNorth1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.CNNorthwest1">
+            <summary>
+            CNNorthwest1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.EUCentral1">
+            <summary>
+            EUCentral1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.EUNorth1">
+            <summary>
+            EUNorth1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.EUWest1">
+            <summary>
+            EUWest1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.EUWest2">
+            <summary>
+            EUWest2 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.EUWest3">
+            <summary>
+            EUWest3 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.SAEast1">
+            <summary>
+            SAEast1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.USEast1">
+            <summary>
+            USEast1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.USEast2">
+            <summary>
+            USEast2 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.USGovCloudEast1">
+            <summary>
+            USGovCloudEast1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.USGovCloudWest1">
+            <summary>
+            USGovCloudWest1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.USWest1">
+            <summary>
+            USWest1 region.
+            </summary>
+        </member>
+        <member name="F:Blobject.AmazonS3.AwsRegion.USWest2">
+            <summary>
+            USWest2 region.
+            </summary>
+        </member>
+        <member name="T:Blobject.AmazonS3.AwsSettings">
+            <summary>
+            Settings when using AWS S3 for storage.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3.AwsSettings.Endpoint">
+            <summary>
+            Override the AWS S3 endpoint (if using non-Amazon storage), otherwise leave null.
+            Use the form http://localhost:8000/
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3.AwsSettings.Ssl">
+            <summary>
+            Enable or disable SSL (only if using non-Amazon storage).
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3.AwsSettings.AccessKey">
+            <summary>
+            AWS S3 access key.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3.AwsSettings.SecretKey">
+            <summary>
+            AWS S3 secret key.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3.AwsSettings.Region">
+            <summary>
+            AWS S3 region.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3.AwsSettings.Bucket">
+            <summary>
+            AWS S3 bucket.
+            </summary>
+        </member>
+        <member name="P:Blobject.AmazonS3.AwsSettings.BaseUrl">
+            <summary>
+            Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.
+            For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.
+            </summary>
+        </member>
+        <member name="M:Blobject.AmazonS3.AwsSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.String,Blobject.AmazonS3.AwsRegion,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.String,Blobject.AmazonS3.AwsRegion,System.String,System.Boolean)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="ssl">Enable or disable SSL.</param> 
+        </member>
+        <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,Blobject.AmazonS3.AwsRegion,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
+            <param name="ssl">Enable or disable SSL.</param>
+            <param name="accessKey">Access key with which to access AWS S3.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="region">AWS region.</param>
+            <param name="bucket">Bucket in which to store BLOBs.</param>
+            <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
+        </member>
+        <member name="M:Blobject.AmazonS3.AwsSettings.GetAwsRegionEndpoint">
+            <summary>
+            Retrieve AWS region endpoint.
+            </summary>
+            <returns>AWS region endpoint.</returns>
+        </member>
+        <member name="M:Blobject.AmazonS3.AwsSettings.ValidateRegion(System.String)">
+            <summary>
+            Validate a region string.
+            </summary>
+            <param name="region">Region.</param>
+            <returns>True if valid.</returns>
+        </member>
+    </members>
+</doc>

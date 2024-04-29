@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Blobject.Disk</name>
+    </assembly>
+    <members>
+        <member name="T:Blobject.Disk.DiskBlobClient">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.Disk.DiskBlobClient.Logger">
+            <summary>
+            Method to invoke to send log messages.
+            </summary>
+        </member>
+        <member name="P:Blobject.Disk.DiskBlobClient.StreamBufferSize">
+            <summary>
+            Buffer size to use when reading from a stream.
+            </summary>
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.#ctor(Blobject.Disk.DiskSettings)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Blobject.Disk.DiskBlobClient"/> class.
+            </summary>
+            <param name="diskSettings">Settings for <see cref="T:Blobject.Disk.DiskBlobClient"/>.</param>
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.Dispose(System.Boolean)">
+            <summary>
+            Disposed.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.GetStreamAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.WriteManyAsync(System.Collections.Generic.List{Blobject.Core.WriteRequest},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.EnumerateAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.EmptyAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Blobject.Disk.DiskSettings">
+            <summary>
+            Settings when using local filesystem for storage.
+            </summary>
+        </member>
+        <member name="P:Blobject.Disk.DiskSettings.Directory">
+            <summary>
+            The filesystem directory to use.
+            </summary>
+        </member>
+        <member name="M:Blobject.Disk.DiskSettings.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:Blobject.Disk.DiskSettings.#ctor(System.String)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="directory">The directory where BLOBs should be stored.</param>
+        </member>
+    </members>
+</doc>

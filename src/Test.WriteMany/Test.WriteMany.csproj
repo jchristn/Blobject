@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFrameworks>net462;net48;net6.0;net7.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -10,7 +10,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\BlobHelper\BlobHelper.csproj" />
+	  <ProjectReference Include="..\Blobject.AmazonS3\Blobject.AmazonS3.csproj" />
+	  <ProjectReference Include="..\Blobject.AzureBlob\Blobject.AzureBlob.csproj" />
+	  <ProjectReference Include="..\Blobject.CIFS\Blobject.CIFS.csproj" />
+	  <ProjectReference Include="..\Blobject.Disk\Blobject.Disk.csproj" />
+	  <ProjectReference Include="..\Blobject.NFS\Blobject.NFS.csproj" />
 	</ItemGroup>
-
+ 
 </Project>

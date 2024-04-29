@@ -1,8 +1,6 @@
-# BlobHelper
+# Blobject
 
-BlobHelper is a common, consistent storage interface for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3), Kvpbase, and local filesystem written in C#.
-
-[![NuGet Version](https://img.shields.io/nuget/v/BlobHelper.svg?style=flat)](https://www.nuget.org/packages/BlobHelper/) [![NuGet](https://img.shields.io/nuget/dt/BlobHelper.svg)](https://www.nuget.org/packages/BlobHelper) 
+Blobject (formerly BlobHelper) is a common, consistent storage interface for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3, View), CIFS (Windows file shares), NFS (Linux and UNIX file shares), and local filesystem written in C#.
 
 ## Help, Feedback, Contribute
 
@@ -18,18 +16,35 @@ This project was built to provide a simple interface over external storage to he
 - @Revazashvili for fixes related to byte array instantiation, Azure, and refactoring
 - @courtzzz for keeping the region list updated
 
-## New in v4.1.x
+## Dependencies
 
-- Refactor recommendation by @Revazashvili to interface and implementation
-- Minor class name change; ```Blobs``` becomes ```BlobClient```
+Though this library is MIT licensed, it is dependent upon other libraries, some of which carry a different license.  Each of these libraries are included by reference, that is, none of their code has been modified.
+
+| Package | URL | License |
+|---------|-----|---------|
+| AWSSDK.S3 | https://github.com/aws/aws-sdk-net | Apache 2.0 |
+| Azure.Storage.Blobs | https://github.com/Azure/azure-sdk-for-net | MIT |
+| EzSmb | https://github.com/ume05rw/EzSmb | LGPL-3.0 |
+| SMBLibrary | https://github.com/TalAloni/SMBLibrary | LGPL-3.0 |
+| NFS-Client | https://github.com/SonnyX/NFS-Client | Unknown, public |
+| Nekodrive | https://github.com/nekoni/nekodrive | Unknown, public | 
+| S3Lite | https://github.com/jchristn/S3Lite | MIT |
+
+## New in v5.0.x
+
+- Rename from `BlobHelper` to `Blobject`
+- Added support for CIFS and NFS
+- Remove use of continuation tokens for disk
+- Add `S3Lite` variant, not dependent on AWSSDK
+- Refactor
 
 ## Example Project
 
-Refer to the ```Test``` project for exercising the library.
+Refer to the `Test` project for exercising the library.
 
 ## Getting Started - AWS S3
 ```csharp
-using BlobHelper;
+using Blobject;
 
 AwsSettings settings = new AwsSettings(
 	accessKey, 
@@ -42,7 +57,7 @@ BlobClient blobs = new BlobClient(settings);
 
 ## Getting Started - AWS S3 Compatible Storage (Minio, Less3, etc)
 ```csharp
-using BlobHelper;
+using Blobject.AmazonS3;
 
 AwsSettings settings = new AwsSettings(
 	endpoint,      // http://localhost:8000/
@@ -54,62 +69,73 @@ AwsSettings settings = new AwsSettings(
 	baseUrl        // i.e. http://localhost:8000/{bucket}/{key}
 	);
 
-BlobClient blobs = new BlobClient(settings); 
+AmazonS3BlobClient blobs = new AmazonS3BlobClient(settings); 
+```
+
+## Getting Started - AWS S3 Lite (non-AWS library to reduce dependency drag)
+```csharp
+using Blobject.AmazonS3Lite;
+
+// Initialize settings as above
+AmazonS3LiteBlobClient blobs = new AmazonS3BlobClient(settings); 
 ```
 
 ## Getting Started - Azure
 ```csharp
-using BlobHelper;
+using Blobject.AzureBlob;
 
-AzureSettings settings = new AzureSettings(
+AzureBlobSettings settings = new AzureBlobSettings(
 	accountName, 
 	accessKey, 
 	"https://[accountName].blob.core.windows.net/", 
 	containerName);
 
-BlobClient blobs = new BlobClient(settings); 
+AzureBlobClient blobs = new AzureBlobClient(settings); 
 ```
 
-## Getting Started - Komodo
+## Getting Started - CIFS
 ```csharp
-using BlobHelper;
+using Blobject.CIFS;
 
-KomodoSettings settings = new KomodoSettings(
-	"http://localhost:9090/", 
-	indexGuid, 
-	apiKey);
+CifsSettings settings = new CifsSettings(
+	IPAddress.Parse("127.0.0.1"),
+	username,
+	password,
+	sharename);
 
-BlobClient blobs = new BlobClient(settings); 
-```
-
-## Getting Started - Kvpbase
-```csharp
-using BlobHelper;
-
-KvpbaseSettings settings = new KvpbaseSettings(
-	"http://localhost:8000/", 
-	userGuid, 
-	containerName, 
-	apiKey);
-
-BlobClient blobs = new BlobClient(settings); 
+CifsBlobClient blobs = new CifsBlobClient(settings);
 ```
 
 ## Getting Started - Disk
 ```csharp
-using BlobHelper;
+using Blobject.Disk;
 
 DiskSettings settings = new DiskSettings("blobs"); 
 
-BlobClient blobs = new BlobClient(settings);
+DiskBlobClient blobs = new DiskBlobClient(settings);
+```
+
+## Getting Started - NFS
+```csharp
+using Blobject.NFS;
+
+NfsSettings settings = new NfsSettings(
+	IPAddress.Parse("127.0.0.1"),
+	0, // user ID
+	0, // group ID,
+	sharename,
+	NfsVersionEnum.V3 // V2, V3, or V4
+	);
+
+NfsBlobClient = new NfsBlobClient(settings);
 ```
 
 ## Getting Started (Byte Arrays for Smaller Objects)
 ```csharp
-await blobs.Write("test", "text/plain", "This is some data");  // throws IOException
-byte[] data = await blobs.Get("test");                         // throws IOException
-bool exists = await blobs.Exists("test");
-await blobs.Delete("test");
+await blobs.WriteAsync("test", "text/plain", "This is some data");  // throws IOException
+byte[] data = await blobs.GetAsync("test");                         // throws IOException
+bool exists = await blobs.ExistsAsync("test");
+await blobs.DeleteAsync("test");
 ```
 
 ## Getting Started (Streams for Larger Objects)
@@ -120,21 +146,29 @@ long contentLength = fi.Length;
 
 using (FileStream fs = new FileStream(inputFile, FileMode.Open))
 {
-    await _Blobs.Write("key", "content-type", contentLength, fs);  // throws IOException
+    await _Blobs.WriteAsync("key", "content-type", contentLength, fs);  // throws IOException
 }
 
 // Downloading to a stream
-BlobData blob = await _Blobs.GetStream(key);
+BlobData blob = await _Blobs.GetStreamAsync(key);
 // read blob.ContentLength bytes from blob.Data
+```
+
+## Accessing Files within Folders
+```csharp
+//
+// Use a key of the form [path]/[to]/[file]/[filename].[ext]
+//
+await blobs.WriteAsync("subdirectory/filename.ext", "text/plain", "Hello!");
 ```
 
 ## Metadata and Enumeration
 ```csharp
 // Get BLOB metadata
-BlobMetadata md = await _Blobs.GetMetadata("key");
+BlobMetadata md = await _Blobs.GetMetadataAsync("key");
 
 // Enumerate BLOBs
-EnumerationResult result = await _Blobs.Enumerate();
+EnumerationResult result = await _Blobs.EnumerateAsync();
 // list of BlobMetadata contained in result.Blobs
 // continuation token in result.NextContinuationToken
 ```
@@ -146,8 +180,7 @@ If you have multiple storage repositories and wish to move BLOBs from one reposi
 Thanks to @phpfui for contributing code and the idea for this enhancement!
 
 ```csharp
-Blobs from    = new Blobs(new DiskSettings("./disk1/")); // assume some files are here
-Blobs to      = new Blobs(new DiskSettings("./disk2/"));
+// instantiate two BLOB clients
 BlobCopy copy = new BlobCopy(from, to);
 CopyStatistics stats = copy.Start();
 /*

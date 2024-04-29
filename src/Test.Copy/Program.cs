@@ -1,13 +1,19 @@
-﻿using System;
-using BlobHelper;
-using GetSomeInput;
-
-namespace Test.Copy
+﻿namespace Test.Copy
 {
+    using System;
+    using System.Net;
+    using Blobject.AmazonS3;
+    using Blobject.AzureBlob;
+    using Blobject.CIFS;
+    using Blobject.Core;
+    using Blobject.Disk;
+    using Blobject.NFS;
+    using GetSomeInput;
+
     class Program
     {
-        static BlobClient _From;
-        static BlobClient _To;
+        static IBlobClient _From;
+        static IBlobClient _To;
 
         static void Main(string[] args)
         {
@@ -40,13 +46,13 @@ namespace Test.Copy
             }
         }
 
-        static BlobClient InitializeClient()
+        static IBlobClient InitializeClient()
         {
             StorageType storageType = StorageType.Disk;
             bool runForever = true;
             while (runForever)
             {
-                string str = Inputty.GetString("Storage type [aws azure disk kvp komodo]:", "disk", false);
+                string str = Inputty.GetString("Storage type [aws azure disk cifs nfs]:", "disk", false);
                 switch (str)
                 {
                     case "aws":
@@ -61,12 +67,12 @@ namespace Test.Copy
                         storageType = StorageType.Disk;
                         runForever = false;
                         break;
-                    case "komodo":
-                        storageType = StorageType.Komodo;
+                    case "cifs":
+                        storageType = StorageType.CIFS;
                         runForever = false;
                         break;
-                    case "kvp":
-                        storageType = StorageType.Kvpbase;
+                    case "nfs":
+                        storageType = StorageType.NFS;
                         runForever = false;
                         break;
                     default:
@@ -102,18 +108,38 @@ namespace Test.Copy
                             Inputty.GetString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
                             );
                     }
-                    return new BlobClient(aws);
+                    return new AmazonS3BlobClient(aws);
+
                 case StorageType.Azure:
-                    AzureSettings azure = new AzureSettings(
+                    AzureBlobSettings azure = new AzureBlobSettings(
                         Inputty.GetString("Account name :", null, false),
                         Inputty.GetString("Access key   :", null, false),
                         Inputty.GetString("Endpoint URL :", null, false),
                         Inputty.GetString("Container    :", null, false));
-                    return new BlobClient(azure);
+                    return new AzureBlobClient(azure);
+
+                case StorageType.CIFS:
+                    CifsSettings cifs = new CifsSettings(
+                        IPAddress.Parse(Inputty.GetString("IP Address :", null, false)),
+                                        Inputty.GetString("Username   :", null, false),
+                                        Inputty.GetString("Password   :", null, false),
+                                        Inputty.GetString("Share      :", null, false));
+                    return new CifsBlobClient(cifs);
+
                 case StorageType.Disk:
                     DiskSettings disk = new DiskSettings(
                         Inputty.GetString("Directory :", null, false));
-                    return new BlobClient(disk);
+                    return new DiskBlobClient(disk);
+
+                case StorageType.NFS:
+                    NfsSettings nfs = new NfsSettings(
+                        IPAddress.Parse(Inputty.GetString("IP Address :", null, false)),
+                                        Inputty.GetInteger("User ID    :", 0, false, true),
+                                        Inputty.GetInteger("Group ID   :", 0, false, true),
+                                        Inputty.GetString("Share      :", null, false),
+                                        (NfsVersionEnum)(Enum.Parse(typeof(NfsVersionEnum), Inputty.GetString("Version    :", "V3", false))));
+                    return new NfsBlobClient(nfs);
+
                 default:
                     throw new ArgumentException("Unknown storage type: '" + storageType + "'.");
             }

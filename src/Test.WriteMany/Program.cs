@@ -1,21 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BlobHelper;
-using GetSomeInput;
-
-namespace Test.WriteMany
+﻿namespace Test.WriteMany
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
+    using System.Text;
+    using System.Threading.Tasks;
+    using Blobject.AmazonS3;
+    using Blobject.AzureBlob;
+    using Blobject.CIFS;
+    using Blobject.Core;
+    using Blobject.Disk;
+    using Blobject.NFS;
+    using GetSomeInput;
+
     class Program
     {
         static StorageType _StorageType;
-        static BlobClient _Blobs;
+        static IBlobClient _Blobs;
         static AwsSettings _AwsSettings;
-        static AzureSettings _AzureSettings;
+        static AzureBlobSettings _AzureSettings;
+        static CifsSettings _CifsSettings;
         static DiskSettings _DiskSettings;
+        static NfsSettings _NfsSettings;
 
         static void Main(string[] args)
         {
@@ -32,7 +40,7 @@ namespace Test.WriteMany
             }
 
             Console.WriteLine("Performing " + count + " write(s)");
-            _Blobs.WriteMany(writes).Wait();
+            _Blobs.WriteManyAsync(writes).Wait();
         }
 
         static void SetStorageType()
@@ -40,7 +48,7 @@ namespace Test.WriteMany
             bool runForever = true;
             while (runForever)
             {
-                string storageType = Inputty.GetString("Storage type [aws azure disk kvp komodo]:", "disk", false);
+                string storageType = Inputty.GetString("Storage type [aws azure disk cifs nfs]:", "disk", false);
                 switch (storageType)
                 {
                     case "aws":
@@ -55,12 +63,12 @@ namespace Test.WriteMany
                         _StorageType = StorageType.Disk;
                         runForever = false;
                         break;
-                    case "komodo":
-                        _StorageType = StorageType.Komodo;
+                    case "cifs":
+                        _StorageType = StorageType.CIFS;
                         runForever = false;
                         break;
-                    case "kvp":
-                        _StorageType = StorageType.Kvpbase;
+                    case "nfs":
+                        _StorageType = StorageType.NFS;
                         runForever = false;
                         break;
                     default:
@@ -99,21 +107,43 @@ namespace Test.WriteMany
                             Inputty.GetString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
                             );
                     }
-                    _Blobs = new BlobClient(_AwsSettings);
+                    _Blobs = new AmazonS3BlobClient(_AwsSettings);
                     break;
+
                 case StorageType.Azure:
-                    _AzureSettings = new AzureSettings(
+                    _AzureSettings = new AzureBlobSettings(
                         Inputty.GetString("Account name :", null, false),
                         Inputty.GetString("Access key   :", null, false),
                         Inputty.GetString("Endpoint URL :", null, false),
                         Inputty.GetString("Container    :", null, false));
-                    _Blobs = new BlobClient(_AzureSettings);
+                    _Blobs = new AzureBlobClient(_AzureSettings);
                     break;
+
+                case StorageType.CIFS:
+                    _CifsSettings = new CifsSettings(
+                        IPAddress.Parse(Inputty.GetString("IP Address :", null, false)),
+                                        Inputty.GetString("Username   :", null, false),
+                                        Inputty.GetString("Password   :", null, false),
+                                        Inputty.GetString("Share      :", null, false));
+                    _Blobs = new CifsBlobClient(_CifsSettings);
+                    break;
+
                 case StorageType.Disk:
                     _DiskSettings = new DiskSettings(
                         Inputty.GetString("Directory :", null, false));
-                    _Blobs = new BlobClient(_DiskSettings);
+                    _Blobs = new DiskBlobClient(_DiskSettings);
                     break;
+
+                case StorageType.NFS:
+                    _NfsSettings = new NfsSettings(
+                        IPAddress.Parse(Inputty.GetString("IP Address :", null, false)),
+                                        Inputty.GetInteger("User ID    :", 0, false, true),
+                                        Inputty.GetInteger("Group ID   :", 0, false, true),
+                                        Inputty.GetString("Share      :", null, false),
+                                        (NfsVersionEnum)(Enum.Parse(typeof(NfsVersionEnum), Inputty.GetString("Version    :", "V3", false))));
+                    _Blobs = new NfsBlobClient(_NfsSettings);
+                    break;
+
                 default:
                     throw new ArgumentException("Unknown storage type: '" + _StorageType + "'.");
             }

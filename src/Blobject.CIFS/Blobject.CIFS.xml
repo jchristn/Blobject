@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Blobject.CIFS</name>
+    </assembly>
+    <members>
+        <member name="T:Blobject.CIFS.CifsBlobClient">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.CIFS.CifsBlobClient.Logger">
+            <summary>
+            Method to invoke to send log messages.
+            </summary>
+        </member>
+        <member name="P:Blobject.CIFS.CifsBlobClient.StreamBufferSize">
+            <summary>
+            Buffer size when working with streams.
+            </summary>
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.#ctor(Blobject.CIFS.CifsSettings)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Blobject.CIFS.CifsBlobClient"/> class.
+            </summary>
+            <param name="cifsSettings">Settings for <see cref="T:Blobject.CIFS.CifsBlobClient"/>.</param>
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.GetStreamAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.WriteManyAsync(System.Collections.Generic.List{Blobject.Core.WriteRequest},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.EnumerateAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.EmptyAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Blobject.CIFS.CifsSettings">
+            <summary>
+            Settings when using CIFS for storage.
+            </summary>
+        </member>
+        <member name="P:Blobject.CIFS.CifsSettings.Ip">
+            <summary>
+            IP address of the server.
+            </summary>
+        </member>
+        <member name="P:Blobject.CIFS.CifsSettings.Username">
+            <summary>
+            Username.  When including domain, use the form \\domain\username.
+            </summary>
+        </member>
+        <member name="P:Blobject.CIFS.CifsSettings.Password">
+            <summary>
+            Password.
+            </summary>
+        </member>
+        <member name="P:Blobject.CIFS.CifsSettings.Share">
+            <summary>
+            Name of the share.
+            </summary>
+        </member>
+        <member name="M:Blobject.CIFS.CifsSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:Blobject.CIFS.CifsSettings.#ctor(System.Net.IPAddress,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="ip">IP address.</param>
+            <param name="user">Username.  When including domain, use the form \\domain\username.</param>
+            <param name="pass">Password.</param>
+            <param name="share">Share name.</param>
+        </member>
+    </members>
+</doc>
