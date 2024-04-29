@@ -1,3 +1,5 @@
+![](https://github.com/jchristn/BlobHelper/blob/master/assets/icon.png?raw=true)
+
 # Blobject
 
 Blobject (formerly BlobHelper) is a common, consistent storage interface for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3, View), CIFS (Windows file shares), NFS (Linux and UNIX file shares), and local filesystem written in C#.
