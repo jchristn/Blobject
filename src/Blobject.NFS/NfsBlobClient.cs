@@ -105,6 +105,20 @@
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// List shares available on the server.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>List of share names.</returns>
+        public async Task<List<string>> ListShares(CancellationToken token = default)
+        {
+            NFSLibrary.NFSClient nfs = InitializeClient();
+            List<string> shares = nfs.GetExportedDevices();
+            if (shares == null) shares = new List<string>();
+            nfs.Disconnect();
+            return shares;
+        }
+
         /// <inheritdoc />
         public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {

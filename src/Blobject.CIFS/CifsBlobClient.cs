@@ -89,6 +89,20 @@
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// List shares available on the server.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>List of share names.</returns>
+        public async Task<List<string>> ListShares(CancellationToken token = default)
+        {
+            Node shares = await EzSmb.Node.GetNode(_CifsSettings.Ip.ToString(), _CifsSettings.Username, _CifsSettings.Password);
+            var nodes = await shares.GetList();
+            List<string> ret = new List<string>();
+            foreach (var node in nodes) ret.Add(node.Name);
+            return ret;
+        }
+
         /// <inheritdoc />
         public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {

@@ -34,6 +34,13 @@
             Dispose.
             </summary>
         </member>
+        <member name="M:Blobject.NFS.NfsBlobClient.ListShares(System.Threading.CancellationToken)">
+            <summary>
+            List shares available on the server.
+            </summary>
+            <param name="token">Cancellation token.</param>
+            <returns>List of share names.</returns>
+        </member>
         <member name="M:Blobject.NFS.NfsBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

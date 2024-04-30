@@ -4,6 +4,7 @@
 #pragma warning disable CS8629 // Nullable value type may be null.
 
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Text;
@@ -42,6 +43,9 @@
                         break;
                     case "load":
                         LoadObjects().Wait();
+                        break;
+                    case "shares":
+                        ListShares().Wait();
                         break;
                     case "get":
                         ReadBlob().Wait();
@@ -102,6 +106,7 @@
             Console.WriteLine("  cls          Clear the screen");
             Console.WriteLine("  q            Quit");
             Console.WriteLine("  load         Load a number of small objects");
+            Console.WriteLine("  shares       List the shares available on the server");
             Console.WriteLine("  get          Get a BLOB");
             Console.WriteLine("  get stream   Get a BLOB using stream");
             Console.WriteLine("  write        Write a BLOB");
@@ -129,6 +134,23 @@
             }
 
             Console.WriteLine("");
+        }
+
+        static async Task ListShares()
+        {
+            List<string> shares = await _Client.ListShares();
+            if (shares != null && shares.Count > 0)
+            {
+                Console.WriteLine("");
+                Console.WriteLine("Shares");
+                foreach (string share in shares) Console.WriteLine("| " + share);
+                Console.WriteLine("");
+            }
+            else
+            {
+                Console.WriteLine("(none)");
+                Console.WriteLine("");
+            }
         }
 
         static async Task WriteBlob()

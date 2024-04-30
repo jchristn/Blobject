@@ -5,7 +5,7 @@
 		<TargetFrameworks>netstandard2.1;net6.0;net7.0;net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>5.0.1</Version>
+		<Version>5.0.2</Version>
 		<Authors>Joel Christner</Authors>
 		<Description>BLOB storage client for NFS file servers, e.g. Linux and UNIX.  Refer to other Blobject packages for other storage repository types.</Description>
 		<Copyright>(c)2024 Joel Christner</Copyright>
