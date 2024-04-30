@@ -29,6 +29,13 @@
             Dispose.
             </summary>
         </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.ListBuckets(System.Threading.CancellationToken)">
+            <summary>
+            List buckets available on the server.
+            </summary>
+            <param name="token">Cancellation token.</param>
+            <returns>List of bucket names.</returns>
+        </member>
         <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

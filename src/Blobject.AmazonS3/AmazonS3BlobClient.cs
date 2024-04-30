@@ -7,6 +7,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
+    using Amazon.Runtime.Internal;
     using Amazon.S3;
     using Amazon.S3.Model;
     using Blobject.Core;
@@ -99,6 +100,28 @@
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// List buckets available on the server.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>List of bucket names.</returns>
+        public async Task<List<string>> ListBuckets(CancellationToken token = default)
+        {
+            ListBucketsRequest lbr = new ListBucketsRequest();
+            List<string> ret = new List<string>();
+
+            ListBucketsResponse response = await _S3Client.ListBucketsAsync(lbr, token).ConfigureAwait(false);
+            if (response != null && response.Buckets != null)
+            {
+                foreach (var bucket in response.Buckets)
+                {
+                    ret.Add(bucket.BucketName);
+                }
+            }
+
+            return ret;
         }
 
         /// <inheritdoc />

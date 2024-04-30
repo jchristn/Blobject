@@ -115,6 +115,27 @@
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// List buckets available on the server.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>List of bucket names.</returns>
+        public async Task<List<string>> ListBuckets(CancellationToken token = default)
+        {
+            ListAllMyBucketsResult result = await _S3Client.Service.ListBucketsAsync(null, token).ConfigureAwait(false);
+            List<string> ret = new List<string>();
+
+            if (result != null && result.Buckets != null && result.Buckets.BucketList != null)
+            {
+                foreach (Bucket bucket in result.Buckets.BucketList)
+                {
+                    ret.Add(bucket.Name);
+                }
+            }
+
+            return ret;
+        }
+
         /// <inheritdoc />
         public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {

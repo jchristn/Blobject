@@ -46,6 +46,7 @@
         private bool _Disposed = false;
         private AzureBlobSettings _Settings = null;
         private string _ConnectionString = null;
+        private BlobServiceClient _ServiceClient = null;
         private BlobContainerClient _ContainerClient = null;
 
         #endregion
@@ -60,6 +61,7 @@
         {
             _Settings = azureSettings;
             _ConnectionString = GetAzureConnectionString();
+            _ServiceClient = new BlobServiceClient(_ConnectionString);
             _ContainerClient = new BlobContainerClient(_ConnectionString, _Settings.Container);
 
         }
@@ -95,6 +97,32 @@
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// List containers available on the server.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>List of container names.</returns>
+        public async Task<List<string>> ListContainers(CancellationToken token = default)
+        {
+            List<string> ret = new List<string>();
+            string prefix = null;
+
+            var resultSegment =
+                _ServiceClient.GetBlobContainersAsync(BlobContainerTraits.Metadata, BlobContainerStates.None, prefix, token)
+                .AsPages(null, null)
+                .ConfigureAwait(false);
+
+            await foreach (Azure.Page<BlobContainerItem> containerPage in resultSegment)
+            {
+                foreach (BlobContainerItem containerItem in containerPage.Values)
+                {
+                    ret.Add(containerItem.Name);
+                }
+            }
+
+            return ret;
         }
 
         /// <inheritdoc />
