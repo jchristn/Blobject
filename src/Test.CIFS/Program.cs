@@ -90,10 +90,10 @@
         static void InitializeClient()
         {
             _Settings = new CifsSettings(
-                IPAddress.Parse(Inputty.GetString("IP Address :", null, false)),
-                                Inputty.GetString("Username   :", null, false),
-                                Inputty.GetString("Password   :", null, false),
-                                Inputty.GetString("Share      :", null, false));
+                Inputty.GetString("Hostname   :", "localhost", false),
+                Inputty.GetString("Username   :", null, false),
+                Inputty.GetString("Password   :", null, false),
+                Inputty.GetString("Share      :", null, false));
             _Client = new CifsBlobClient(_Settings);
             if (_Debug) _Client.Logger = Console.WriteLine;
         }

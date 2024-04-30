@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Net;
+    using System.Net.Sockets;
     using Blobject.Core;
 
     /// <summary>
@@ -109,27 +110,44 @@
         /// </summary>
         public CifsSettings()
         {
-
+            IPHostEntry host = Dns.GetHostEntry("localhost");
+            _Ip = host.AddressList[0];
         }
 
         /// <summary>
         /// Initialize the object.
         /// </summary>
-        /// <param name="ip">IP address.</param>
+        /// <param name="hostname">Hostname of the server.</param>
         /// <param name="user">Username.  When including domain, use the form \\domain\username.</param>
         /// <param name="pass">Password.</param>
         /// <param name="share">Share name.</param>
-        public CifsSettings(IPAddress ip, string user, string pass, string share)
+        public CifsSettings(string hostname, string user, string pass, string share)
         {
-            if (ip == null) throw new ArgumentNullException(nameof(ip));
+            if (String.IsNullOrEmpty(hostname)) throw new ArgumentNullException(nameof(hostname));
             if (String.IsNullOrEmpty(user)) throw new ArgumentNullException(nameof(user));
             if (String.IsNullOrEmpty(pass)) throw new ArgumentNullException(nameof(pass));
             if (String.IsNullOrEmpty(share)) throw new ArgumentNullException(nameof(share));
 
-            _Ip = ip;
+            _Hostname = hostname;
             _Username = user;
             _Password = pass;
-            _Share = share; 
+            _Share = share;
+
+            IPHostEntry host = Dns.GetHostEntry(_Hostname);
+
+            foreach (var candidate in host.AddressList)
+            {
+                byte[] bytes = candidate.GetAddressBytes();
+
+                switch (candidate.AddressFamily)
+                {
+                    case AddressFamily.InterNetwork:
+                        if (bytes.Length == 4) _Ip = candidate;
+                        break;
+                }
+            }
+
+            if (_Ip == null) throw new ArgumentException("Unable to resolve hostname '" + _Hostname + "'");
         }
 
         #endregion

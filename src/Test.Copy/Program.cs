@@ -120,10 +120,10 @@
 
                 case StorageType.CIFS:
                     CifsSettings cifs = new CifsSettings(
-                        IPAddress.Parse(Inputty.GetString("IP Address :", null, false)),
-                                        Inputty.GetString("Username   :", null, false),
-                                        Inputty.GetString("Password   :", null, false),
-                                        Inputty.GetString("Share      :", null, false));
+                        Inputty.GetString("Hostname   :", "localhost", false),
+                        Inputty.GetString("Username   :", null, false),
+                        Inputty.GetString("Password   :", null, false),
+                        Inputty.GetString("Share      :", null, false));
                     return new CifsBlobClient(cifs);
 
                 case StorageType.Disk:
@@ -133,11 +133,11 @@
 
                 case StorageType.NFS:
                     NfsSettings nfs = new NfsSettings(
-                        IPAddress.Parse(Inputty.GetString("IP Address :", null, false)),
-                                        Inputty.GetInteger("User ID    :", 0, false, true),
-                                        Inputty.GetInteger("Group ID   :", 0, false, true),
-                                        Inputty.GetString("Share      :", null, false),
-                                        (NfsVersionEnum)(Enum.Parse(typeof(NfsVersionEnum), Inputty.GetString("Version    :", "V3", false))));
+                        Inputty.GetString("Hostname   :", "localhost", false),
+                        Inputty.GetInteger("User ID    :", 0, false, true),
+                        Inputty.GetInteger("Group ID   :", 0, false, true),
+                        Inputty.GetString("Share      :", null, false),
+                        (NfsVersionEnum)(Enum.Parse(typeof(NfsVersionEnum), Inputty.GetString("Version    :", "V3", false))));
                     return new NfsBlobClient(nfs);
 
                 default:

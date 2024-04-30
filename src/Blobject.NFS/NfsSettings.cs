@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Net;
+    using System.Net.Sockets;
     using Blobject.Core;
 
     /// <summary>
@@ -114,28 +115,45 @@
         /// </summary>
         public NfsSettings()
         {
-
+            IPHostEntry host = Dns.GetHostEntry("localhost");
+            _Ip = host.AddressList[0];
         }
 
         /// <summary>
         /// Initialize the object.
         /// </summary>
-        /// <param name="ip">IP address.</param>
+        /// <param name="hostname">Hostname of the server.</param>
         /// <param name="userId">User ID.</param>
         /// <param name="groupId">Group ID.</param>
         /// <param name="share">Share name.</param>
         /// <param name="version">NFS version.</param>
-        public NfsSettings(IPAddress ip, int userId, int groupId, string share, NfsVersionEnum version)
+        public NfsSettings(string hostname, int userId, int groupId, string share, NfsVersionEnum version)
         {
-            if (ip == null) throw new ArgumentNullException(nameof(ip));
+            if (String.IsNullOrEmpty(hostname)) throw new ArgumentNullException(nameof(hostname));
             if (String.IsNullOrEmpty(share)) throw new ArgumentNullException(nameof(share));
 
-            _Ip = ip;
+            _Hostname = hostname;
             _UserId = userId;
             _GroupId = groupId;
             _Share = share;
 
             Version = version;
+
+            IPHostEntry host = Dns.GetHostEntry(_Hostname);
+            
+            foreach (var candidate in host.AddressList)
+            {
+                byte[] bytes = candidate.GetAddressBytes();
+
+                switch (candidate.AddressFamily)
+                {
+                    case AddressFamily.InterNetwork:
+                        if (bytes.Length == 4) _Ip = candidate;
+                        break;
+                }
+            }
+
+            if (_Ip == null) throw new ArgumentException("Unable to resolve hostname '" + _Hostname + "'");
         }
 
         #endregion

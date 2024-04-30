@@ -117,11 +117,11 @@
             Initialize the object.
             </summary>
         </member>
-        <member name="M:Blobject.NFS.NfsSettings.#ctor(System.Net.IPAddress,System.Int32,System.Int32,System.String,Blobject.NFS.NfsVersionEnum)">
+        <member name="M:Blobject.NFS.NfsSettings.#ctor(System.String,System.Int32,System.Int32,System.String,Blobject.NFS.NfsVersionEnum)">
             <summary>
             Initialize the object.
             </summary>
-            <param name="ip">IP address.</param>
+            <param name="hostname">Hostname of the server.</param>
             <param name="userId">User ID.</param>
             <param name="groupId">Group ID.</param>
             <param name="share">Share name.</param>

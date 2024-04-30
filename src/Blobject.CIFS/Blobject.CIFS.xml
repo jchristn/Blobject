@@ -112,11 +112,11 @@
             Initialize the object.
             </summary>
         </member>
-        <member name="M:Blobject.CIFS.CifsSettings.#ctor(System.Net.IPAddress,System.String,System.String,System.String)">
+        <member name="M:Blobject.CIFS.CifsSettings.#ctor(System.String,System.String,System.String,System.String)">
             <summary>
             Initialize the object.
             </summary>
-            <param name="ip">IP address.</param>
+            <param name="hostname">Hostname of the server.</param>
             <param name="user">Username.  When including domain, use the form \\domain\username.</param>
             <param name="pass">Password.</param>
             <param name="share">Share name.</param>
