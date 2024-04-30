@@ -82,9 +82,14 @@
             Settings when using CIFS for storage.
             </summary>
         </member>
+        <member name="P:Blobject.CIFS.CifsSettings.Hostname">
+            <summary>
+            Hostname.
+            </summary>
+        </member>
         <member name="P:Blobject.CIFS.CifsSettings.Ip">
             <summary>
-            IP address of the server.
+            IP address from the supplied hostname.
             </summary>
         </member>
         <member name="P:Blobject.CIFS.CifsSettings.Username">

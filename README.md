@@ -100,7 +100,7 @@ AzureBlobClient blobs = new AzureBlobClient(settings);
 using Blobject.CIFS;
 
 CifsSettings settings = new CifsSettings(
-	IPAddress.Parse("127.0.0.1"),
+	"localhost",
 	username,
 	password,
 	sharename);
@@ -122,7 +122,7 @@ DiskBlobClient blobs = new DiskBlobClient(settings);
 using Blobject.NFS;
 
 NfsSettings settings = new NfsSettings(
-	IPAddress.Parse("127.0.0.1"),
+	"localhost",
 	0, // user ID
 	0, // group ID,
 	sharename,

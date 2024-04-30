@@ -13,18 +13,32 @@
         #region Public-Members
 
         /// <summary>
-        /// IP address of the server.
+        /// Hostname.
+        /// </summary>
+        public string Hostname
+        {
+            get
+            {
+                return _Hostname;
+            }
+            set
+            {
+                if (String.IsNullOrEmpty(value)) throw new ArgumentNullException(nameof(Hostname));
+                IPHostEntry host = Dns.GetHostEntry(value);
+                if (host.AddressList.Length < 1) throw new ArgumentException("Unable to resolve hostname '" + value + "'");
+                _Ip = host.AddressList[0];
+                _Hostname = value;
+            }
+        }
+
+        /// <summary>
+        /// IP address from the supplied hostname.
         /// </summary>
         public IPAddress Ip
         {
             get
             {
                 return _Ip;
-            }
-            set
-            {
-                if (value == null) throw new ArgumentNullException(nameof(Ip));
-                _Ip = value;
             }
         }
 
@@ -81,6 +95,7 @@
         #region Private-Members
 
         private IPAddress _Ip = null;
+        private string _Hostname = null;
         private string _Username = null;
         private string _Password = null;
         private string _Share = null;

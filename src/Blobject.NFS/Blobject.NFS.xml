@@ -82,9 +82,14 @@
             Settings when using NFS for storage.
             </summary>
         </member>
+        <member name="P:Blobject.NFS.NfsSettings.Hostname">
+            <summary>
+            Hostname.
+            </summary>
+        </member>
         <member name="P:Blobject.NFS.NfsSettings.Ip">
             <summary>
-            IP address of the server.
+            IP address from the supplied hostname.
             </summary>
         </member>
         <member name="P:Blobject.NFS.NfsSettings.UserId">
