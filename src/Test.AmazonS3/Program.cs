@@ -96,7 +96,7 @@
                 _Settings = new AwsSettings(
                     Inputty.GetString("Access key :", null, false),
                     Inputty.GetString("Secret key :", null, false),
-                    Inputty.GetString("Region     :", "USWest1", false),
+                    Inputty.GetString("Region     :", "us-west-1", false),
                     Inputty.GetString("Bucket     :", null, false)
                     );
             }
@@ -107,7 +107,7 @@
                     Inputty.GetBoolean("SSL        :", true),
                     Inputty.GetString("Access key :", null, false),
                     Inputty.GetString("Secret key :", null, false),
-                    Inputty.GetString("Region     :", "USWest1", false),
+                    Inputty.GetString("Region     :", "us-west-1", false),
                     Inputty.GetString("Bucket     :", null, false),
                     Inputty.GetString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
                     );

@@ -51,7 +51,7 @@ using Blobject;
 AwsSettings settings = new AwsSettings(
 	accessKey, 
 	secretKey, 
-	AwsRegion.USWest1,
+	"us-west-1",
 	bucket);
 
 BlobClient blobs = new BlobClient(settings); 
@@ -66,7 +66,7 @@ AwsSettings settings = new AwsSettings(
 	true,          // enable or disable SSL
 	accessKey, 
 	secretKey, 
-	AwsRegion.USWest1,
+	"us-west-1",
 	bucket,
 	baseUrl        // i.e. http://localhost:8000/{bucket}/{key}
 	);

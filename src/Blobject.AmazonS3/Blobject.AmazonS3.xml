@@ -72,126 +72,6 @@
         <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="T:Blobject.AmazonS3.AwsRegion">
-            <summary>
-            AWS region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.APNortheast1">
-            <summary>
-            APNortheast1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.APNortheast2">
-            <summary>
-            APNortheast2 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.APNortheast3">
-            <summary>
-            APNortheast3 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.APSoutheast1">
-            <summary>
-            APSoutheast1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.APSoutheast2">
-            <summary>
-            APSoutheast2 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.APSoutheast3">
-            <summary>
-            APSoutheast3 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.APSoutheast4">
-            <summary>
-            APSoutheast4 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.APSouth1">
-            <summary>
-            APSouth1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.CACentral1">
-            <summary>
-            CACentral1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.CNNorth1">
-            <summary>
-            CNNorth1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.CNNorthwest1">
-            <summary>
-            CNNorthwest1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.EUCentral1">
-            <summary>
-            EUCentral1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.EUNorth1">
-            <summary>
-            EUNorth1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.EUWest1">
-            <summary>
-            EUWest1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.EUWest2">
-            <summary>
-            EUWest2 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.EUWest3">
-            <summary>
-            EUWest3 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.SAEast1">
-            <summary>
-            SAEast1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.USEast1">
-            <summary>
-            USEast1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.USEast2">
-            <summary>
-            USEast2 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.USGovCloudEast1">
-            <summary>
-            USGovCloudEast1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.USGovCloudWest1">
-            <summary>
-            USGovCloudWest1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.USWest1">
-            <summary>
-            USWest1 region.
-            </summary>
-        </member>
-        <member name="F:Blobject.AmazonS3.AwsRegion.USWest2">
-            <summary>
-            USWest2 region.
-            </summary>
-        </member>
         <member name="T:Blobject.AmazonS3.AwsSettings">
             <summary>
             Settings when using AWS S3 for storage.
@@ -223,6 +103,11 @@
             AWS S3 region.
             </summary>
         </member>
+        <member name="P:Blobject.AmazonS3.AwsSettings.AwsRegion">
+            <summary>
+            AWS region, generated and used internally by the library.
+            </summary>
+        </member>
         <member name="P:Blobject.AmazonS3.AwsSettings.Bucket">
             <summary>
             AWS S3 bucket.
@@ -239,15 +124,6 @@
             Initialize the object.
             </summary>
         </member>
-        <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.String,Blobject.AmazonS3.AwsRegion,System.String)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
-            <param name="region">AWS region.</param>
-            <param name="bucket">Bucket in which to store BLOBs.</param>
-        </member>
         <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.String,System.String,System.String)">
             <summary>
             Initialize the object.
@@ -256,16 +132,6 @@
             <param name="secretKey">Secret key with which to access AWS S3.</param>
             <param name="region">AWS region.</param>
             <param name="bucket">Bucket in which to store BLOBs.</param>
-        </member>
-        <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.String,Blobject.AmazonS3.AwsRegion,System.String,System.Boolean)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
-            <param name="region">AWS region.</param>
-            <param name="bucket">Bucket in which to store BLOBs.</param>
-            <param name="ssl">Enable or disable SSL.</param>
         </member>
         <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.String,System.String,System.String,System.Boolean)">
             <summary>
@@ -276,18 +142,6 @@
             <param name="region">AWS region.</param>
             <param name="bucket">Bucket in which to store BLOBs.</param>
             <param name="ssl">Enable or disable SSL.</param> 
-        </member>
-        <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,Blobject.AmazonS3.AwsRegion,System.String,System.String)">
-            <summary>
-            Initialize the object.
-            </summary>
-            <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
-            <param name="ssl">Enable or disable SSL.</param>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
-            <param name="region">AWS region.</param>
-            <param name="bucket">Bucket in which to store BLOBs.</param>
-            <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
         </member>
         <member name="M:Blobject.AmazonS3.AwsSettings.#ctor(System.String,System.Boolean,System.String,System.String,System.String,System.String,System.String)">
             <summary>
@@ -300,19 +154,6 @@
             <param name="region">AWS region.</param>
             <param name="bucket">Bucket in which to store BLOBs.</param>
             <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
-        </member>
-        <member name="M:Blobject.AmazonS3.AwsSettings.GetAwsRegionEndpoint">
-            <summary>
-            Retrieve AWS region endpoint.
-            </summary>
-            <returns>AWS region endpoint.</returns>
-        </member>
-        <member name="M:Blobject.AmazonS3.AwsSettings.ValidateRegion(System.String)">
-            <summary>
-            Validate a region string.
-            </summary>
-            <param name="region">Region.</param>
-            <returns>True if valid.</returns>
         </member>
     </members>
 </doc>

@@ -47,10 +47,9 @@
 
             if (String.IsNullOrEmpty(_AwsSettings.Endpoint))
             {
-                Amazon.RegionEndpoint s3Region = _AwsSettings.GetAwsRegionEndpoint();
                 s3Config = new AmazonS3Config
                 {
-                    RegionEndpoint = s3Region,
+                    RegionEndpoint = _AwsSettings.AwsRegion,
                     UseHttp = !_AwsSettings.Ssl,
                 };
 
@@ -346,7 +345,7 @@
                 if (_AwsSettings.Ssl) ret = "https://";
                 else ret = "http://";
 
-                ret += _AwsSettings.Bucket + ".s3." + S3RegionToString(_AwsSettings.Region) + ".amazonaws.com/" + key;
+                ret += _AwsSettings.Bucket + ".s3." + _AwsSettings.Region + ".amazonaws.com/" + key;
 
                 return ret;
             }
@@ -423,61 +422,6 @@
         #endregion
 
         #region Private-Methods
-
-        private string S3RegionToString(AwsRegion region)
-        {
-            switch (region)
-            {
-                case AwsRegion.APNortheast1:
-                    return "ap-northeast-1";
-                case AwsRegion.APNortheast2:
-                    return "ap-northeast-2";
-                case AwsRegion.APNortheast3:
-                    return "ap-northeast-3";
-                case AwsRegion.APSouth1:
-                    return "ap-south-1";
-                case AwsRegion.APSoutheast1:
-                    return "ap-southeast-1";
-                case AwsRegion.APSoutheast2:
-                    return "ap-southeast-2";
-                case AwsRegion.APSoutheast3:
-                    return "ap-southeast-3";
-                case AwsRegion.APSoutheast4:
-                    return "ap-southeast-4";
-                case AwsRegion.CACentral1:
-                    return "ca-central-1";
-                case AwsRegion.CNNorth1:
-                    return "cn-north-1";
-                case AwsRegion.CNNorthwest1:
-                    return "cn-northwest-1";
-                case AwsRegion.EUCentral1:
-                    return "eu-central-1";
-                case AwsRegion.EUNorth1:
-                    return "eu-north-1";
-                case AwsRegion.EUWest1:
-                    return "eu-west-1";
-                case AwsRegion.EUWest2:
-                    return "eu-west-2";
-                case AwsRegion.EUWest3:
-                    return "eu-west-3";
-                case AwsRegion.SAEast1:
-                    return "sa-east-1";
-                case AwsRegion.USEast1:
-                    return "us-east-1";
-                case AwsRegion.USEast2:
-                    return "us-east-2";
-                case AwsRegion.USGovCloudEast1:
-                    return "us-gov-east-1";
-                case AwsRegion.USGovCloudWest1:
-                    return "us-gov-west-1";
-                case AwsRegion.USWest1:
-                    return "us-west-1";
-                case AwsRegion.USWest2:
-                    return "us-west-2";
-                default:
-                    throw new ArgumentException("Unknown region: " + region.ToString());
-            }
-        }
 
         private void Log(string msg)
         {
