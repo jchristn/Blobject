@@ -240,38 +240,47 @@
         }
 
         /// <inheritdoc />
-        public async Task<EnumerationResult> EnumerateAsync(string prefix = null, string continuationToken = null, CancellationToken token = default)
+        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            Log("enumerating using prefix " + prefix);
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
 
-            ListBucketResult lbr = await _S3Client.Bucket.ListAsync(_AwsSettings.Bucket, prefix, null, continuationToken, 1000, null, token).ConfigureAwait(false);
+            string continuationToken = "";
 
-            EnumerationResult ret = new EnumerationResult();
-
-            foreach (ObjectMetadata curr in lbr.Contents)
+            while (true)
             {
-                BlobMetadata md = new BlobMetadata
-                {
-                    Key = curr.Key,
-                    ContentLength = curr.Size,
-                    ETag = curr.ETag,
-                    CreatedUtc = curr.LastModified,
-                    LastAccessUtc = curr.LastModified,
-                    LastUpdateUtc = curr.LastModified
-                };
+                ListBucketResult lbr = _S3Client.Bucket.ListAsync(_AwsSettings.Bucket, filter.Prefix, null, continuationToken, 1000, null).Result;
 
-                if (!String.IsNullOrEmpty(md.ETag))
+                foreach (ObjectMetadata curr in lbr.Contents)
                 {
-                    while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
+                    if (curr.Size < filter.MinimumSize || curr.Size > filter.MaximumSize) continue;
+                    if (!String.IsNullOrEmpty(filter.Suffix) && !curr.Key.EndsWith(filter.Suffix)) continue;
+
+                    BlobMetadata md = new BlobMetadata
+                    {
+                        Key = curr.Key,
+                        ContentLength = curr.Size,
+                        ETag = curr.ETag,
+                        CreatedUtc = curr.LastModified,
+                        LastAccessUtc = curr.LastModified,
+                        LastUpdateUtc = curr.LastModified
+                    };
+
+                    if (!String.IsNullOrEmpty(md.ETag))
+                    {
+                        while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
+                    }
+
+                    yield return md;
                 }
 
-                ret.Blobs.Add(md);
+                continuationToken = lbr.NextContinuationToken;
+
+                if (String.IsNullOrEmpty(continuationToken)) break;
             }
 
-            if (!String.IsNullOrEmpty(lbr.NextContinuationToken)) ret.NextContinuationToken = lbr.NextContinuationToken;
-
-            Log("enumeration complete with " + ret.Blobs.Count + " BLOBs");
-            return ret;
+            yield break;
         }
 
         /// <inheritdoc />
@@ -279,25 +288,10 @@
         {
             EmptyResult er = new EmptyResult();
 
-            string continuationToken = null;
-
-            while (true)
+            foreach (BlobMetadata md in Enumerate())
             {
-                EnumerationResult result = await EnumerateAsync(null, continuationToken, token).ConfigureAwait(false);
-                continuationToken = result.NextContinuationToken;
-
-                if (result.Blobs != null && result.Blobs.Count > 0)
-                {
-                    foreach (BlobMetadata md in result.Blobs)
-                    {
-                        await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                        er.Blobs.Add(md);
-                    }
-                }
-                else
-                {
-                    break;
-                }
+                await DeleteAsync(md.Key, token).ConfigureAwait(false);
+                er.Blobs.Add(md);
             }
 
             return er;

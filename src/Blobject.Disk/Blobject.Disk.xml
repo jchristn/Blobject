@@ -64,7 +64,7 @@
         <member name="M:Blobject.Disk.DiskBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:Blobject.Disk.DiskBlobClient.EnumerateAsync(System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:Blobject.Disk.DiskBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
             <inheritdoc />
         </member>
         <member name="M:Blobject.Disk.DiskBlobClient.EmptyAsync(System.Threading.CancellationToken)">

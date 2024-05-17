@@ -85,7 +85,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Blobject.Core" Version="5.0.5" />
 		<PackageReference Include="EzSmb" Version="1.3.10" />
 	</ItemGroup>
 
@@ -102,6 +101,10 @@
 	  <None Include="Blobject.CIFS.xml">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Blobject.Core\Blobject.Core.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -89,9 +89,26 @@
         /// <returns>String.</returns>
         public override string ToString()
         {
-            string ret =
-                "---" + Environment.NewLine +
-                "   Key            : " + Key + Environment.NewLine +
+            string isFolder = "";
+            if (IsFolder) isFolder += "(folder)";
+
+            string ret = "";
+
+            if (IsFolder)
+            {
+                ret +=
+                    "---" + Environment.NewLine +
+                    "   Folder         : " + Key + " " + isFolder + Environment.NewLine;
+            }
+            else
+            {
+                ret +=
+                    "---" + Environment.NewLine +
+                    "   Key            : " + Key + " " + isFolder + Environment.NewLine;
+            }
+
+            ret += 
+                "   Is Folder      : " + IsFolder + Environment.NewLine +
                 "   Content Type   : " + ContentType + Environment.NewLine +
                 "   Content Length : " + ContentLength + Environment.NewLine +
                 "   ETag           : " + ETag + Environment.NewLine;

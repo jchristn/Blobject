@@ -81,13 +81,16 @@
         /// Start the copy operation.
         /// </summary>
         /// <param name="stopAfter">Stop after this many objects have been copied.</param>
+        /// <param name="filter">Enumeration filter.</param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>Copy statistics.</returns>
-        public async Task<CopyStatistics> Start(int stopAfter = -1, CancellationToken token = default)
+        public async Task<CopyStatistics> Start(int stopAfter = -1, EnumerationFilter filter = null, CancellationToken token = default)
         {
+            if (filter == null) filter = new EnumerationFilter();
             if (stopAfter < -1 || stopAfter == 0) throw new ArgumentException("Value for stopAfter must be -1 or a positive integer.");
 
             CopyStatistics ret = new CopyStatistics();
+
             ret.Time.Start = DateTime.Now;
 
             try
@@ -96,54 +99,35 @@
                 {
                     if (token.IsCancellationRequested) break;
 
-                    string continuationToken = null;
-                    EnumerationResult enumResult = await _From.EnumerateAsync(_Prefix, continuationToken, token).ConfigureAwait(false);
-                    if (enumResult == null)
-                    {
-                        Log("no enumeration resource from source");
-                        break;
-                    }
-                    else
-                    {
-                        if (!String.IsNullOrEmpty(enumResult.NextContinuationToken)) continuationToken = enumResult.NextContinuationToken;
+                    bool maxCopiesReached = false;
 
-                        ret.BlobsEnumerated += enumResult.Count;
-                        ret.BytesEnumerated += enumResult.Bytes;
+                    foreach (BlobMetadata sourceBlob in _From.Enumerate(filter))
+                    {
+                        if (ret.BlobsWritten >= stopAfter) maxCopiesReached = true;
+                        if (maxCopiesReached) break;
 
-                        if (enumResult.Blobs != null && enumResult.Blobs.Count > 0)
+                        ret.BlobsEnumerated += 1;
+                        ret.BytesEnumerated += sourceBlob.ContentLength;
+
+                        byte[] blobData = await _From.GetAsync(sourceBlob.Key, token).ConfigureAwait(false);
+
+                        ret.BlobsRead += 1;
+                        ret.BytesRead += blobData.Length;
+
+                        await _To.WriteAsync(sourceBlob.Key, sourceBlob.ContentType, blobData, token).ConfigureAwait(false);
+
+                        ret.BlobsWritten += 1;
+                        ret.BytesWritten += blobData.Length;
+                        ret.Keys.Add(sourceBlob.Key);
+
+                        if (stopAfter != -1)
                         {
-                            bool maxCopiesReached = false;
-
-                            foreach (BlobMetadata blob in enumResult.Blobs)
+                            if (ret.BlobsWritten >= stopAfter)
                             {
-                                byte[] blobData = await _From.GetAsync(blob.Key, token).ConfigureAwait(false);
-
-                                ret.BlobsRead += 1;
-                                ret.BytesRead += blobData.Length;
-
-                                await _To.WriteAsync(blob.Key, blob.ContentType, blobData, token).ConfigureAwait(false);
-
-                                ret.BlobsWritten += 1;
-                                ret.BytesWritten += blobData.Length;
-                                ret.Keys.Add(blob.Key);
-
-                                if (stopAfter != -1)
-                                {
-                                    if (ret.BlobsWritten >= stopAfter)
-                                    {
-                                        maxCopiesReached = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (maxCopiesReached)
-                            {
+                                maxCopiesReached = true;
                                 break;
                             }
                         }
-
-                        if (!enumResult.HasMore) break;
                     }
                 }
 

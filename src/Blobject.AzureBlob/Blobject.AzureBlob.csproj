@@ -32,7 +32,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
-		<PackageReference Include="Blobject.Core" Version="5.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -60,6 +59,10 @@
 		<None Include="Blobject.AzureBlob.xml">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Blobject.Core\Blobject.Core.csproj" />
 	</ItemGroup>
 
 </Project>

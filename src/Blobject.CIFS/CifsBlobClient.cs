@@ -228,31 +228,28 @@
         }
 
         /// <inheritdoc />
-        public async Task<EnumerationResult> EnumerateAsync(string prefix = null, string continuationToken = null, CancellationToken token = default)
+        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            Log("enumerating using prefix " + prefix);
-
-            if (String.IsNullOrEmpty(prefix)) prefix = "*";
-            if (!prefix.Contains("*")) prefix = prefix + "*";
-
-            EnumerationResult ret = new EnumerationResult();
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
 
             string path = BuildSharePath();
-            Node folder = null;
 
-            if (prefix.Contains("/")) prefix = prefix.Replace("/", "\\");
-            while (prefix.StartsWith("\\")) prefix = prefix.Substring(1);
+            if (filter.Prefix.Contains("/")) filter.Prefix = filter.Prefix.Replace("/", "\\");
+            while (filter.Prefix.StartsWith("\\")) filter.Prefix = filter.Prefix.Substring(1);
+            if (!String.IsNullOrEmpty(filter.Prefix) && !filter.Prefix.EndsWith("*")) filter.Prefix += "*";
 
-            if (prefix.Contains("\\"))
+            if (filter.Prefix.Contains("\\"))
             {
                 #region Nested
 
-                if (prefix.EndsWith("\\"))
+                if (filter.Prefix.EndsWith("\\"))
                 {
                     #region Subdirectory
 
-                    path += prefix;
-                    prefix = "*";
+                    path += filter.Prefix;
+                    filter.Prefix = "*";
 
                     #endregion
                 }
@@ -260,13 +257,13 @@
                 {
                     #region Subdirectory-and-Prefix
 
-                    string[] parts = prefix.Split('\\');
+                    string[] parts = filter.Prefix.Split('\\');
                     for (int i = 0; i < (parts.Length - 1); i++)
                     {
                         path += "\\" + parts[i];
                     }
 
-                    prefix = parts[parts.Length - 1];
+                    filter.Prefix = parts[parts.Length - 1];
 
                     #endregion
                 }
@@ -282,15 +279,19 @@
                 #endregion
             }
 
-            Log("retrieving item list in path " + (!String.IsNullOrEmpty(path) ? path : "(empty)") + " prefix " + prefix);
+            Log("retrieving item list in path " + (!String.IsNullOrEmpty(path) ? path : "(empty)") + " prefix " + filter.Prefix);
 
-            folder = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
+            Node folder = Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).Result;
 
-            Node[] nodes = await folder.GetList(prefix).ConfigureAwait(false);
+            Node[] nodes = folder.GetList(filter.Prefix).Result;
             if (nodes != null && nodes.Length > 0)
             {
                 foreach (Node node in nodes)
                 {
+                    if (node.Size < filter.MinimumSize || node.Size > filter.MaximumSize) continue;
+                    if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.ToLower().StartsWith(filter.Prefix)) continue;
+                    if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.ToLower().EndsWith(filter.Suffix)) continue;
+
                     BlobMetadata md = new BlobMetadata
                     {
                         Key = node.Name,
@@ -303,12 +304,11 @@
 
                     if (node.Type == NodeType.Folder) md.IsFolder = true;
 
-                    ret.Blobs.Add(md);
+                    yield return md;
                 }
             }
 
-            Log("enumeration complete with " + ret.Blobs.Count + " BLOBs");
-            return ret;
+            yield break;
         }
 
         /// <inheritdoc />
@@ -316,25 +316,10 @@
         {
             EmptyResult er = new EmptyResult();
 
-            string continuationToken = null;
-
-            while (true)
+            foreach (BlobMetadata md in Enumerate())
             {
-                EnumerationResult result = await EnumerateAsync(null, continuationToken, token).ConfigureAwait(false);
-                continuationToken = result.NextContinuationToken;
-
-                if (result.Blobs != null && result.Blobs.Count > 0)
-                {
-                    foreach (BlobMetadata md in result.Blobs)
-                    {
-                        await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                        er.Blobs.Add(md);
-                    }
-                }
-                else
-                {
-                    break;
-                }
+                await DeleteAsync(md.Key, token).ConfigureAwait(false);
+                er.Blobs.Add(md);
             }
 
             return er;

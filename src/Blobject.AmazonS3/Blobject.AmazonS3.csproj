@@ -86,7 +86,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="AWSSDK.S3" Version="3.7.307.25" />
-		<PackageReference Include="Blobject.Core" Version="5.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -102,6 +101,10 @@
 		<None Include="Blobject.AmazonS3.xml">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Blobject.Core\Blobject.Core.csproj" />
 	</ItemGroup>
 
 </Project>

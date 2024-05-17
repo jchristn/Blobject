@@ -6,6 +6,7 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -74,10 +75,7 @@
                         BlobMetadata().Wait();
                         break;
                     case "enum":
-                        Enumerate().Wait();
-                        break;
-                    case "enumpfx":
-                        EnumeratePrefix().Wait();
+                        Enumerate();
                         break;
                     case "url":
                         GenerateUrl();
@@ -135,7 +133,6 @@
             Console.WriteLine("  empty        Empty the container (destructive)");
             Console.WriteLine("  md           Retrieve BLOB metadata");
             Console.WriteLine("  enum         Enumerate a bucket");
-            Console.WriteLine("  enumpfx      Enumerate a bucket by object prefix");
             Console.WriteLine("  url          Generate a URL for an object by key");
             Console.WriteLine("");
         }
@@ -282,65 +279,28 @@
             Console.WriteLine(md.ToString());
         }
 
-        static async Task Enumerate()
+        static void Enumerate()
         {
-            string prefix = Inputty.GetString("Prefix :", null, true);
-            string token = Inputty.GetString("Token  :", null, true);
+            EnumerationFilter filter = BuildEnumerationFilter();
 
-            EnumerationResult result = await _Client.EnumerateAsync(prefix, token);
-
-            Console.WriteLine("");
-            if (result.Blobs != null && result.Blobs.Count > 0)
-            {
-                foreach (BlobMetadata curr in result.Blobs)
-                {
-                    Console.WriteLine(
-                        String.Format("{0,-27}", (curr.IsFolder ? "(dir) " : "") + curr.Key) +
-                        String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
-                        String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")));
-                }
-            }
-            else
-            {
-                Console.WriteLine("(none)");
-            }
-
-            if (!String.IsNullOrEmpty(result.NextContinuationToken))
-                Console.WriteLine("Continuation token: " + result.NextContinuationToken);
+            int count = 0;
+            long bytes = 0;
 
             Console.WriteLine("");
-            Console.WriteLine("Count: " + result.Count);
-            Console.WriteLine("Bytes: " + result.Bytes);
-            Console.WriteLine("");
-        }
-
-        static async Task EnumeratePrefix()
-        {
-            EnumerationResult result = await _Client.EnumerateAsync(
-                Inputty.GetString("Prefix :", null, true),
-                Inputty.GetString("Token  :", null, true));
-
-            if (result.Blobs != null && result.Blobs.Count > 0)
+            foreach (BlobMetadata curr in _Client.Enumerate(filter))
             {
-                foreach (BlobMetadata curr in result.Blobs)
-                {
-                    Console.WriteLine(
-                        String.Format("{0,-27}", (curr.IsFolder ? "(dir) " : "") + curr.Key) +
-                        String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
-                        String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")));
-                }
-            }
-            else
-            {
-                Console.WriteLine("(none)");
+                Console.WriteLine(
+                    String.Format("{0,-27}", (curr.IsFolder ? "(dir) " : "") + curr.Key) +
+                    String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
+                    String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")));
+
+                count += 1;
+                bytes += curr.ContentLength;
             }
 
-            if (!String.IsNullOrEmpty(result.NextContinuationToken))
-                Console.WriteLine("Continuation token: " + result.NextContinuationToken);
-
             Console.WriteLine("");
-            Console.WriteLine("Count: " + result.Count);
-            Console.WriteLine("Bytes: " + result.Bytes);
+            Console.WriteLine("Count: " + count);
+            Console.WriteLine("Bytes: " + bytes);
             Console.WriteLine("");
         }
 
@@ -348,6 +308,19 @@
         {
             Console.WriteLine(_Client.GenerateUrl(
                 Inputty.GetString("Key:", "hello.txt", false)));
+        }
+
+        static EnumerationFilter BuildEnumerationFilter()
+        {
+            EnumerationFilter ret = new EnumerationFilter
+            {
+                MinimumSize = Inputty.GetInteger("Minimum size :", 0, true, true),
+                MaximumSize = Inputty.GetInteger("Maximum size :", Int32.MaxValue, true, true),
+                Prefix = Inputty.GetString("Prefix       :", null, true),
+                Suffix = Inputty.GetString("Suffix       :", null, true)
+            };
+
+            return ret;
         }
 
         private static byte[] ReadToEnd(Stream stream)

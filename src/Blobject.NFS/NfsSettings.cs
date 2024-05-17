@@ -25,10 +25,17 @@
             set
             {
                 if (String.IsNullOrEmpty(value)) throw new ArgumentNullException(nameof(Hostname));
-                IPHostEntry host = Dns.GetHostEntry(value);
-                if (host.AddressList.Length < 1) throw new ArgumentException("Unable to resolve hostname '" + value + "'");
-                _Ip = host.AddressList[0];
-                _Hostname = value;
+
+                if (Common.IsIpV4Address(value))
+                {
+                    _Ip = IPAddress.Parse(value);
+                }
+                else
+                {
+                    _Ip = Common.ResolveHostToIpV4Address(value);
+                }
+
+                if (_Ip == null) throw new ArgumentException("Unable to resolve hostname '" + value + "'");
             }
         }
 
@@ -87,6 +94,10 @@
             set
             {
                 if (String.IsNullOrEmpty(value)) throw new ArgumentNullException(nameof(Share));
+                value = value.Replace("\\", "/");
+                while (value.EndsWith("/")) 
+                    value = value.Substring(0, value.Length - 1); // remove trailing slash
+
                 _Share = value;
             }
         }
@@ -94,7 +105,17 @@
         /// <summary>
         /// NFS version.
         /// </summary>
-        public NfsVersionEnum Version { get; set; } = NfsVersionEnum.V3;
+        public NfsVersionEnum Version
+        {
+            get
+            {
+                return _Version;
+            }
+            set
+            {
+                _Version = value;
+            }
+        }
 
         #endregion
 
@@ -105,6 +126,7 @@
         private int _UserId = 0;
         private int _GroupId = 0;
         private string _Share = null;
+        private NfsVersionEnum _Version = NfsVersionEnum.V3;
 
         #endregion
 
@@ -115,8 +137,8 @@
         /// </summary>
         public NfsSettings()
         {
-            IPHostEntry host = Dns.GetHostEntry("localhost");
-            _Ip = host.AddressList[0];
+            _Hostname = "localhost";
+            _Ip = IPAddress.Parse("127.0.0.1");
         }
 
         /// <summary>
@@ -136,21 +158,15 @@
             _UserId = userId;
             _GroupId = groupId;
             _Share = share;
+            _Version = version;
 
-            Version = version;
-
-            IPHostEntry host = Dns.GetHostEntry(_Hostname);
-            
-            foreach (var candidate in host.AddressList)
+            if (Common.IsIpV4Address(_Hostname))
             {
-                byte[] bytes = candidate.GetAddressBytes();
-
-                switch (candidate.AddressFamily)
-                {
-                    case AddressFamily.InterNetwork:
-                        if (bytes.Length == 4) _Ip = candidate;
-                        break;
-                }
+                _Ip = IPAddress.Parse(_Hostname);
+            }
+            else
+            {
+                _Ip = Common.ResolveHostToIpV4Address(_Hostname);
             }
 
             if (_Ip == null) throw new ArgumentException("Unable to resolve hostname '" + _Hostname + "'");

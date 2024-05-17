@@ -85,10 +85,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Blobject.Core" Version="5.0.5" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<None Include="assets\icon.ico">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
@@ -101,6 +97,10 @@
 	  <None Include="Blobject.Disk.xml">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Blobject.Core\Blobject.Core.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -15,12 +15,15 @@
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Collections.Generic;
+    using System.Linq;
 
     class Program
     {
         static NfsBlobClient _Client = null;
         static NfsSettings _Settings = null;
-        static bool _Debug = true;
+        static string _Hostname = "192.168.226.132";
+        static string _Share = "/share";
+        static bool _Debug = false;
 
         static void Main(string[] args)
         {
@@ -77,11 +80,8 @@
                         BlobMetadata().Wait();
                         break;
                     case "enum":
-                        Enumerate().Wait();
-                        break;
-                    case "enumpfx":
-                        EnumeratePrefix().Wait();
-                        break;
+                        Enumerate();
+                        break; 
                     case "url":
                         GenerateUrl();
                         break;
@@ -92,10 +92,10 @@
         static void InitializeClient()
         {
             _Settings = new NfsSettings(
-                 Inputty.GetString("Hostname   :", "localhost", false),
+                 Inputty.GetString("Hostname   :", _Hostname, false),
                 Inputty.GetInteger("User ID    :", 0, false, true),
                 Inputty.GetInteger("Group ID   :", 0, false, true),
-                Inputty.GetString("Share      :", null, false),
+                Inputty.GetString("Share      :", _Share, false),
                 (NfsVersionEnum)(Enum.Parse(typeof(NfsVersionEnum), Inputty.GetString("Version    :", "V3", false))));
             _Client = new NfsBlobClient(_Settings);
             if (_Debug) _Client.Logger = Console.WriteLine;
@@ -120,7 +120,6 @@
             Console.WriteLine("  empty        Empty the container (destructive)");
             Console.WriteLine("  md           Retrieve BLOB metadata");
             Console.WriteLine("  enum         Enumerate a bucket");
-            Console.WriteLine("  enumpfx      Enumerate a bucket by object prefix");
             Console.WriteLine("  url          Generate a URL for an object by key");
             Console.WriteLine("");
         }
@@ -134,6 +133,7 @@
             {
                 Console.Write("\rLoading object " + i.ToString() + "...");
                 await _Client.WriteAsync(i.ToString(), "text/plain", "Hello, world!");
+                await Task.Delay(100);
             }
 
             Console.WriteLine("");
@@ -267,65 +267,29 @@
             Console.WriteLine(md.ToString());
         }
 
-        static async Task Enumerate()
+        static void Enumerate()
         {
-            string prefix = Inputty.GetString("Prefix :", null, true);
-            string token = Inputty.GetString("Token  :", null, true);
+            EnumerationFilter filter = BuildEnumerationFilter();
 
-            EnumerationResult result = await _Client.EnumerateAsync(prefix, token);
-
-            Console.WriteLine("");
-            if (result.Blobs != null && result.Blobs.Count > 0)
-            {
-                foreach (BlobMetadata curr in result.Blobs)
-                {
-                    Console.WriteLine(
-                        String.Format("{0,-27}", (curr.IsFolder ? "(F) " : "") + curr.Key) +
-                        String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
-                        String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")));
-                }
-            }
-            else
-            {
-                Console.WriteLine("(none)");
-            }
-
-            if (!String.IsNullOrEmpty(result.NextContinuationToken))
-                Console.WriteLine("Continuation token: " + result.NextContinuationToken);
+            int count = 0;
+            long bytes = 0;
 
             Console.WriteLine("");
-            Console.WriteLine("Count: " + result.Count);
-            Console.WriteLine("Bytes: " + result.Bytes);
-            Console.WriteLine("");
-        }
-
-        static async Task EnumeratePrefix()
-        {
-            EnumerationResult result = await _Client.EnumerateAsync(
-                Inputty.GetString("Prefix :", null, true),
-                Inputty.GetString("Token  :", null, true));
-
-            if (result.Blobs != null && result.Blobs.Count > 0)
+            foreach (BlobMetadata curr in _Client.Enumerate(filter))
             {
-                foreach (BlobMetadata curr in result.Blobs)
-                {
-                    Console.WriteLine(
-                        String.Format("{0,-27}", (curr.IsFolder ? "(F) " : "") + curr.Key) +
-                        String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
-                        String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")));
-                }
-            }
-            else
-            {
-                Console.WriteLine("(none)");
+                Console.WriteLine(
+                    String.Format("{0,-27}", curr.Key) +
+                    String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
+                    String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")) +
+                    String.Format("{0,-6}", curr.IsFolder ? "dir" : ""));
+
+                count += 1;
+                bytes += curr.ContentLength;
             }
 
-            if (!String.IsNullOrEmpty(result.NextContinuationToken))
-                Console.WriteLine("Continuation token: " + result.NextContinuationToken);
-
             Console.WriteLine("");
-            Console.WriteLine("Count: " + result.Count);
-            Console.WriteLine("Bytes: " + result.Bytes);
+            Console.WriteLine("Count: " + count);
+            Console.WriteLine("Bytes: " + bytes);
             Console.WriteLine("");
         }
 
@@ -333,6 +297,19 @@
         {
             Console.WriteLine(_Client.GenerateUrl(
                 Inputty.GetString("Key:", "hello.txt", false)));
+        }
+
+        static EnumerationFilter BuildEnumerationFilter()
+        {
+            EnumerationFilter ret = new EnumerationFilter
+            {
+                MinimumSize = Inputty.GetInteger("Minimum size :", 0, true, true),
+                MaximumSize = Inputty.GetInteger("Maximum size :", Int32.MaxValue, true, true),
+                Prefix = Inputty.GetString("Prefix       :", null, true),
+                Suffix = Inputty.GetString("Suffix       :", null, true)
+            };
+
+            return ret;
         }
 
         private static byte[] ReadToEnd(Stream stream)

@@ -71,7 +71,6 @@
 
 	
 	<ItemGroup>
-		<PackageReference Include="Blobject.Core" Version="5.0.5" />
 		<PackageReference Include="S3Lite" Version="1.0.2" />
 	</ItemGroup>
 
@@ -100,6 +99,10 @@
 		<None Include="Blobject.AmazonS3Lite.xml">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+	</ItemGroup>
+ 
+	<ItemGroup>
+	  <ProjectReference Include="..\Blobject.Core\Blobject.Core.csproj" />
 	</ItemGroup>
 
 </Project>

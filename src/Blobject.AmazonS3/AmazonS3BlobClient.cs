@@ -352,42 +352,54 @@
         }
 
         /// <inheritdoc />
-        public async Task<EnumerationResult> EnumerateAsync(string prefix = null, string continuationToken = null, CancellationToken token = default)
+        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            Log("enumerating using prefix " + prefix);
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
 
-            ListObjectsRequest req = new ListObjectsRequest();
-            req.BucketName = _AwsSettings.Bucket;
-            if (!String.IsNullOrEmpty(prefix)) req.Prefix = prefix;
+            string continuationToken = "";
 
-            if (!String.IsNullOrEmpty(continuationToken)) req.Marker = continuationToken;
-
-            ListObjectsResponse resp = await _S3Client.ListObjectsAsync(req, token).ConfigureAwait(false);
-            EnumerationResult ret = new EnumerationResult();
-
-            if (resp.S3Objects != null && resp.S3Objects.Count > 0)
+            while (true)
             {
-                foreach (S3Object curr in resp.S3Objects)
+                ListObjectsRequest req = new ListObjectsRequest();
+                req.BucketName = _AwsSettings.Bucket;
+                if (!String.IsNullOrEmpty(filter.Prefix)) req.Prefix = filter.Prefix;
+
+                if (!String.IsNullOrEmpty(continuationToken)) req.Marker = continuationToken;
+
+                ListObjectsResponse resp = _S3Client.ListObjectsAsync(req).Result;
+
+                if (resp.S3Objects != null && resp.S3Objects.Count > 0)
                 {
-                    BlobMetadata md = new BlobMetadata();
-                    md.Key = curr.Key;
-                    md.ContentLength = curr.Size;
-                    md.ETag = curr.ETag;
-                    md.CreatedUtc = curr.LastModified;
-
-                    if (!String.IsNullOrEmpty(md.ETag))
+                    foreach (S3Object curr in resp.S3Objects)
                     {
-                        while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
-                    }
+                        if (curr.Size < filter.MinimumSize || curr.Size > filter.MaximumSize) continue;
+                        if (!String.IsNullOrEmpty(filter.Suffix) && !curr.Key.EndsWith(filter.Suffix)) continue;
 
-                    ret.Blobs.Add(md);
+                        BlobMetadata md = new BlobMetadata();
+                        md.Key = curr.Key;
+                        md.ContentLength = curr.Size;
+                        md.ETag = curr.ETag;
+                        md.CreatedUtc = curr.LastModified;
+                        md.LastAccessUtc = curr.LastModified;
+                        md.LastUpdateUtc = curr.LastModified;
+
+                        if (!String.IsNullOrEmpty(md.ETag))
+                        {
+                            if (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
+                        }
+
+                        yield return md;
+                    }
                 }
+
+                continuationToken = resp.NextMarker;
+
+                if (String.IsNullOrEmpty(continuationToken)) break;
             }
 
-            if (!String.IsNullOrEmpty(resp.NextMarker)) ret.NextContinuationToken = resp.NextMarker;
-
-            Log("enumeration complete with " + ret.Blobs.Count + " BLOBs");
-            return ret;
+            yield break;
         }
 
         /// <inheritdoc />
@@ -395,25 +407,10 @@
         {
             EmptyResult er = new EmptyResult();
 
-            string continuationToken = null;
-
-            while (true)
+            foreach (BlobMetadata md in Enumerate())
             {
-                EnumerationResult result = await EnumerateAsync(null, continuationToken, token).ConfigureAwait(false);
-                continuationToken = result.NextContinuationToken;
-
-                if (result.Blobs != null && result.Blobs.Count > 0)
-                {
-                    foreach (BlobMetadata md in result.Blobs)
-                    {
-                        await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                        er.Blobs.Add(md);
-                    }
-                }
-                else
-                {
-                    break;
-                }
+                await DeleteAsync(md.Key, token).ConfigureAwait(false);
+                er.Blobs.Add(md);
             }
 
             return er;

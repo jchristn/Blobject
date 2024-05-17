@@ -71,7 +71,7 @@
         <member name="M:Blobject.CIFS.CifsBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:Blobject.CIFS.CifsBlobClient.EnumerateAsync(System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:Blobject.CIFS.CifsBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
             <inheritdoc />
         </member>
         <member name="M:Blobject.CIFS.CifsBlobClient.EmptyAsync(System.Threading.CancellationToken)">

@@ -66,7 +66,7 @@
         <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.EnumerateAsync(System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
             <inheritdoc />
         </member>
         <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.EmptyAsync(System.Threading.CancellationToken)">

@@ -6,6 +6,7 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Xml.Linq;
     using Azure;
     using Azure.Storage.Blobs;
     using Azure.Storage.Blobs.Models;
@@ -295,38 +296,50 @@
         }
 
         /// <inheritdoc />
-        public async Task<EnumerationResult> EnumerateAsync(string prefix = null, string continuationToken = null, CancellationToken token = default)
+        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            Log("enumerating using prefix " + prefix);
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
 
-            List<BlobMetadata> mds = new List<BlobMetadata>();
+            string continuationToken = "";
 
-            var pages = _ContainerClient.GetBlobsAsync(BlobTraits.None, BlobStates.None, prefix, token).AsPages(continuationToken, 5000).ConfigureAwait(false);
-
-            await foreach (Page<BlobItem> page in pages)
+            while (true)
             {
-                continuationToken = page.ContinuationToken;
+                var pages = _ContainerClient.GetBlobs(BlobTraits.None, BlobStates.None, filter.Prefix).AsPages(continuationToken, 1000);
 
-                foreach (BlobItem item in page.Values)
+                foreach (Page<BlobItem> page in pages)
                 {
-                    BlobMetadata md = new BlobMetadata();
-                    md.Key = item.Name;
-                    md.ContentType = item.Properties.ContentType;
-                    md.ContentLength = (item.Properties.ContentLength != null ? Convert.ToInt64(item.Properties.ContentLength) : 0);
-                    md.ETag = item.Properties.ETag.ToString();
-                    md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
-                    md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
-                    md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
-                    mds.Add(md);
+                    continuationToken = page.ContinuationToken;
+
+                    if (page.Values == null || page.Values.Count < 1) break;
+
+                    foreach (BlobItem item in page.Values)
+                    {
+                        long contentLength = (item.Properties.ContentLength != null ? Convert.ToInt64(item.Properties.ContentLength) : 0);
+
+                        if (contentLength < filter.MinimumSize || contentLength > filter.MaximumSize) continue;
+                        if (!String.IsNullOrEmpty(filter.Suffix) && !item.Name.EndsWith(filter.Suffix)) continue;
+
+                        BlobMetadata md = new BlobMetadata();
+                        md.Key = item.Name;
+                        md.ContentType = item.Properties.ContentType;
+                        md.ContentLength = contentLength;
+                        md.ETag = item.Properties.ETag.ToString();
+                        md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+                        md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+                        md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+
+                        yield return md;
+                    }
+
+                    if (String.IsNullOrEmpty(continuationToken)) break;
                 }
 
-                break;
+                if (String.IsNullOrEmpty(continuationToken)) break;
             }
 
-            EnumerationResult ret = new EnumerationResult(continuationToken, mds);
-
-            Log("enumeration complete with " + ret.Blobs.Count + " BLOBs");
-            return ret;
+            yield break;
         }
 
         /// <inheritdoc />
@@ -334,25 +347,10 @@
         {
             EmptyResult er = new EmptyResult();
 
-            string continuationToken = null;
-
-            while (true)
+            foreach (BlobMetadata md in Enumerate())
             {
-                EnumerationResult result = await EnumerateAsync(null, null, token).ConfigureAwait(false);
-                continuationToken = result.NextContinuationToken;
-
-                if (result.Blobs != null && result.Blobs.Count > 0)
-                {
-                    foreach (BlobMetadata md in result.Blobs)
-                    {
-                        await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                        er.Blobs.Add(md);
-                    }
-                }
-                else
-                {
-                    break;
-                }
+                await DeleteAsync(md.Key, token).ConfigureAwait(false);
+                er.Blobs.Add(md);
             }
 
             return er;

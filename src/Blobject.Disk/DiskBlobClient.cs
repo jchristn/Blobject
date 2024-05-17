@@ -296,23 +296,26 @@
         }
 
         /// <inheritdoc />
-        public async Task<EnumerationResult> EnumerateAsync(string prefix = null, string continuationToken = null, CancellationToken token = default)
+        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            Log("enumerating using prefix " + prefix);
-            IEnumerable<string> files = null;
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
 
-            if (!String.IsNullOrEmpty(prefix))
+            IEnumerable<string> files;
+
+            if (!String.IsNullOrEmpty(filter.Prefix))
             {
-                if (Directory.Exists(_DiskSettings.Directory + prefix))
+                if (Directory.Exists(_DiskSettings.Directory + filter.Prefix))
                 {
-                    string tempPrefix = prefix;
+                    string tempPrefix = filter.Prefix;
                     tempPrefix = tempPrefix.Replace("\\", "/");
                     if (!tempPrefix.EndsWith("/")) tempPrefix += "/";
                     files = Directory.EnumerateFiles(_DiskSettings.Directory, tempPrefix + "*", SearchOption.AllDirectories);
                 }
                 else
                 {
-                    files = Directory.EnumerateFiles(_DiskSettings.Directory, prefix + "*", SearchOption.AllDirectories);
+                    files = Directory.EnumerateFiles(_DiskSettings.Directory, filter.Prefix + "*", SearchOption.AllDirectories);
                 }
             }
             else
@@ -320,8 +323,10 @@
                 files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
             }
 
-            EnumerationResult ret = new EnumerationResult();
-            if (files.Count() < 1) return ret;
+            if (files.Count() < 1)
+            {
+                yield break;
+            }
 
             foreach (string file in files)
             {
@@ -331,6 +336,9 @@
                 if (filename.StartsWith(_DiskSettings.Directory)) filename = file.Substring(_DiskSettings.Directory.Length);
                 if (!String.IsNullOrEmpty(filename)) filename = filename.Replace("\\", "/");
 
+                if (fi.Length < filter.MinimumSize || fi.Length > filter.MaximumSize) continue;
+                if (!String.IsNullOrEmpty(filter.Suffix) && !filename.EndsWith(filter.Suffix)) continue;
+
                 BlobMetadata md = new BlobMetadata();
                 md.Key = filename;
 
@@ -339,13 +347,10 @@
                 md.LastAccessUtc = fi.LastAccessTimeUtc;
                 md.LastUpdateUtc = fi.LastWriteTimeUtc;
 
-                ret.Blobs.Add(md);
-
-                continue;
+                yield return md;
             }
 
-            Log("enumeration complete with " + ret.Blobs.Count + " BLOBs");
-            return ret;
+            yield break;
         }
 
         /// <inheritdoc />
@@ -353,25 +358,10 @@
         {
             EmptyResult er = new EmptyResult();
 
-            string continuationToken = null;
-
-            while (true)
-            {
-                EnumerationResult result = await EnumerateAsync(null, null, token).ConfigureAwait(false);
-                continuationToken = result.NextContinuationToken;
-
-                if (result.Blobs != null && result.Blobs.Count > 0)
-                {
-                    foreach (BlobMetadata md in result.Blobs)
-                    {
-                        await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                        er.Blobs.Add(md);
-                    }
-                }
-                else
-                {
-                    break;
-                }
+            foreach (BlobMetadata md in Enumerate())
+            { 
+                await DeleteAsync(md.Key, token).ConfigureAwait(false);
+                er.Blobs.Add(md);
             }
 
             return er;

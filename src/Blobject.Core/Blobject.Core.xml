@@ -33,11 +33,12 @@
             Dispose.
             </summary>
         </member>
-        <member name="M:Blobject.Core.BlobCopy.Start(System.Int32,System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobCopy.Start(System.Int32,Blobject.Core.EnumerationFilter,System.Threading.CancellationToken)">
             <summary>
             Start the copy operation.
             </summary>
             <param name="stopAfter">Stop after this many objects have been copied.</param>
+            <param name="filter">Enumeration filter.</param>
             <param name="token">Cancellation token.</param>
             <returns>Copy statistics.</returns>
         </member>
@@ -177,6 +178,20 @@
             <param name="hex">Hex string.</param>
             <returns>Bytes.</returns>
         </member>
+        <member name="M:Blobject.Core.Common.IsIpV4Address(System.String)">
+            <summary>
+            Determine if a value is an IPv4 address.
+            </summary>
+            <param name="str">String.</param>
+            <returns>True if an IPv4 address.</returns>
+        </member>
+        <member name="M:Blobject.Core.Common.ResolveHostToIpV4Address(System.String)">
+            <summary>
+            Resolve a hostname to an IPv4 address.
+            </summary>
+            <param name="str">String.</param>
+            <returns>IPAddress.</returns>
+        </member>
         <member name="T:Blobject.Core.CopyStatistics">
             <summary>
             BLOB copy statistics.
@@ -273,57 +288,34 @@
             Instantiate the object.
             </summary>
         </member>
-        <member name="T:Blobject.Core.EnumerationResult">
+        <member name="T:Blobject.Core.EnumerationFilter">
             <summary>
-            Enumeration results.
+            Enumeration filter.
             </summary>
         </member>
-        <member name="P:Blobject.Core.EnumerationResult.HasMore">
+        <member name="P:Blobject.Core.EnumerationFilter.MinimumSize">
             <summary>
-            Flag indicating if more results are available.
+            Minimum size.
             </summary>
         </member>
-        <member name="P:Blobject.Core.EnumerationResult.NextContinuationToken">
+        <member name="P:Blobject.Core.EnumerationFilter.MaximumSize">
             <summary>
-            Next continuation token to supply in order to continue enumerating from the end of the previous request.
+            Maximum size.
             </summary>
         </member>
-        <member name="P:Blobject.Core.EnumerationResult.Count">
+        <member name="P:Blobject.Core.EnumerationFilter.Prefix">
             <summary>
-            The number of BLOBs.
+            Prefix.
             </summary>
         </member>
-        <member name="P:Blobject.Core.EnumerationResult.Bytes">
+        <member name="P:Blobject.Core.EnumerationFilter.Suffix">
             <summary>
-            The total number of bytes represented by the BLOBs.
+            Suffix.
             </summary>
         </member>
-        <member name="P:Blobject.Core.EnumerationResult.Blobs">
-            <summary>
-            List of BLOB metadata objects.
-            </summary>
-        </member>
-        <member name="M:Blobject.Core.EnumerationResult.#ctor">
+        <member name="M:Blobject.Core.EnumerationFilter.#ctor">
             <summary>
             Instantiate the object.
-            </summary>
-        </member>
-        <member name="M:Blobject.Core.EnumerationResult.#ctor(System.String,System.Collections.Generic.List{Blobject.Core.BlobMetadata})">
-            <summary>
-            Instantiate.
-            </summary>
-            <param name="continuationToken">Continuation token.</param>
-            <param name="blobs">BLOBs.</param>
-        </member>
-        <member name="M:Blobject.Core.EnumerationResult.Dispose(System.Boolean)">
-            <summary>
-            Dispose.
-            </summary>
-            <param name="disposing">Disposing.</param>
-        </member>
-        <member name="M:Blobject.Core.EnumerationResult.Dispose">
-            <summary>
-            Dispose.
             </summary>
         </member>
         <member name="T:Blobject.Core.IBlobClient">
@@ -334,6 +326,8 @@
         <member name="M:Blobject.Core.IBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Gets the content of the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
             <param name="key">The key of the BLOB to get.</param>
             <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
@@ -342,6 +336,8 @@
         <member name="M:Blobject.Core.IBlobClient.GetStreamAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Gets the stream of the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
             <param name="key">The key of the BLOB to get.</param>
             <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
@@ -350,6 +346,8 @@
         <member name="M:Blobject.Core.IBlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Gets the metadata of the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
             <param name="key">The key of the BLOB to get metadata for.</param>
             <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
@@ -358,6 +356,8 @@
         <member name="M:Blobject.Core.IBlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Writes the specified data to the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
             <param name="key">The key of the BLOB to write to.</param>
             <param name="contentType">The content type of the BLOB.</param>
@@ -367,6 +367,8 @@
         <member name="M:Blobject.Core.IBlobClient.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
             <summary>
             Writes the specified data to the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
             <param name="key">The key of the BLOB to write to.</param>
             <param name="contentType">The content type of the BLOB.</param>
@@ -376,6 +378,8 @@
         <member name="M:Blobject.Core.IBlobClient.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
             <summary>
             Writes the data from the specified stream to the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
             <param name="key">The key of the BLOB to write to.</param>
             <param name="contentType">The content type of the BLOB.</param>
@@ -386,6 +390,8 @@
         <member name="M:Blobject.Core.IBlobClient.WriteManyAsync(System.Collections.Generic.List{Blobject.Core.WriteRequest},System.Threading.CancellationToken)">
             <summary>
             Writes many objects to the BLOB storage asynchronously.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
             <param name="objects">The list of objects to write to the BLOB storage.</param>
             <param name="token">The cancellation token.</param>
@@ -394,6 +400,8 @@
         <member name="M:Blobject.Core.IBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Deletes an object from the BLOB storage asynchronously.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
             <param name="key">The key of the object to delete from the BLOB storage.</param>
             <param name="token">The cancellation token.</param>
@@ -402,6 +410,8 @@
         <member name="M:Blobject.Core.IBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Checks if an object with the specified key exists in the BLOB storage asynchronously.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
             <param name="key">The key of the object to check.</param>
             <param name="token">The cancellation token.</param>
@@ -410,23 +420,25 @@
         <member name="M:Blobject.Core.IBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
             <summary>
             Generates a URL to access the object with the specified key in the BLOB storage asynchronously.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
             <param name="key">The key of the object to generate the URL for.</param>
             <param name="token">The cancellation token.</param>
             <returns>A string representing the URL to access the object.</returns>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.EnumerateAsync(System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.IBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
             <summary>
-            Enumerates all objects in the BLOB storage asynchronously.
+            Enumerate all BLOBs within the repository asynchronously.
+            To enumerate only a specific prefix or contents of a specific folder, use the / character.
+            For example, path/to/folder/myfile.txt
             </summary>
-            <param name="prefix">The prefix used to filter the objects to enumerate.</param>
-            <param name="continuationToken">The continuation token used to resume a previous enumeration operation.</param>
-            <param name="token">The cancellation token.</param>
-            <returns>A task representing the asynchronous operation. The task result is an <see cref="T:Blobject.Core.EnumerationResult"/> object containing the enumeration results.</returns>
+            <param name="filter">Enumeration filter.</param>
+            <returns>IEnumerable of BlobMetadata.</returns>
         </member>
         <member name="M:Blobject.Core.IBlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <summary>
-            Deletes all objects in the BLOB storage asynchronously.
+            WARNING: This API deletes all objects in the BLOB storage asynchronously recursively.
             </summary>
             <param name="token">The cancellation token.</param>
             <returns>A task representing the asynchronous operation.</returns>
