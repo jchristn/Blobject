@@ -42,8 +42,8 @@
 
         /// <summary>
         /// Writes the specified data to the BLOB with the specified key.
-        /// For objects contained within subdirectories or folders, use the / character.
-        /// For example, path/to/folder/myfile.txt
+        /// For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+        /// To create a folder, have the key end in the / character, and send an empty string, an empty byte array, or an empty stream with zero content length.
         /// </summary>
         /// <param name="key">The key of the BLOB to write to.</param>
         /// <param name="contentType">The content type of the BLOB.</param>
@@ -53,8 +53,8 @@
 
         /// <summary>
         /// Writes the specified data to the BLOB with the specified key.
-        /// For objects contained within subdirectories or folders, use the / character.
-        /// For example, path/to/folder/myfile.txt
+        /// For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+        /// To create a folder, have the key end in the / character, and send an empty string, an empty byte array, or an empty stream with zero content length.
         /// </summary>
         /// <param name="key">The key of the BLOB to write to.</param>
         /// <param name="contentType">The content type of the BLOB.</param>
@@ -64,8 +64,8 @@
 
         /// <summary>
         /// Writes the data from the specified stream to the BLOB with the specified key.
-        /// For objects contained within subdirectories or folders, use the / character.
-        /// For example, path/to/folder/myfile.txt
+        /// For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+        /// To create a folder, have the key end in the / character, and send an empty string, an empty byte array, or an empty stream with zero content length.
         /// </summary>
         /// <param name="key">The key of the BLOB to write to.</param>
         /// <param name="contentType">The content type of the BLOB.</param>
@@ -77,8 +77,8 @@
 
         /// <summary>
         /// Writes many objects to the BLOB storage asynchronously.
-        /// For objects contained within subdirectories or folders, use the / character.
-        /// For example, path/to/folder/myfile.txt
+        /// For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+        /// To create a folder, have the key end in the / character, and send an empty string, an empty byte array, or an empty stream with zero content length.
         /// </summary>
         /// <param name="objects">The list of objects to write to the BLOB storage.</param>
         /// <param name="token">The cancellation token.</param>
@@ -87,8 +87,8 @@
 
         /// <summary>
         /// Deletes an object from the BLOB storage asynchronously.
-        /// For objects contained within subdirectories or folders, use the / character.
-        /// For example, path/to/folder/myfile.txt
+        /// For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+        /// For file storage platforms, when deleting a folder, use / at the end of the key.  The directory must be empty.
         /// </summary>
         /// <param name="key">The key of the object to delete from the BLOB storage.</param>
         /// <param name="token">The cancellation token.</param>
@@ -97,8 +97,7 @@
 
         /// <summary>
         /// Checks if an object with the specified key exists in the BLOB storage asynchronously.
-        /// For objects contained within subdirectories or folders, use the / character.
-        /// For example, path/to/folder/myfile.txt
+        /// For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
         /// </summary>
         /// <param name="key">The key of the object to check.</param>
         /// <param name="token">The cancellation token.</param>

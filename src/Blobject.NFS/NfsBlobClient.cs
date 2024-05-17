@@ -208,8 +208,7 @@
         /// <inheritdoc />
         public Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
-            key = PathNormalizer(key);
+            if (String.IsNullOrEmpty(data)) data = "";
 
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
@@ -217,22 +216,30 @@
         /// <inheritdoc />
         public async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
-            key = PathNormalizer(key);
+            if (data == null) data = new byte[0];
 
             using (MemoryStream stream = new MemoryStream())
             {
                 await stream.WriteAsync(data, 0, data.Length, token).ConfigureAwait(false);
                 stream.Seek(0, SeekOrigin.Begin);
-                _Client.Write(key, stream);
+
+                await WriteAsync(key, contentType, data.Length, stream, token).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
         public async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
-            key = PathNormalizer(key);
+            string normalizedKey = PathNormalizer(key);
 
-            _Client.Write(key, stream);
+            if (!String.IsNullOrEmpty(key) && key.EndsWith("/") && contentLength == 0)
+            {
+                _Client.CreateDirectory(normalizedKey);
+            }
+            else
+            {
+                _Client.Write(normalizedKey, stream);
+            }
         }
 
         /// <inheritdoc />

@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<Version>5.0.5</Version>
 		<LangVersion>8.0</LangVersion>
 		<TargetFrameworks>netstandard2.1;net6.0;net7.0;net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>5.0.2</Version>
 		<Authors>Joel Christner</Authors>
 		<Description>BLOB storage client for Amazon S3 (including compatible storage e.g. Minio, Less3, Ceph, View) using a lightweight, non-AWS SDK.  Refer to other Blobject packages for other storage repository types.</Description>
 		<Copyright>(c)2024 Joel Christner</Copyright>
@@ -71,6 +71,7 @@
 
 	
 	<ItemGroup>
+		<PackageReference Include="Blobject.Core" Version="5.0.7" />
 		<PackageReference Include="S3Lite" Version="1.0.2" />
 	</ItemGroup>
 
@@ -99,10 +100,6 @@
 		<None Include="Blobject.AmazonS3Lite.xml">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-	</ItemGroup>
- 
-	<ItemGroup>
-	  <ProjectReference Include="..\Blobject.Core\Blobject.Core.csproj" />
 	</ItemGroup>
 
 </Project>
