@@ -41,6 +41,8 @@
         /// <param name="awsSettings">Settings for <see cref="AmazonS3BlobClient"/>.</param>
         public AmazonS3BlobClient(AwsSettings awsSettings)
         {
+            if (awsSettings == null) throw new ArgumentNullException(nameof(awsSettings));
+
             AmazonS3Config s3Config;
             _AwsSettings = awsSettings;
             BasicAWSCredentials s3Credentials = new Amazon.Runtime.BasicAWSCredentials(_AwsSettings.AccessKey, _AwsSettings.SecretKey);

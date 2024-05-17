@@ -51,6 +51,8 @@
         /// <param name="awsSettings">Settings for <see cref="AmazonS3LiteBlobClient"/>.</param>
         public AmazonS3LiteBlobClient(AwsSettings awsSettings)
         {
+            if (awsSettings == null) throw new ArgumentNullException(nameof(awsSettings));
+
             _AwsSettings = awsSettings;
 
             if (String.IsNullOrEmpty(_AwsSettings.Endpoint))

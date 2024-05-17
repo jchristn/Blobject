@@ -54,6 +54,8 @@
         /// <param name="diskSettings">Settings for <see cref="DiskBlobClient"/>.</param>
         public DiskBlobClient(DiskSettings diskSettings)
         {
+            if (diskSettings == null) throw new ArgumentNullException(nameof(diskSettings));
+
             _DiskSettings = diskSettings;
 
             if (!Directory.Exists(diskSettings.Directory)) Directory.CreateDirectory(diskSettings.Directory);

@@ -38,6 +38,7 @@ Though this library is MIT licensed, it is dependent upon other libraries, some 
 - Added support for CIFS and NFS
 - Remove use of continuation tokens for disk
 - Add `S3Lite` variant, not dependent on AWSSDK
+- Enumerate APIs now return an `IEnumerable<BlobMetadata>`, no pagination required
 - Refactor
 
 ## Example Project
@@ -165,14 +166,16 @@ await blobs.WriteAsync("subdirectory/filename.ext", "text/plain", "Hello!");
 ```
 
 ## Metadata and Enumeration
+
+Enumeration is always full; the library will manage any continuation tokens (e.g. AWS S3, S3 compatible, Azure) and also recurse into subdirectories for file, CIFS, and NFS.
+
 ```csharp
 // Get BLOB metadata
 BlobMetadata md = await _Blobs.GetMetadataAsync("key");
 
 // Enumerate BLOBs
-EnumerationResult result = await _Blobs.EnumerateAsync();
-// list of BlobMetadata contained in result.Blobs
-// continuation token in result.NextContinuationToken
+foreach (BlobMetadata blob in await _Blobs.EnumerateAsync())
+  Console.WriteLine(blob.Key + " " + blob.ContentLength + " folder? " + blob.IsFolder);
 ```
 
 ## Copying BLOBs from Repository to Repository

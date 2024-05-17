@@ -60,6 +60,8 @@
         /// <param name="azureSettings">Settings for <see cref="AzureBlobClient"/>.</param>
         public AzureBlobClient(AzureBlobSettings azureSettings)
         {
+            if (azureSettings == null) throw new ArgumentNullException(nameof(azureSettings));
+
             _Settings = azureSettings;
             _ConnectionString = GetAzureConnectionString();
             _ServiceClient = new BlobServiceClient(_ConnectionString);

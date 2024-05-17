@@ -77,6 +77,8 @@
         /// <param name="nfsSettings">Settings for <see cref="NfsBlobClient"/>.</param>
         public NfsBlobClient(NfsSettings nfsSettings)
         {
+            if (nfsSettings == null) throw new ArgumentNullException(nameof(nfsSettings));
+
             _NfsSettings = nfsSettings;
             _Client = InitializeClient();
             _Client.MountDevice(nfsSettings.Share);

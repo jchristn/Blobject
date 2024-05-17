@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.IO;
     using System.Linq;
     using System.Text;
@@ -55,6 +56,8 @@
         /// <param name="cifsSettings">Settings for <see cref="CifsBlobClient"/>.</param>
         public CifsBlobClient(CifsSettings cifsSettings)
         {
+            if (cifsSettings == null) throw new ArgumentNullException(nameof(cifsSettings));
+
             _CifsSettings = cifsSettings;
         }
 
@@ -97,9 +100,9 @@
         public async Task<List<string>> ListShares(CancellationToken token = default)
         {
             Node shares = await EzSmb.Node.GetNode(_CifsSettings.Ip.ToString(), _CifsSettings.Username, _CifsSettings.Password);
-            var nodes = await shares.GetList();
+            Node[] nodes = await shares.GetList();
             List<string> ret = new List<string>();
-            foreach (var node in nodes) ret.Add(node.Name);
+            foreach (Node node in nodes) ret.Add(node.Name);
             return ret;
         }
 
@@ -146,6 +149,7 @@
                 BlobMetadata ret = new BlobMetadata
                 {
                     Key = key,
+                    IsFolder = (file.Type == NodeType.Folder),
                     ContentType = "application/octet-stream",
                     ContentLength = (file.Size != null ? file.Size.Value : 0),
                     CreatedUtc = file.Created,
@@ -174,9 +178,16 @@
             string path = BuildSharePath();
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
 
-            using (MemoryStream stream = new MemoryStream(data))
+            if (key.EndsWith("/"))
             {
-                await file.Write(stream, key).ConfigureAwait(false);
+                await file.CreateFolder(key);
+            }
+            else
+            {
+                using (MemoryStream stream = new MemoryStream(data))
+                {
+                    await file.Write(stream, key).ConfigureAwait(false);
+                }
             }
         }
 
@@ -186,7 +197,14 @@
             string path = BuildSharePath();
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
 
-            await file.Write(stream, key).ConfigureAwait(false);
+            if (key.EndsWith("/"))
+            {
+                await file.CreateFolder(key);
+            }
+            else
+            {
+                await file.Write(stream, key).ConfigureAwait(false);
+            }
         }
 
         /// <inheritdoc />
@@ -234,21 +252,22 @@
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
-            string path = BuildSharePath();
+            string sharePath = BuildSharePath();
+            string baseDirectory = "";
 
             if (filter.Prefix.Contains("/")) filter.Prefix = filter.Prefix.Replace("/", "\\");
             while (filter.Prefix.StartsWith("\\")) filter.Prefix = filter.Prefix.Substring(1);
             if (!String.IsNullOrEmpty(filter.Prefix) && !filter.Prefix.EndsWith("*")) filter.Prefix += "*";
-
+             
             if (filter.Prefix.Contains("\\"))
             {
                 #region Nested
 
                 if (filter.Prefix.EndsWith("\\"))
                 {
-                    #region Subdirectory
+                    #region Path-Only
 
-                    path += filter.Prefix;
+                    baseDirectory += filter.Prefix;
                     filter.Prefix = "*";
 
                     #endregion
@@ -260,7 +279,7 @@
                     string[] parts = filter.Prefix.Split('\\');
                     for (int i = 0; i < (parts.Length - 1); i++)
                     {
-                        path += "\\" + parts[i];
+                        baseDirectory += "\\" + parts[i];
                     }
 
                     filter.Prefix = parts[parts.Length - 1];
@@ -279,32 +298,79 @@
                 #endregion
             }
 
-            Log("retrieving item list in path " + (!String.IsNullOrEmpty(path) ? path : "(empty)") + " prefix " + filter.Prefix);
+            baseDirectory = baseDirectory.Replace("\\\\", "\\");
+            Log("retrieving item list in path " + (!String.IsNullOrEmpty(baseDirectory) ? baseDirectory : "(empty)") + " prefix " + filter.Prefix);
 
-            Node folder = Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).Result;
-
-            Node[] nodes = folder.GetList(filter.Prefix).Result;
+            Node root = Node.GetNode(sharePath + "\\" + baseDirectory, _CifsSettings.Username, _CifsSettings.Password).Result;
+            Node[] nodes = root.GetList(filter.Prefix).Result;
             if (nodes != null && nodes.Length > 0)
             {
                 foreach (Node node in nodes)
                 {
-                    if (node.Size < filter.MinimumSize || node.Size > filter.MaximumSize) continue;
-                    if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.ToLower().StartsWith(filter.Prefix)) continue;
-                    if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.ToLower().EndsWith(filter.Suffix)) continue;
-
-                    BlobMetadata md = new BlobMetadata
+                    if (node.Type == NodeType.Folder)
                     {
-                        Key = node.Name,
-                        ContentType = "application/octet-stream",
-                        ContentLength = (node.Size != null ? node.Size.Value : 0),
-                        CreatedUtc = node.Created,
-                        LastAccessUtc = node.LastAccessed,
-                        LastUpdateUtc = node.LastAccessed
-                    };
+                        EnumerationFilter ef = new EnumerationFilter
+                        {
+                            MinimumSize = filter.MinimumSize,
+                            MaximumSize = filter.MaximumSize,
+                            Prefix = filter.Prefix,
+                            Suffix = filter.Suffix
+                        };
 
-                    if (node.Type == NodeType.Folder) md.IsFolder = true;
+                        IEnumerable<BlobMetadata> blobs = EnumerateSubdirectory(
+                            ef, 
+                            sharePath,
+                            baseDirectory + "\\" + node.Name + "\\", 
+                            filter.Prefix);
 
-                    yield return md;
+                        if (blobs != null)
+                        {
+                            foreach (BlobMetadata blob in blobs)
+                            {
+                                yield return blob;
+                            }
+                        }
+
+                        // return the directory after returning the files to support empty operations
+
+                        string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
+                        while (key.StartsWith("/")) key = key.Substring(1);
+
+                        BlobMetadata dir = new BlobMetadata
+                        {
+                            Key = key,
+                            IsFolder = true,
+                            ContentType = "application/octet-stream",
+                            ContentLength = (node.Size != null ? node.Size.Value : 0),
+                            CreatedUtc = node.Created,
+                            LastAccessUtc = node.LastAccessed,
+                            LastUpdateUtc = node.Updated
+                        };
+
+                        yield return dir;
+                    }
+                    else
+                    {
+                        if (node.Size < filter.MinimumSize || node.Size > filter.MaximumSize) continue;
+                        if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.ToLower().StartsWith(filter.Prefix)) continue;
+                        if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.ToLower().EndsWith(filter.Suffix)) continue;
+
+                        string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
+                        while (key.StartsWith("/")) key = key.Substring(1);
+
+                        BlobMetadata md = new BlobMetadata
+                        {
+                            Key = key,
+                            IsFolder = false,
+                            ContentType = "application/octet-stream",
+                            ContentLength = (node.Size != null ? node.Size.Value : 0),
+                            CreatedUtc = node.Created,
+                            LastAccessUtc = node.LastAccessed,
+                            LastUpdateUtc = node.LastAccessed
+                        };
+                        
+                        yield return md;
+                    } 
                 }
             }
 
@@ -337,6 +403,87 @@
         private string BuildFilePath(string filename)
         {
             return _CifsSettings.Ip + "\\" + _CifsSettings.Share + "\\" + filename;
+        }
+
+        private IEnumerable<BlobMetadata> EnumerateSubdirectory(EnumerationFilter filter, string sharePath, string baseDirectory, string filePrefix)
+        {
+            baseDirectory = baseDirectory.Replace("\\\\", "\\");
+            Log("retrieving item list in path " + (!String.IsNullOrEmpty(baseDirectory) ? baseDirectory : "(empty)") + " prefix " + filePrefix);
+
+            Node root = Node.GetNode(sharePath + "\\" + baseDirectory, _CifsSettings.Username, _CifsSettings.Password).Result;
+            Node[] nodes = root.GetList(filePrefix).Result;
+            if (nodes != null && nodes.Length > 0)
+            {
+                foreach (Node node in nodes)
+                {
+                    if (node.Type == NodeType.Folder)
+                    {
+                        EnumerationFilter ef = new EnumerationFilter
+                        {
+                            MinimumSize = filter.MinimumSize,
+                            MaximumSize = filter.MaximumSize,
+                            Prefix = filter.Prefix,
+                            Suffix = filter.Suffix
+                        };
+
+                        IEnumerable<BlobMetadata> blobs = EnumerateSubdirectory(
+                            ef,
+                            sharePath,
+                            baseDirectory + "\\" + node.Name,
+                            filter.Prefix);
+
+                        if (blobs != null)
+                        {
+                            foreach (BlobMetadata blob in blobs)
+                            {
+                                yield return blob;
+                            }
+                        }
+
+                        // return the directory after returning the files to support empty operations
+
+                        string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
+                        while (key.StartsWith("/")) key = key.Substring(1);
+
+                        BlobMetadata dir = new BlobMetadata
+                        {
+                            Key = key,
+                            IsFolder = true,
+                            ContentType = "application/octet-stream",
+                            ContentLength = (node.Size != null ? node.Size.Value : 0),
+                            CreatedUtc = node.Created,
+                            LastAccessUtc = node.LastAccessed,
+                            LastUpdateUtc = node.Updated
+                        };
+
+                        yield return dir;
+                    }
+                    else
+                    {
+                        if (node.Size < filter.MinimumSize || node.Size > filter.MaximumSize) continue;
+                        if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.ToLower().StartsWith(filter.Prefix)) continue;
+                        if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.ToLower().EndsWith(filter.Suffix)) continue;
+
+                        string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
+                        while (key.StartsWith("/")) key = key.Substring(1);
+
+                        BlobMetadata md = new BlobMetadata
+                        {
+                            Key = key,
+                            IsFolder = false,
+                            ContentType = "application/octet-stream",
+                            ContentLength = (node.Size != null ? node.Size.Value : 0),
+                            CreatedUtc = node.Created,
+                            LastAccessUtc = node.LastAccessed,
+                            LastUpdateUtc = node.LastAccessed
+                        };
+
+                        yield return md;
+                    }
+                }
+            }
+
+            yield break;
         }
 
         private void Log(string msg)
