@@ -21,6 +21,7 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -485,9 +486,19 @@
         private string PathNormalizer(string path)
         {
             if (String.IsNullOrEmpty(path)) return null;
-            if (path.Contains("/")) path = path.Replace("/", "\\");
-            if (!path.StartsWith(".\\")) path = ".\\" + path;
-            while (path.EndsWith("/")) path = path.Substring(0, path.Length - 1);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (path.Contains("/")) path = path.Replace("/", "\\");
+                if (!path.StartsWith(".\\")) path = ".\\" + path;
+                while (path.EndsWith("\\")) path = path.Substring(0, path.Length - 1);
+            }
+            else
+            {
+                if (path.Contains("\\")) path = path.Replace("\\", "/");
+                if (!path.StartsWith("./")) path = "./" + path;
+                while (path.EndsWith("/")) path = path.Substring(0, path.Length - 1);
+            }
             return path;
         }
 
