@@ -237,7 +237,7 @@
 
             if (!String.IsNullOrEmpty(key) && key.EndsWith("/") && contentLength == 0)
             {
-                _Client.CreateDirectory(normalizedKey);
+                _Client.CreateDirectory(key.Substring(0, key.Length - 1));
             }
             else
             {
@@ -486,19 +486,9 @@
         private string PathNormalizer(string path)
         {
             if (String.IsNullOrEmpty(path)) return null;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                if (path.Contains("/")) path = path.Replace("/", "\\");
-                if (!path.StartsWith(".\\")) path = ".\\" + path;
-                while (path.EndsWith("\\")) path = path.Substring(0, path.Length - 1);
-            }
-            else
-            {
-                if (path.Contains("\\")) path = path.Replace("\\", "/");
-                if (!path.StartsWith("./")) path = "./" + path;
-                while (path.EndsWith("/")) path = path.Substring(0, path.Length - 1);
-            }
+            if (path.Contains("/")) path = path.Replace("/", "\\");
+            if (!path.StartsWith(".\\")) path = ".\\" + path;
+            while (path.EndsWith("\\")) path = path.Substring(0, path.Length - 1);
             return path;
         }
 
