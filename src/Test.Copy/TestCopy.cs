@@ -10,10 +10,10 @@
     using Blobject.NFS;
     using GetSomeInput;
 
-    class Program
+    class TestCopy
     {
-        static IBlobClient _From;
-        static IBlobClient _To;
+        static BlobClientBase _From;
+        static BlobClientBase _To;
 
         static void Main(string[] args)
         {
@@ -46,9 +46,9 @@
             }
         }
 
-        static IBlobClient InitializeClient()
+        static BlobClientBase InitializeClient()
         {
-            StorageType storageType = StorageType.Disk;
+            StorageTypeEnum storageType = StorageTypeEnum.Disk;
             bool runForever = true;
             while (runForever)
             {
@@ -56,23 +56,23 @@
                 switch (str)
                 {
                     case "aws":
-                        storageType = StorageType.AwsS3;
+                        storageType = StorageTypeEnum.AwsS3;
                         runForever = false;
                         break;
                     case "azure":
-                        storageType = StorageType.Azure;
+                        storageType = StorageTypeEnum.Azure;
                         runForever = false;
                         break;
                     case "disk":
-                        storageType = StorageType.Disk;
+                        storageType = StorageTypeEnum.Disk;
                         runForever = false;
                         break;
                     case "cifs":
-                        storageType = StorageType.CIFS;
+                        storageType = StorageTypeEnum.CIFS;
                         runForever = false;
                         break;
                     case "nfs":
-                        storageType = StorageType.NFS;
+                        storageType = StorageTypeEnum.NFS;
                         runForever = false;
                         break;
                     default:
@@ -83,7 +83,7 @@
 
             switch (storageType)
             {
-                case StorageType.AwsS3:
+                case StorageTypeEnum.AwsS3:
                     Console.WriteLine("For S3-compatible storage, endpoint should be of the form http://[hostname]:[port]/");
                     string endpoint = Inputty.GetString("Endpoint   :", null, true);
                     AwsSettings aws = null;
@@ -110,7 +110,7 @@
                     }
                     return new AmazonS3BlobClient(aws);
 
-                case StorageType.Azure:
+                case StorageTypeEnum.Azure:
                     AzureBlobSettings azure = new AzureBlobSettings(
                         Inputty.GetString("Account name :", null, false),
                         Inputty.GetString("Access key   :", null, false),
@@ -118,7 +118,7 @@
                         Inputty.GetString("Container    :", null, false));
                     return new AzureBlobClient(azure);
 
-                case StorageType.CIFS:
+                case StorageTypeEnum.CIFS:
                     CifsSettings cifs = new CifsSettings(
                         Inputty.GetString("Hostname   :", "localhost", false),
                         Inputty.GetString("Username   :", null, false),
@@ -126,12 +126,12 @@
                         Inputty.GetString("Share      :", null, false));
                     return new CifsBlobClient(cifs);
 
-                case StorageType.Disk:
+                case StorageTypeEnum.Disk:
                     DiskSettings disk = new DiskSettings(
                         Inputty.GetString("Directory :", null, false));
                     return new DiskBlobClient(disk);
 
-                case StorageType.NFS:
+                case StorageTypeEnum.NFS:
                     NfsSettings nfs = new NfsSettings(
                         Inputty.GetString("Hostname   :", "localhost", false),
                         Inputty.GetInteger("User ID    :", 0, false, true),

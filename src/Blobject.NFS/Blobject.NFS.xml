@@ -7,16 +7,6 @@
         <member name="T:Blobject.NFS.NfsBlobClient">
             <inheritdoc />
         </member>
-        <member name="P:Blobject.NFS.NfsBlobClient.Logger">
-            <summary>
-            Method to invoke to send log messages.
-            </summary>
-        </member>
-        <member name="P:Blobject.NFS.NfsBlobClient.StreamBufferSize">
-            <summary>
-            Buffer size when working with streams.
-            </summary>
-        </member>
         <member name="M:Blobject.NFS.NfsBlobClient.#ctor(Blobject.NFS.NfsSettings)">
             <summary>
             Initializes a new instance of the <see cref="T:Blobject.NFS.NfsBlobClient"/> class.

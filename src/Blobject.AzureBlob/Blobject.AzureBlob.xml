@@ -7,16 +7,6 @@
         <member name="T:Blobject.AzureBlob.AzureBlobClient">
             <inheritdoc />
         </member>
-        <member name="P:Blobject.AzureBlob.AzureBlobClient.Logger">
-            <summary>
-            Method to invoke to send log messages.
-            </summary>
-        </member>
-        <member name="P:Blobject.AzureBlob.AzureBlobClient.StreamBufferSize">
-            <summary>
-            Buffer size to use when reading from a stream.
-            </summary>
-        </member>
         <member name="M:Blobject.AzureBlob.AzureBlobClient.#ctor(Blobject.AzureBlob.AzureBlobSettings)">
             <summary>
             Initializes a new instance of the <see cref="T:Blobject.AzureBlob.AzureBlobClient"/> class.

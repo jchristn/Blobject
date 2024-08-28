@@ -5,7 +5,7 @@
     /// <summary>
     /// Storage type.
     /// </summary>
-    public enum StorageType
+    public enum StorageTypeEnum
     {
         /// <summary>
         /// Amazon Simple Storage Service.

@@ -7,16 +7,6 @@
         <member name="T:Blobject.CIFS.CifsBlobClient">
             <inheritdoc />
         </member>
-        <member name="P:Blobject.CIFS.CifsBlobClient.Logger">
-            <summary>
-            Method to invoke to send log messages.
-            </summary>
-        </member>
-        <member name="P:Blobject.CIFS.CifsBlobClient.StreamBufferSize">
-            <summary>
-            Buffer size when working with streams.
-            </summary>
-        </member>
         <member name="M:Blobject.CIFS.CifsBlobClient.#ctor(Blobject.CIFS.CifsSettings)">
             <summary>
             Initializes a new instance of the <see cref="T:Blobject.CIFS.CifsBlobClient"/> class.

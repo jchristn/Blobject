@@ -1,27 +1,32 @@
-﻿namespace Test.AmazonS3
+﻿namespace Test.NFS
 {
+    using System.Net;
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 #pragma warning disable CS8629 // Nullable value type may be null.
 
     using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Blobject.AmazonS3;
     using Blobject.Core;
+    using Blobject.NFS;
     using GetSomeInput;
+    using System.Diagnostics;
+    using System.Runtime.CompilerServices;
+    using System.Collections.Generic;
+    using System.Linq;
 
-    class Program
+    class TestNfs
     {
-        static AmazonS3BlobClient _Client = null;
-        static AwsSettings _Settings = null;
-        static bool _Debug = true;
+        static NfsBlobClient _Client = null;
+        static NfsSettings _Settings = null;
+        static string _Hostname = "192.168.254.129";
+        static string _Share = "/srv";
+        static bool _Debug = false;
 
         static void Main(string[] args)
-        { 
+        {
             InitializeClient();
 
             bool runForever = true;
@@ -76,41 +81,23 @@
                         break;
                     case "enum":
                         Enumerate();
-                        break;
+                        break; 
                     case "url":
                         GenerateUrl();
                         break;
                 }
             }
         }
-         
+
         static void InitializeClient()
         {
-            Console.WriteLine("For S3-compatible storage, endpoint should be of the form http://[hostname]:[port]/");
-            string endpoint = Inputty.GetString("Endpoint   :", null, true);
-
-            if (String.IsNullOrEmpty(endpoint))
-            {
-                _Settings = new AwsSettings(
-                    Inputty.GetString("Access key :", null, false),
-                    Inputty.GetString("Secret key :", null, false),
-                    Inputty.GetString("Region     :", "us-west-1", false),
-                    Inputty.GetString("Bucket     :", null, false)
-                    );
-            }
-            else
-            {
-                _Settings = new AwsSettings(
-                    endpoint,
-                    Inputty.GetBoolean("SSL        :", true),
-                    Inputty.GetString("Access key :", null, false),
-                    Inputty.GetString("Secret key :", null, false),
-                    Inputty.GetString("Region     :", "us-west-1", false),
-                    Inputty.GetString("Bucket     :", null, false),
-                    Inputty.GetString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
-                    );
-            }
-            _Client = new AmazonS3BlobClient(_Settings);
+            _Settings = new NfsSettings(
+                 Inputty.GetString("Hostname   :", _Hostname, false),
+                Inputty.GetInteger("User ID    :", 0, false, true),
+                Inputty.GetInteger("Group ID   :", 0, false, true),
+                Inputty.GetString("Share      :", _Share, false),
+                (NfsVersionEnum)(Enum.Parse(typeof(NfsVersionEnum), Inputty.GetString("Version    :", "V3", false))));
+            _Client = new NfsBlobClient(_Settings);
             if (_Debug) _Client.Logger = Console.WriteLine;
         }
 
@@ -146,6 +133,7 @@
             {
                 Console.Write("\rLoading object " + i.ToString() + "...");
                 await _Client.WriteAsync(i.ToString(), "text/plain", "Hello, world!");
+                await Task.Delay(100);
             }
 
             Console.WriteLine("");
@@ -153,7 +141,7 @@
 
         static async Task ListShares()
         {
-            List<string> shares = await _Client.ListBuckets();
+            List<string> shares = await _Client.ListShares();
             if (shares != null && shares.Count > 0)
             {
                 Console.WriteLine("");
@@ -290,9 +278,10 @@
             foreach (BlobMetadata curr in _Client.Enumerate(filter))
             {
                 Console.WriteLine(
-                    String.Format("{0,-27}", (curr.IsFolder ? "(dir) " : "") + curr.Key) +
+                    String.Format("{0,-27}", curr.Key) +
                     String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
-                    String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")));
+                    String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")) +
+                    String.Format("{0,-6}", curr.IsFolder ? "dir" : ""));
 
                 count += 1;
                 bytes += curr.ContentLength;
@@ -303,7 +292,7 @@
             Console.WriteLine("Bytes: " + bytes);
             Console.WriteLine("");
         }
-         
+
         static void GenerateUrl()
         {
             Console.WriteLine(_Client.GenerateUrl(
@@ -316,8 +305,8 @@
             {
                 MinimumSize = Inputty.GetInteger("Minimum size :", 0, true, true),
                 MaximumSize = Inputty.GetInteger("Maximum size :", Int32.MaxValue, true, true),
-                Prefix = Inputty.GetString      ("Prefix       :", null, true),
-                Suffix = Inputty.GetString      ("Suffix       :", null, true)
+                Prefix = Inputty.GetString("Prefix       :", null, true),
+                Suffix = Inputty.GetString("Suffix       :", null, true)
             };
 
             return ret;

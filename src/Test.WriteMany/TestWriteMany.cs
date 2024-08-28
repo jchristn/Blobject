@@ -15,10 +15,10 @@
     using Blobject.NFS;
     using GetSomeInput;
 
-    class Program
+    class TestWriteMany
     {
-        static StorageType _StorageType;
-        static IBlobClient _Blobs;
+        static StorageTypeEnum _StorageType;
+        static BlobClientBase _Blobs;
         static AwsSettings _AwsSettings;
         static AzureBlobSettings _AzureSettings;
         static CifsSettings _CifsSettings;
@@ -52,23 +52,23 @@
                 switch (storageType)
                 {
                     case "aws":
-                        _StorageType = StorageType.AwsS3;
+                        _StorageType = StorageTypeEnum.AwsS3;
                         runForever = false;
                         break;
                     case "azure":
-                        _StorageType = StorageType.Azure;
+                        _StorageType = StorageTypeEnum.Azure;
                         runForever = false;
                         break;
                     case "disk":
-                        _StorageType = StorageType.Disk;
+                        _StorageType = StorageTypeEnum.Disk;
                         runForever = false;
                         break;
                     case "cifs":
-                        _StorageType = StorageType.CIFS;
+                        _StorageType = StorageTypeEnum.CIFS;
                         runForever = false;
                         break;
                     case "nfs":
-                        _StorageType = StorageType.NFS;
+                        _StorageType = StorageTypeEnum.NFS;
                         runForever = false;
                         break;
                     default:
@@ -82,7 +82,7 @@
         {
             switch (_StorageType)
             {
-                case StorageType.AwsS3:
+                case StorageTypeEnum.AwsS3:
                     Console.WriteLine("For S3-compatible storage, endpoint should be of the form http://[hostname]:[port]/");
                     string endpoint = Inputty.GetString("Endpoint   :", null, true);
 
@@ -110,7 +110,7 @@
                     _Blobs = new AmazonS3BlobClient(_AwsSettings);
                     break;
 
-                case StorageType.Azure:
+                case StorageTypeEnum.Azure:
                     _AzureSettings = new AzureBlobSettings(
                         Inputty.GetString("Account name :", null, false),
                         Inputty.GetString("Access key   :", null, false),
@@ -119,7 +119,7 @@
                     _Blobs = new AzureBlobClient(_AzureSettings);
                     break;
 
-                case StorageType.CIFS:
+                case StorageTypeEnum.CIFS:
                     _CifsSettings = new CifsSettings(
                         Inputty.GetString("Hostname   :", "localhost", false),
                         Inputty.GetString("Username   :", null, false),
@@ -128,13 +128,13 @@
                     _Blobs = new CifsBlobClient(_CifsSettings);
                     break;
 
-                case StorageType.Disk:
+                case StorageTypeEnum.Disk:
                     _DiskSettings = new DiskSettings(
                         Inputty.GetString("Directory :", null, false));
                     _Blobs = new DiskBlobClient(_DiskSettings);
                     break;
 
-                case StorageType.NFS:
+                case StorageTypeEnum.NFS:
                     _NfsSettings = new NfsSettings(
                         Inputty.GetString("Hostname   :", "localhost", false),
                         Inputty.GetInteger("User ID    :", 0, false, true),

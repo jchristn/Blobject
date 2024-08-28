@@ -1,29 +1,25 @@
-﻿namespace Test.NFS
+﻿namespace Test.CIFS
 {
-    using System.Net;
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 #pragma warning disable CS8629 // Nullable value type may be null.
 
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
+    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Blobject.CIFS;
     using Blobject.Core;
-    using Blobject.NFS;
     using GetSomeInput;
-    using System.Diagnostics;
-    using System.Runtime.CompilerServices;
-    using System.Collections.Generic;
-    using System.Linq;
 
-    class Program
+    class TestCifs
     {
-        static NfsBlobClient _Client = null;
-        static NfsSettings _Settings = null;
-        static string _Hostname = "192.168.226.132";
-        static string _Share = "/share";
-        static bool _Debug = false;
+        static CifsBlobClient _Client = null;
+        static CifsSettings _Settings = null;
+        static bool _Debug = true;
 
         static void Main(string[] args)
         {
@@ -81,7 +77,7 @@
                         break;
                     case "enum":
                         Enumerate();
-                        break; 
+                        break;
                     case "url":
                         GenerateUrl();
                         break;
@@ -91,13 +87,12 @@
 
         static void InitializeClient()
         {
-            _Settings = new NfsSettings(
-                 Inputty.GetString("Hostname   :", _Hostname, false),
-                Inputty.GetInteger("User ID    :", 0, false, true),
-                Inputty.GetInteger("Group ID   :", 0, false, true),
-                Inputty.GetString("Share      :", _Share, false),
-                (NfsVersionEnum)(Enum.Parse(typeof(NfsVersionEnum), Inputty.GetString("Version    :", "V3", false))));
-            _Client = new NfsBlobClient(_Settings);
+            _Settings = new CifsSettings(
+                Inputty.GetString("Hostname   :", "localhost", false),
+                Inputty.GetString("Username   :", null, false),
+                Inputty.GetString("Password   :", null, false),
+                Inputty.GetString("Share      :", null, false));
+            _Client = new CifsBlobClient(_Settings);
             if (_Debug) _Client.Logger = Console.WriteLine;
         }
 
@@ -133,7 +128,6 @@
             {
                 Console.Write("\rLoading object " + i.ToString() + "...");
                 await _Client.WriteAsync(i.ToString(), "text/plain", "Hello, world!");
-                await Task.Delay(100);
             }
 
             Console.WriteLine("");
@@ -278,10 +272,9 @@
             foreach (BlobMetadata curr in _Client.Enumerate(filter))
             {
                 Console.WriteLine(
-                    String.Format("{0,-27}", curr.Key) +
+                    String.Format("{0,-27}", (curr.IsFolder ? "(dir) " : "") + curr.Key) +
                     String.Format("{0,-18}", curr.ContentLength.ToString() + " bytes") +
-                    String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")) +
-                    String.Format("{0,-6}", curr.IsFolder ? "dir" : ""));
+                    String.Format("{0,-30}", curr.CreatedUtc.Value.ToString("yyyy-MM-dd HH:mm:ss")));
 
                 count += 1;
                 bytes += curr.ContentLength;

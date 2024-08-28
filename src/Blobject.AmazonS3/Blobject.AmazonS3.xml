@@ -7,11 +7,6 @@
         <member name="T:Blobject.AmazonS3.AmazonS3BlobClient">
             <inheritdoc />
         </member>
-        <member name="P:Blobject.AmazonS3.AmazonS3BlobClient.Logger">
-            <summary>
-            Method to invoke to send log messages.
-            </summary>
-        </member>
         <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.#ctor(Blobject.AmazonS3.AwsSettings)">
             <summary>
             Initializes a new instance of the <see cref="T:Blobject.AmazonS3.AmazonS3BlobClient"/> class.

@@ -12,30 +12,9 @@
     using EzSmb;
 
     /// <inheritdoc />
-    public class CifsBlobClient : IBlobClient, IDisposable
+    public class CifsBlobClient : BlobClientBase, IDisposable
     {
         #region Public-Members
-
-        /// <summary>
-        /// Method to invoke to send log messages.
-        /// </summary>
-        public Action<string> Logger { get; set; } = null;
-
-        /// <summary>
-        /// Buffer size when working with streams.
-        /// </summary>
-        public int StreamBufferSize
-        {
-            get
-            {
-                return _StreamBufferSize;
-            }
-            set
-            {
-                if (value < 1) throw new ArgumentOutOfRangeException(nameof(StreamBufferSize));
-                _StreamBufferSize = value;
-            }
-        }
 
         #endregion
 
@@ -43,7 +22,6 @@
 
         private string _Header = "[CifsBlobClient] ";
         private CifsSettings _CifsSettings = null;
-        private int _StreamBufferSize = 4096;
         private bool _Disposed = false;
 
         #endregion
@@ -107,21 +85,26 @@
         }
 
         /// <inheritdoc />
-        public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
             string path = BuildFilePath(key);
 
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
 
-            using (MemoryStream stream = await file.Read().ConfigureAwait(false))
+            if (file.Size > 0)
             {
-                byte[] data = Common.ReadStreamFully(stream);
-                return data;
+                using (MemoryStream stream = await file.Read().ConfigureAwait(false))
+                {
+                    byte[] data = Common.ReadStreamFully(stream);
+                    return data;
+                }
             }
+
+            return Array.Empty<byte>();
         }
 
         /// <inheritdoc />
-        public async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
             string path = BuildFilePath(key);
 
@@ -138,7 +121,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
             string path = BuildFilePath(key);
 
@@ -166,14 +149,14 @@
         }
 
         /// <inheritdoc />
-        public Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             string path = BuildSharePath();
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
@@ -192,7 +175,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
             string path = BuildSharePath();
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
@@ -208,7 +191,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
+        public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
             foreach (WriteRequest obj in objects)
             {
@@ -224,7 +207,7 @@
         }
 
         /// <inheritdoc />
-        public async Task DeleteAsync(string key, CancellationToken token = default)
+        public override async Task DeleteAsync(string key, CancellationToken token = default)
         {
             string path = BuildFilePath(key);
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
@@ -232,7 +215,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
             string path = BuildFilePath(key);
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
@@ -240,13 +223,14 @@
         }
 
         /// <inheritdoc />
-        public string GenerateUrl(string key, CancellationToken token = default)
+        public override string GenerateUrl(string key, CancellationToken token = default)
         {
+            if (!String.IsNullOrEmpty(key)) key = key.Replace("/", "\\");
             return "\\\\" + _CifsSettings.Ip.ToString() + "\\" + _CifsSettings.Share + "\\" + key;
         }
 
         /// <inheritdoc />
-        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
+        public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
             if (filter == null) filter = new EnumerationFilter();
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -320,13 +304,17 @@
                         IEnumerable<BlobMetadata> blobs = EnumerateSubdirectory(
                             ef, 
                             sharePath,
-                            baseDirectory + "\\" + node.Name + "\\", 
+                            baseDirectory + "\\" + node.Name, 
                             filter.Prefix);
 
                         if (blobs != null)
                         {
                             foreach (BlobMetadata blob in blobs)
                             {
+                                if (blob.ContentLength < filter.MinimumSize || blob.ContentLength > filter.MaximumSize) continue;
+                                if (!String.IsNullOrEmpty(filter.Prefix) && !blob.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
+                                if (!String.IsNullOrEmpty(filter.Suffix) && !blob.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+
                                 yield return blob;
                             }
                         }
@@ -346,6 +334,10 @@
                             LastAccessUtc = node.LastAccessed,
                             LastUpdateUtc = node.Updated
                         };
+
+                        if (dir.ContentLength < filter.MinimumSize || dir.ContentLength > filter.MaximumSize) continue;
+                        if (!String.IsNullOrEmpty(filter.Prefix) && !dir.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
+                        if (!String.IsNullOrEmpty(filter.Suffix) && !dir.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
 
                         yield return dir;
                     }
@@ -378,7 +370,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
             EmptyResult er = new EmptyResult();
 

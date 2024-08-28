@@ -30,32 +30,11 @@
     using NFSLibrary.Protocols.Commons;
 
     /// <inheritdoc />
-    public class NfsBlobClient : IBlobClient, IDisposable
+    public class NfsBlobClient : BlobClientBase, IDisposable
     {
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
         #region Public-Members
-
-        /// <summary>
-        /// Method to invoke to send log messages.
-        /// </summary>
-        public Action<string> Logger { get; set; } = null;
-
-        /// <summary>
-        /// Buffer size when working with streams.
-        /// </summary>
-        public int StreamBufferSize
-        {
-            get
-            {
-                return _StreamBufferSize;
-            }
-            set
-            {
-                if (value < 1) throw new ArgumentOutOfRangeException(nameof(StreamBufferSize));
-                _StreamBufferSize = value;
-            }
-        }
 
         #endregion
 
@@ -63,7 +42,6 @@
 
         private string _Header = "[NfsBlobClient] ";
         private NfsSettings _NfsSettings = null;
-        private int _StreamBufferSize = 4096;
         private bool _Disposed = false;
 
         private NFSClient _Client = null;
@@ -134,28 +112,37 @@
         }
 
         /// <inheritdoc />
-        public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
+            string normalizedKey = PathNormalizer(key);
             byte[] ret = null;
-            key = PathNormalizer(key);
 
-            Stream stream = new MemoryStream();
-            _Client.Read(key, ref stream);
+            NFSAttributes attrib = null;
 
-            if (stream != null)
+            attrib = _Client.GetItemAttributes(normalizedKey);
+            if (attrib != null)
             {
-                stream.Seek(0, SeekOrigin.Begin);
-                ret = ((MemoryStream)stream).ToArray();
-                stream.Close();
-                stream.Dispose();
-                stream = null;
+                bool isFolder = _Client.IsDirectory(normalizedKey);
+                if (isFolder) return null;
+
+                Stream stream = new MemoryStream();
+                _Client.Read(normalizedKey, ref stream);
+
+                if (stream != null)
+                {
+                    stream.Seek(0, SeekOrigin.Begin);
+                    ret = ((MemoryStream)stream).ToArray();
+                    stream.Close();
+                    stream.Dispose();
+                    stream = null;
+                }
             }
 
             return ret;
         }
 
         /// <inheritdoc />
-        public async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
             BlobMetadata md = await GetMetadataAsync(key, token).ConfigureAwait(false);
             BlobData ret = null;
@@ -179,7 +166,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
             string normalizedKey = PathNormalizer(key);
 
@@ -209,7 +196,7 @@
         }
 
         /// <inheritdoc />
-        public Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(data)) data = "";
 
@@ -217,7 +204,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             if (data == null) data = new byte[0];
 
@@ -231,7 +218,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
             string normalizedKey = PathNormalizer(key);
 
@@ -246,7 +233,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
+        public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
             foreach (WriteRequest obj in objects)
             {
@@ -264,7 +251,7 @@
         }
 
         /// <inheritdoc />
-        public async Task DeleteAsync(string key, CancellationToken token = default)
+        public override async Task DeleteAsync(string key, CancellationToken token = default)
         {
             string normalizedKey = PathNormalizer(key);
 
@@ -287,7 +274,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
             key = PathNormalizer(key);
             bool exists = false;
@@ -306,7 +293,7 @@
         }
 
         /// <inheritdoc />
-        public string GenerateUrl(string key, CancellationToken token = default)
+        public override string GenerateUrl(string key, CancellationToken token = default)
         {
             string url = "/" + _NfsSettings.Ip.ToString() + "/" + _NfsSettings.Share + "/" + key;
             url = url.Replace("\\", "/").Replace("//", "/");
@@ -314,7 +301,7 @@
         }
 
         /// <inheritdoc />
-        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
+        public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
             #region Set-Filter
 
@@ -375,7 +362,7 @@
                         {
                             MinimumSize = filter.MinimumSize,
                             MaximumSize = filter.MaximumSize,
-                            Prefix = blob.Key + "/",
+                            Prefix = blob.Key,
                             Suffix = filter.Suffix
                         };
 
@@ -406,7 +393,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
             EmptyResult er = new EmptyResult();
              
@@ -485,11 +472,21 @@
 
         private string PathNormalizer(string path)
         {
+            /*
             if (String.IsNullOrEmpty(path)) return null;
             if (path.Contains("/")) path = path.Replace("/", "\\");
             if (!path.StartsWith(".\\")) path = ".\\" + path;
             while (path.EndsWith("\\")) path = path.Substring(0, path.Length - 1);
             return path;
+            */
+
+            if (String.IsNullOrEmpty(path)) return ".";
+            path = path.Replace("/", "\\");
+            while (path.EndsWith("\\")) path = path.Substring(0, path.Length - 1);
+            while (path.StartsWith(".")) path = path.Substring(1);
+            while (path.StartsWith("\\")) path = path.Substring(1);
+            string[] parts = path.Split("\\");
+            return ".\\" + string.Join("\\", parts);
         }
 
         private IEnumerable<BlobMetadata> EnumerateSubdirectory(EnumerationFilter filter, string baseDirectory, string filePrefix)
@@ -507,8 +504,6 @@
                 NFSAttributes attrib = _Client.GetItemAttributes(PathNormalizer(baseDirectory + "/" + item));
                 if (attrib == null) continue;
 
-                if (attrib.Size < filter.MinimumSize || attrib.Size > filter.MaximumSize) continue;
-
                 BlobMetadata md = new BlobMetadata
                 {
                     Key = keyPrefix + item,
@@ -520,8 +515,15 @@
                     LastUpdateUtc = attrib.ModifiedDateTime
                 };
 
-                if (md.IsFolder) md.Key += "/";
+                if (md.IsFolder)
+                {
+                    md.Key += "/";
+                    md.ContentLength = 0;
+                }
+
                 md.Key = md.Key.Replace("//", "/");
+
+                if (md.ContentLength < filter.MinimumSize || md.ContentLength > filter.MaximumSize) continue;
 
                 yield return md;
             }

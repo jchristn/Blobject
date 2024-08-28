@@ -13,14 +13,9 @@
     using Blobject.Core;
 
     /// <inheritdoc />
-    public class AmazonS3BlobClient : IBlobClient, IDisposable
+    public class AmazonS3BlobClient : BlobClientBase, IDisposable
     {
         #region Public-Members
-
-        /// <summary>
-        /// Method to invoke to send log messages.
-        /// </summary>
-        public Action<string> Logger { get; set; } = null;
 
         #endregion
 
@@ -126,7 +121,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
             GetObjectRequest request = new GetObjectRequest
             {
@@ -136,34 +131,41 @@
 
             using (GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false))
             {
-                using (Stream responseStream = response.ResponseStream)
+                if (response != null && response.HttpStatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    using (StreamReader reader = new StreamReader(responseStream))
+                    using (Stream responseStream = response.ResponseStream)
                     {
-                        if (response.ContentLength > 0)
+                        using (StreamReader reader = new StreamReader(responseStream))
                         {
-                            // first copy the stream
-                            byte[] data = new byte[response.ContentLength];
-
-                            using (Stream bodyStream = response.ResponseStream)
+                            if (response.ContentLength > 0)
                             {
-                                data = Common.ReadStreamFully(bodyStream);
+                                // first copy the stream
+                                byte[] data = new byte[response.ContentLength];
 
-                                int statusCode = (int)response.HttpStatusCode;
-                                return data;
+                                using (Stream bodyStream = response.ResponseStream)
+                                {
+                                    data = Common.ReadStreamFully(bodyStream);
+
+                                    int statusCode = (int)response.HttpStatusCode;
+                                    return data;
+                                }
+                            }
+                            else
+                            {
+                                return null;
                             }
                         }
-                        else
-                        {
-                            throw new IOException("Unable to read object.");
-                        }
                     }
+                }
+                else
+                {
+                    throw new IOException("Unable to read object.");
                 }
             }
         }
 
         /// <inheritdoc />
-        public async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
             GetObjectRequest request = new GetObjectRequest
             {
@@ -192,7 +194,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
             GetObjectMetadataRequest request = new GetObjectMetadataRequest();
             request.BucketName = _AwsSettings.Bucket;
@@ -200,7 +202,7 @@
 
             GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request, token).ConfigureAwait(false);
 
-            if (response.ContentLength > 0)
+            if (response != null && response.HttpStatusCode == System.Net.HttpStatusCode.OK)
             {
                 BlobMetadata md = new BlobMetadata();
                 md.Key = key;
@@ -223,14 +225,14 @@
         }
 
         /// <inheritdoc />
-        public Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             long contentLength = 0;
             if (data != null && data.Length > 0)
@@ -253,7 +255,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
             PutObjectRequest request = new PutObjectRequest();
 
@@ -278,7 +280,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
+        public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
             foreach (WriteRequest obj in objects)
             {
@@ -294,7 +296,7 @@
         }
 
         /// <inheritdoc />
-        public async Task DeleteAsync(string key, CancellationToken token = default)
+        public override async Task DeleteAsync(string key, CancellationToken token = default)
         {
             DeleteObjectRequest request = new DeleteObjectRequest
             {
@@ -306,7 +308,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
             GetObjectMetadataRequest request = new GetObjectMetadataRequest
             {
@@ -330,7 +332,7 @@
         }
 
         /// <inheritdoc />
-        public string GenerateUrl(string key, CancellationToken token = default)
+        public override string GenerateUrl(string key, CancellationToken token = default)
         {
             if (!String.IsNullOrEmpty(_AwsSettings.BaseUrl))
             {
@@ -354,7 +356,7 @@
         }
 
         /// <inheritdoc />
-        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
+        public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
             if (filter == null) filter = new EnumerationFilter();
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -405,7 +407,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
             EmptyResult er = new EmptyResult();
 

@@ -14,7 +14,7 @@
     using Blobject.Core;
     using GetSomeInput;
 
-    class Program
+    class TestAmazonS3Lite
     {
         static AmazonS3LiteBlobClient _Client = null;
         static AwsSettings _Settings = null;

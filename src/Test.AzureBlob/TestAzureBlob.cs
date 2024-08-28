@@ -14,7 +14,7 @@
     using Blobject.Core;
     using GetSomeInput;
 
-    class Program
+    class TestAzureBlob
     {
         static AzureBlobClient _Client = null;
         static AzureBlobSettings _Settings = null;

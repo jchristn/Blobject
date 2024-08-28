@@ -13,30 +13,9 @@
     using Blobject.Core;
 
     /// <inheritdoc />
-    public class AzureBlobClient : IBlobClient, IDisposable
+    public class AzureBlobClient : BlobClientBase, IDisposable
     {
         #region Public-Members
-
-        /// <summary>
-        /// Method to invoke to send log messages.
-        /// </summary>
-        public Action<string> Logger { get; set; } = null;
-
-        /// <summary>
-        /// Buffer size to use when reading from a stream.
-        /// </summary>
-        public int StreamBufferSize
-        {
-            get
-            {
-                return _StreamBufferSize;
-            }
-            set
-            {
-                if (value < 1) throw new ArgumentOutOfRangeException(nameof(StreamBufferSize));
-                _StreamBufferSize = value;
-            }
-        }
 
         #endregion
 
@@ -129,7 +108,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = new Azure.Storage.Blobs.BlobClient(_ConnectionString, _Settings.Container, key);
@@ -161,7 +140,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = new Azure.Storage.Blobs.BlobClient(_ConnectionString, _Settings.Container, key);
@@ -171,7 +150,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = new Azure.Storage.Blobs.BlobClient(_ConnectionString, _Settings.Container, key);
@@ -188,14 +167,14 @@
         }
 
         /// <inheritdoc />
-        public Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = new Azure.Storage.Blobs.BlobClient(_ConnectionString, _Settings.Container, key);
@@ -210,7 +189,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             if (contentLength < 0) throw new ArgumentException("Content length must be zero or greater.");
@@ -249,7 +228,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
+        public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
             foreach (WriteRequest obj in objects)
             {
@@ -265,7 +244,7 @@
         }
 
         /// <inheritdoc />
-        public async Task DeleteAsync(string key, CancellationToken token = default)
+        public override async Task DeleteAsync(string key, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = new Azure.Storage.Blobs.BlobClient(_ConnectionString, _Settings.Container, key);
@@ -273,7 +252,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
             try
             {
@@ -287,7 +266,7 @@
         }
 
         /// <inheritdoc />
-        public string GenerateUrl(string key, CancellationToken token = default)
+        public override string GenerateUrl(string key, CancellationToken token = default)
         {
             return "https://" +
                 _Settings.AccountName +
@@ -298,7 +277,7 @@
         }
 
         /// <inheritdoc />
-        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
+        public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
             if (filter == null) filter = new EnumerationFilter();
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -345,7 +324,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
             EmptyResult er = new EmptyResult();
 

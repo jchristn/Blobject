@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>5.0.6</Version>
+		<Version>5.0.8</Version>
 		<LangVersion>8.0</LangVersion>
 		<TargetFrameworks>netstandard2.1;net6.0;net7.0;net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -71,8 +71,8 @@
 
 	
 	<ItemGroup>
-		<PackageReference Include="Blobject.Core" Version="5.0.7" />
-		<PackageReference Include="S3Lite" Version="1.0.2" />
+		<PackageReference Include="Blobject.Core" Version="5.0.8" />
+		<PackageReference Include="S3Lite" Version="1.0.6" />
 	</ItemGroup>
 
 	<ItemGroup>

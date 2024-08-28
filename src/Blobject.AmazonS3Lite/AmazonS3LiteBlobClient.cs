@@ -11,26 +11,11 @@
     using Blobject.Core;
 
     /// <inheritdoc />
-    public class AmazonS3LiteBlobClient : IBlobClient, IDisposable
+    public class AmazonS3LiteBlobClient : BlobClientBase, IDisposable
     {
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
         #region Public-Members
-
-        /// <summary>
-        /// Method to invoke to send log messages.
-        /// </summary>
-        public Action<string> Logger
-        {
-            get
-            {
-                return _S3Client.Logger;
-            }
-            set
-            {
-                _S3Client.Logger = value;
-            }
-        }
 
         #endregion
 
@@ -139,19 +124,19 @@
         }
 
         /// <inheritdoc />
-        public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
             return await _S3Client.Object.GetAsync(_AwsSettings.Bucket, key, null, null, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
             throw new NotImplementedException();
         }
 
         /// <inheritdoc />
-        public async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
             ObjectMetadata md = await _S3Client.Object.GetMetadataAsync(_AwsSettings.Bucket, key, null, null, token).ConfigureAwait(false);
             if (md == null)
@@ -170,27 +155,27 @@
         }
 
         /// <inheritdoc />
-        public Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             await _S3Client.Object.WriteAsync(_AwsSettings.Bucket, key, data, contentType, null, null, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
             byte[] bytes = Common.ReadStreamFully(stream);
             await WriteAsync(key, contentType, bytes, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
+        public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
             foreach (WriteRequest obj in objects)
             {
@@ -206,19 +191,19 @@
         }
 
         /// <inheritdoc />
-        public async Task DeleteAsync(string key, CancellationToken token = default)
+        public override async Task DeleteAsync(string key, CancellationToken token = default)
         {
             await _S3Client.Object.DeleteAsync(_AwsSettings.Bucket, key, null, null, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public async Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
             return await _S3Client.Object.ExistsAsync(_AwsSettings.Bucket, key, null, null, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
-        public string GenerateUrl(string key, CancellationToken token = default)
+        public override string GenerateUrl(string key, CancellationToken token = default)
         {
             if (!String.IsNullOrEmpty(_AwsSettings.BaseUrl))
             {
@@ -242,7 +227,7 @@
         }
 
         /// <inheritdoc />
-        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
+        public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
             if (filter == null) filter = new EnumerationFilter();
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -286,7 +271,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
             EmptyResult er = new EmptyResult();
 

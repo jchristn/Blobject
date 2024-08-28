@@ -1,26 +1,27 @@
-﻿namespace Test.Disk
+﻿namespace Test.AmazonS3
 {
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 #pragma warning disable CS8629 // Nullable value type may be null.
 
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Blobject.Disk;
+    using Blobject.AmazonS3;
     using Blobject.Core;
     using GetSomeInput;
-    using System.Linq;
 
-    class Program
+    class TestAmazonS3
     {
-        static DiskBlobClient _Client = null;
-        static DiskSettings _Settings = null;
+        static AmazonS3BlobClient _Client = null;
+        static AwsSettings _Settings = null;
         static bool _Debug = true;
 
         static void Main(string[] args)
-        {
+        { 
             InitializeClient();
 
             bool runForever = true;
@@ -42,6 +43,9 @@
                         break;
                     case "load":
                         LoadObjects().Wait();
+                        break;
+                    case "shares":
+                        ListShares().Wait();
                         break;
                     case "get":
                         ReadBlob().Wait();
@@ -79,11 +83,34 @@
                 }
             }
         }
-
+         
         static void InitializeClient()
         {
-            _Settings = new DiskSettings(Inputty.GetString("Directory :", null, false));
-            _Client = new DiskBlobClient(_Settings);
+            Console.WriteLine("For S3-compatible storage, endpoint should be of the form http://[hostname]:[port]/");
+            string endpoint = Inputty.GetString("Endpoint   :", null, true);
+
+            if (String.IsNullOrEmpty(endpoint))
+            {
+                _Settings = new AwsSettings(
+                    Inputty.GetString("Access key :", null, false),
+                    Inputty.GetString("Secret key :", null, false),
+                    Inputty.GetString("Region     :", "us-west-1", false),
+                    Inputty.GetString("Bucket     :", null, false)
+                    );
+            }
+            else
+            {
+                _Settings = new AwsSettings(
+                    endpoint,
+                    Inputty.GetBoolean("SSL        :", true),
+                    Inputty.GetString("Access key :", null, false),
+                    Inputty.GetString("Secret key :", null, false),
+                    Inputty.GetString("Region     :", "us-west-1", false),
+                    Inputty.GetString("Bucket     :", null, false),
+                    Inputty.GetString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
+                    );
+            }
+            _Client = new AmazonS3BlobClient(_Settings);
             if (_Debug) _Client.Logger = Console.WriteLine;
         }
 
@@ -95,6 +122,7 @@
             Console.WriteLine("  cls          Clear the screen");
             Console.WriteLine("  q            Quit");
             Console.WriteLine("  load         Load a number of small objects");
+            Console.WriteLine("  shares       List the shares available on the server");
             Console.WriteLine("  get          Get a BLOB");
             Console.WriteLine("  get stream   Get a BLOB using stream");
             Console.WriteLine("  write        Write a BLOB");
@@ -121,6 +149,23 @@
             }
 
             Console.WriteLine("");
+        }
+
+        static async Task ListShares()
+        {
+            List<string> shares = await _Client.ListBuckets();
+            if (shares != null && shares.Count > 0)
+            {
+                Console.WriteLine("");
+                Console.WriteLine("Shares");
+                foreach (string share in shares) Console.WriteLine("| " + share);
+                Console.WriteLine("");
+            }
+            else
+            {
+                Console.WriteLine("(none)");
+                Console.WriteLine("");
+            }
         }
 
         static async Task WriteBlob()
@@ -258,7 +303,7 @@
             Console.WriteLine("Bytes: " + bytes);
             Console.WriteLine("");
         }
-
+         
         static void GenerateUrl()
         {
             Console.WriteLine(_Client.GenerateUrl(
@@ -271,8 +316,8 @@
             {
                 MinimumSize = Inputty.GetInteger("Minimum size :", 0, true, true),
                 MaximumSize = Inputty.GetInteger("Maximum size :", Int32.MaxValue, true, true),
-                Prefix = Inputty.GetString("Prefix       :", null, true),
-                Suffix = Inputty.GetString("Suffix       :", null, true)
+                Prefix = Inputty.GetString      ("Prefix       :", null, true),
+                Suffix = Inputty.GetString      ("Suffix       :", null, true)
             };
 
             return ret;

@@ -10,37 +10,15 @@
     using Blobject.Core;
 
     /// <inheritdoc />
-    public class DiskBlobClient : IBlobClient, IDisposable
+    public class DiskBlobClient : BlobClientBase, IDisposable
     {
         #region Public-Members
-
-        /// <summary>
-        /// Method to invoke to send log messages.
-        /// </summary>
-        public Action<string> Logger { get; set; } = null;
-
-        /// <summary>
-        /// Buffer size to use when reading from a stream.
-        /// </summary>
-        public int StreamBufferSize
-        {
-            get
-            {
-                return _StreamBufferSize;
-            }
-            set
-            {
-                if (value < 1) throw new ArgumentOutOfRangeException(nameof(StreamBufferSize));
-                _StreamBufferSize = value;
-            }
-        }
 
         #endregion
 
         #region Private-Members
 
         private string _Header = "[DiskBlobClient] ";
-        private int _StreamBufferSize = 65536;
         private bool _Disposed = false;
         private DiskSettings _DiskSettings = null;
 
@@ -94,7 +72,7 @@
 
         /// <inheritdoc />
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        public async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
             string filename = GenerateUrl(key);
             if (Directory.Exists(filename))
@@ -112,7 +90,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
             string filename = GenerateUrl(key);
             if (File.Exists(filename))
@@ -132,7 +110,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
             string filename = GenerateUrl(key);
 
@@ -165,14 +143,14 @@
         }
 
         /// <inheritdoc />
-        public Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             long contentLength = 0;
             MemoryStream stream = new MemoryStream(Array.Empty<byte>());
@@ -188,7 +166,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
             string filename = GenerateUrl(key);
 
@@ -210,15 +188,15 @@
 
                 int read = 0;
                 long bytesRemaining = contentLength;
-                byte[] buffer = new byte[_StreamBufferSize];
+                byte[] buffer = new byte[StreamBufferSize];
 
                 using (FileStream fs = new FileStream(filename, FileMode.OpenOrCreate))
                 {
                     while (bytesRemaining > 0)
                     {
-                        if (bytesRemaining >= _StreamBufferSize)
+                        if (bytesRemaining >= StreamBufferSize)
                         {
-                            read = await stream.ReadAsync(buffer, 0, _StreamBufferSize, token).ConfigureAwait(false);
+                            read = await stream.ReadAsync(buffer, 0, StreamBufferSize, token).ConfigureAwait(false);
                         }
                         else
                         {
@@ -236,7 +214,7 @@
         }
 
         /// <inheritdoc />
-        public async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
+        public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
             foreach (WriteRequest obj in objects)
             {
@@ -252,7 +230,7 @@
         }
 
         /// <inheritdoc />
-        public async Task DeleteAsync(string key, CancellationToken token = default)
+        public override async Task DeleteAsync(string key, CancellationToken token = default)
         {
             string filename = GenerateUrl(key);
             if (File.Exists(filename))
@@ -270,7 +248,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
             string filename = GenerateUrl(key);
             if (File.Exists(filename))
@@ -288,7 +266,7 @@
         }
 
         /// <inheritdoc />
-        public string GenerateUrl(string key, CancellationToken token = default)
+        public override string GenerateUrl(string key, CancellationToken token = default)
         {
             string dir = _DiskSettings.Directory;
             dir = dir.Replace("\\", "/");
@@ -298,7 +276,7 @@
         }
 
         /// <inheritdoc />
-        public IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
+        public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
             if (filter == null) filter = new EnumerationFilter();
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -356,7 +334,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
             EmptyResult er = new EmptyResult();
 

@@ -24,8 +24,8 @@
         private string _Header = "[BlobCopy] ";
         private string _Prefix = null;
 
-        private IBlobClient _From = null;
-        private IBlobClient _To = null;
+        private BlobClientBase _From = null;
+        private BlobClientBase _To = null;
         private bool _Disposed = false;
 
         #endregion
@@ -35,10 +35,10 @@
         /// <summary>
         /// Instantiate.
         /// </summary>
-        /// <param name="copyFrom">Settings of the repository from which objects should be copied.</param>
-        /// <param name="copyTo">Settings of the repository to which objects should be copied.</param>
+        /// <param name="copyFrom">Repository from which objects should be copied.</param>
+        /// <param name="copyTo">Repository to which objects should be copied.</param>
         /// <param name="prefix">Prefix of the objects that should be copied.</param>
-        public BlobCopy(IBlobClient copyFrom, IBlobClient copyTo, string prefix = null)
+        public BlobCopy(BlobClientBase copyFrom, BlobClientBase copyTo, string prefix = null)
         {
             if (copyFrom == null) throw new ArgumentNullException(nameof(copyFrom));
             if (copyTo == null) throw new ArgumentNullException(nameof(copyTo));

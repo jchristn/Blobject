@@ -14,12 +14,12 @@
             Method to invoke to send log messages.
             </summary>
         </member>
-        <member name="M:Blobject.Core.BlobCopy.#ctor(Blobject.Core.IBlobClient,Blobject.Core.IBlobClient,System.String)">
+        <member name="M:Blobject.Core.BlobCopy.#ctor(Blobject.Core.BlobClientBase,Blobject.Core.BlobClientBase,System.String)">
             <summary>
             Instantiate.
             </summary>
-            <param name="copyFrom">Settings of the repository from which objects should be copied.</param>
-            <param name="copyTo">Settings of the repository to which objects should be copied.</param>
+            <param name="copyFrom">Repository from which objects should be copied.</param>
+            <param name="copyTo">Repository to which objects should be copied.</param>
             <param name="prefix">Prefix of the objects that should be copied.</param>
         </member>
         <member name="M:Blobject.Core.BlobCopy.Dispose(System.Boolean)">
@@ -318,12 +318,22 @@
             Instantiate the object.
             </summary>
         </member>
-        <member name="T:Blobject.Core.IBlobClient">
+        <member name="T:Blobject.Core.BlobClientBase">
             <summary>
             An interface for interacting with different BLOB storage providers.
             </summary>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
+        <member name="P:Blobject.Core.BlobClientBase.Logger">
+            <summary>
+            Method to invoke to send log messages.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobClientBase.StreamBufferSize">
+            <summary>
+            Buffer size to use when reading from a stream.  Default is 65536.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.GetAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Gets the content of the BLOB with the specified key.
             For objects contained within subdirectories or folders, use the / character.
@@ -333,7 +343,7 @@
             <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
             <returns>A byte array containing the content of the BLOB.</returns>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.GetStreamAsync(System.String,System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobClientBase.GetStreamAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Gets the stream of the BLOB with the specified key.
             For objects contained within subdirectories or folders, use the / character.
@@ -343,7 +353,7 @@
             <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
             <returns>A <see cref="T:Blobject.Core.BlobData"/> object containing the stream of the BLOB.</returns>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobClientBase.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Gets the metadata of the BLOB with the specified key.
             For objects contained within subdirectories or folders, use the / character.
@@ -353,7 +363,7 @@
             <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
             <returns>A <see cref="T:Blobject.Core.BlobMetadata"/> object containing the metadata of the BLOB.</returns>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobClientBase.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             Writes the specified data to the BLOB with the specified key.
             For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
@@ -364,7 +374,7 @@
             <param name="data">The data to write to the BLOB.</param>
             <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobClientBase.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
             <summary>
             Writes the specified data to the BLOB with the specified key.
             For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
@@ -375,7 +385,7 @@
             <param name="data">The data to write to the BLOB.</param>
             <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobClientBase.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
             <summary>
             Writes the data from the specified stream to the BLOB with the specified key.
             For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
@@ -387,7 +397,7 @@
             <param name="stream">The stream containing the data to write to the BLOB.</param>
             <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.WriteManyAsync(System.Collections.Generic.List{Blobject.Core.WriteRequest},System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobClientBase.WriteManyAsync(System.Collections.Generic.List{Blobject.Core.WriteRequest},System.Threading.CancellationToken)">
             <summary>
             Writes many objects to the BLOB storage asynchronously.
             For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
@@ -397,17 +407,17 @@
             <param name="token">The cancellation token.</param>
             <returns>A task representing the asynchronous operation.</returns>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobClientBase.DeleteAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Deletes an object from the BLOB storage asynchronously.
             For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
-            For file storage platforms, when deleting a folder, use / at the end of the key.  The directory must be empty.
+            For file storage platforms, when deleting a folder, use / at the end of the key.
             </summary>
             <param name="key">The key of the object to delete from the BLOB storage.</param>
             <param name="token">The cancellation token.</param>
             <returns>A task representing the asynchronous operation.</returns>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobClientBase.ExistsAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Checks if an object with the specified key exists in the BLOB storage asynchronously.
             For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
@@ -416,7 +426,7 @@
             <param name="token">The cancellation token.</param>
             <returns>A task representing the asynchronous operation. The task result is true if the object exists; otherwise, false.</returns>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobClientBase.GenerateUrl(System.String,System.Threading.CancellationToken)">
             <summary>
             Generates a URL to access the object with the specified key in the BLOB storage asynchronously.
             For objects contained within subdirectories or folders, use the / character.
@@ -426,7 +436,7 @@
             <param name="token">The cancellation token.</param>
             <returns>A string representing the URL to access the object.</returns>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
+        <member name="M:Blobject.Core.BlobClientBase.Enumerate(Blobject.Core.EnumerationFilter)">
             <summary>
             Enumerate all BLOBs within the repository asynchronously.
             To enumerate only a specific prefix or contents of a specific folder, use the / character.
@@ -435,7 +445,7 @@
             <param name="filter">Enumeration filter.</param>
             <returns>IEnumerable of BlobMetadata.</returns>
         </member>
-        <member name="M:Blobject.Core.IBlobClient.EmptyAsync(System.Threading.CancellationToken)">
+        <member name="M:Blobject.Core.BlobClientBase.EmptyAsync(System.Threading.CancellationToken)">
             <summary>
             WARNING: This API deletes all objects in the BLOB storage asynchronously recursively.
             </summary>
@@ -479,32 +489,32 @@
             <param name="data">JSON data.</param>
             <returns>Instance.</returns>
         </member>
-        <member name="T:Blobject.Core.StorageType">
+        <member name="T:Blobject.Core.StorageTypeEnum">
             <summary>
             Storage type.
             </summary>
         </member>
-        <member name="F:Blobject.Core.StorageType.AwsS3">
+        <member name="F:Blobject.Core.StorageTypeEnum.AwsS3">
             <summary>
             Amazon Simple Storage Service.
             </summary>
         </member>
-        <member name="F:Blobject.Core.StorageType.Azure">
+        <member name="F:Blobject.Core.StorageTypeEnum.Azure">
             <summary>
             Microsoft Azure BLOB Storage Service.
             </summary>
         </member>
-        <member name="F:Blobject.Core.StorageType.Disk">
+        <member name="F:Blobject.Core.StorageTypeEnum.Disk">
             <summary>
             Local filesystem/disk storage.
             </summary>
         </member>
-        <member name="F:Blobject.Core.StorageType.CIFS">
+        <member name="F:Blobject.Core.StorageTypeEnum.CIFS">
             <summary>
             CIFS/SMB, e.g. Windows file share or SAMBA.
             </summary>
         </member>
-        <member name="F:Blobject.Core.StorageType.NFS">
+        <member name="F:Blobject.Core.StorageTypeEnum.NFS">
             <summary>
             NFS, e.g. Linux export.
             </summary>
