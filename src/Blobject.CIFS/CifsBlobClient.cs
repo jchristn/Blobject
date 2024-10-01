@@ -77,11 +77,20 @@
         /// <returns>List of share names.</returns>
         public async Task<List<string>> ListShares(CancellationToken token = default)
         {
+            Log("retrieving shares for " + _CifsSettings.Ip.ToString() + " using username " + _CifsSettings.Username);
             Node shares = await EzSmb.Node.GetNode(_CifsSettings.Ip.ToString(), _CifsSettings.Username, _CifsSettings.Password);
-            Node[] nodes = await shares.GetList();
-            List<string> ret = new List<string>();
-            foreach (Node node in nodes) ret.Add(node.Name);
-            return ret;
+            if (shares != null)
+            {
+                Node[] nodes = await shares.GetList();
+                List<string> ret = new List<string>();
+                foreach (Node node in nodes) ret.Add(node.Name);
+                return ret;
+            }
+            else
+            {
+                Log("no shares returned for " + _CifsSettings.Ip.ToString());
+                return new List<string>();
+            }
         }
 
         /// <inheritdoc />
@@ -91,7 +100,7 @@
 
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
 
-            if (file.Size > 0)
+            if (file != null && file.Size > 0)
             {
                 using (MemoryStream stream = await file.Read().ConfigureAwait(false))
                 {
@@ -110,14 +119,19 @@
 
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
 
-            using (MemoryStream stream = await file.Read().ConfigureAwait(false))
+            if (file != null)
             {
-                BlobData ret = new BlobData();
-                ret.ContentLength = (file.Size != null ? file.Size.Value : 0);
-                await stream.CopyToAsync(ret.Data).ConfigureAwait(false);
-                ret.Data.Seek(0, SeekOrigin.Begin);
-                return ret;
+                using (MemoryStream stream = await file.Read().ConfigureAwait(false))
+                {
+                    BlobData ret = new BlobData();
+                    ret.ContentLength = (file.Size != null ? file.Size.Value : 0);
+                    await stream.CopyToAsync(ret.Data).ConfigureAwait(false);
+                    ret.Data.Seek(0, SeekOrigin.Begin);
+                    return ret;
+                }
             }
+
+            throw new FileNotFoundException("The specified file '" + key + "' was not found.");
         }
 
         /// <inheritdoc />
@@ -283,87 +297,98 @@
             }
 
             baseDirectory = baseDirectory.Replace("\\\\", "\\");
-            Log("retrieving item list in path " + (!String.IsNullOrEmpty(baseDirectory) ? baseDirectory : "(empty)") + " prefix " + filter.Prefix);
+            string path = sharePath + "\\" + baseDirectory;
+            
+            Log("retrieving item list in path " + path + " prefix " + filter.Prefix);
+            if (String.IsNullOrEmpty(baseDirectory)) path += ".";
+            
+            Node root = Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).Result;
 
-            Node root = Node.GetNode(sharePath + "\\" + baseDirectory, _CifsSettings.Username, _CifsSettings.Password).Result;
-            Node[] nodes = root.GetList(filter.Prefix).Result;
-            if (nodes != null && nodes.Length > 0)
+            if (root != null)
             {
-                foreach (Node node in nodes)
+                Node[] nodes = root.GetList(filter.Prefix).Result;
+                if (nodes != null && nodes.Length > 0)
                 {
-                    if (node.Type == NodeType.Folder)
+                    foreach (Node node in nodes)
                     {
-                        EnumerationFilter ef = new EnumerationFilter
+                        if (node.Type == NodeType.Folder)
                         {
-                            MinimumSize = filter.MinimumSize,
-                            MaximumSize = filter.MaximumSize,
-                            Prefix = filter.Prefix,
-                            Suffix = filter.Suffix
-                        };
-
-                        IEnumerable<BlobMetadata> blobs = EnumerateSubdirectory(
-                            ef, 
-                            sharePath,
-                            baseDirectory + "\\" + node.Name, 
-                            filter.Prefix);
-
-                        if (blobs != null)
-                        {
-                            foreach (BlobMetadata blob in blobs)
+                            EnumerationFilter ef = new EnumerationFilter
                             {
-                                if (blob.ContentLength < filter.MinimumSize || blob.ContentLength > filter.MaximumSize) continue;
-                                if (!String.IsNullOrEmpty(filter.Prefix) && !blob.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
-                                if (!String.IsNullOrEmpty(filter.Suffix) && !blob.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+                                MinimumSize = filter.MinimumSize,
+                                MaximumSize = filter.MaximumSize,
+                                Prefix = filter.Prefix,
+                                Suffix = filter.Suffix
+                            };
 
-                                yield return blob;
+                            IEnumerable<BlobMetadata> blobs = EnumerateSubdirectory(
+                                ef,
+                                sharePath,
+                                baseDirectory + "\\" + node.Name,
+                                filter.Prefix);
+
+                            if (blobs != null)
+                            {
+                                foreach (BlobMetadata blob in blobs)
+                                {
+                                    if (blob.ContentLength < filter.MinimumSize || blob.ContentLength > filter.MaximumSize) continue;
+                                    if (!String.IsNullOrEmpty(filter.Prefix) && !blob.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
+                                    if (!String.IsNullOrEmpty(filter.Suffix) && !blob.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+
+                                    yield return blob;
+                                }
                             }
+
+                            // return the directory after returning the files to support empty operations
+
+                            string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
+                            while (key.StartsWith("/")) key = key.Substring(1);
+
+                            BlobMetadata dir = new BlobMetadata
+                            {
+                                Key = key,
+                                IsFolder = true,
+                                ContentType = "application/octet-stream",
+                                ContentLength = (node.Size != null ? node.Size.Value : 0),
+                                CreatedUtc = node.Created,
+                                LastAccessUtc = node.LastAccessed,
+                                LastUpdateUtc = node.Updated
+                            };
+
+                            if (dir.ContentLength < filter.MinimumSize || dir.ContentLength > filter.MaximumSize) continue;
+                            if (!String.IsNullOrEmpty(filter.Prefix) && !dir.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
+                            if (!String.IsNullOrEmpty(filter.Suffix) && !dir.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+
+                            yield return dir;
                         }
-
-                        // return the directory after returning the files to support empty operations
-
-                        string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
-                        while (key.StartsWith("/")) key = key.Substring(1);
-
-                        BlobMetadata dir = new BlobMetadata
+                        else
                         {
-                            Key = key,
-                            IsFolder = true,
-                            ContentType = "application/octet-stream",
-                            ContentLength = (node.Size != null ? node.Size.Value : 0),
-                            CreatedUtc = node.Created,
-                            LastAccessUtc = node.LastAccessed,
-                            LastUpdateUtc = node.Updated
-                        };
+                            if (node.Size < filter.MinimumSize || node.Size > filter.MaximumSize) continue;
+                            if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.ToLower().StartsWith(filter.Prefix)) continue;
+                            if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.ToLower().EndsWith(filter.Suffix)) continue;
 
-                        if (dir.ContentLength < filter.MinimumSize || dir.ContentLength > filter.MaximumSize) continue;
-                        if (!String.IsNullOrEmpty(filter.Prefix) && !dir.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
-                        if (!String.IsNullOrEmpty(filter.Suffix) && !dir.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+                            string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
+                            while (key.StartsWith("/")) key = key.Substring(1);
 
-                        yield return dir;
+                            BlobMetadata md = new BlobMetadata
+                            {
+                                Key = key,
+                                IsFolder = false,
+                                ContentType = "application/octet-stream",
+                                ContentLength = (node.Size != null ? node.Size.Value : 0),
+                                CreatedUtc = node.Created,
+                                LastAccessUtc = node.LastAccessed,
+                                LastUpdateUtc = node.LastAccessed
+                            };
+
+                            yield return md;
+                        }
                     }
-                    else
-                    {
-                        if (node.Size < filter.MinimumSize || node.Size > filter.MaximumSize) continue;
-                        if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.ToLower().StartsWith(filter.Prefix)) continue;
-                        if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.ToLower().EndsWith(filter.Suffix)) continue;
-
-                        string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
-                        while (key.StartsWith("/")) key = key.Substring(1);
-
-                        BlobMetadata md = new BlobMetadata
-                        {
-                            Key = key,
-                            IsFolder = false,
-                            ContentType = "application/octet-stream",
-                            ContentLength = (node.Size != null ? node.Size.Value : 0),
-                            CreatedUtc = node.Created,
-                            LastAccessUtc = node.LastAccessed,
-                            LastUpdateUtc = node.LastAccessed
-                        };
-                        
-                        yield return md;
-                    } 
                 }
+            }
+            else
+            {
+                Log("root node for " + path + " is null");
             }
 
             yield break;
