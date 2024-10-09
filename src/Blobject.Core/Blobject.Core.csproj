@@ -70,7 +70,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Text.Json" Version="8.0.4" />
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
 		<PackageReference Include="Timestamps" Version="1.0.9" />
 	</ItemGroup>
 
