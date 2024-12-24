@@ -1,0 +1,575 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Blobject.Core</name>
+    </assembly>
+    <members>
+        <member name="T:Blobject.Core.BlobCopy">
+            <summary>
+            BLOB copy.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobCopy.Logger">
+            <summary>
+            Method to invoke to send log messages.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.BlobCopy.#ctor(Blobject.Core.BlobClientBase,Blobject.Core.BlobClientBase,System.String)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="copyFrom">Repository from which objects should be copied.</param>
+            <param name="copyTo">Repository to which objects should be copied.</param>
+            <param name="prefix">Prefix of the objects that should be copied.</param>
+        </member>
+        <member name="M:Blobject.Core.BlobCopy.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:Blobject.Core.BlobCopy.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.BlobCopy.Start(System.Int32,Blobject.Core.EnumerationFilter,System.Threading.CancellationToken)">
+            <summary>
+            Start the copy operation.
+            </summary>
+            <param name="stopAfter">Stop after this many objects have been copied.</param>
+            <param name="filter">Enumeration filter.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Copy statistics.</returns>
+        </member>
+        <member name="T:Blobject.Core.BlobData">
+            <summary>
+            Contains content-length (how many bytes to read) and data stream for a given object.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobData.ContentLength">
+            <summary>
+            Content-length of the object (how many bytes to read from Data).
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobData.Data">
+            <summary>
+            Stream containing requested data.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.BlobData.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.BlobData.#ctor(System.Int64,System.IO.Stream)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="contentLength">Content length.</param>
+            <param name="data">Data stream.</param>
+        </member>
+        <member name="M:Blobject.Core.BlobData.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.BlobData.Dispose(System.Boolean)">
+            <summary>
+            Dispose of resources.
+            </summary>
+            <param name="disposing"></param>
+        </member>
+        <member name="T:Blobject.Core.BlobMetadata">
+            <summary>
+            Metadata about a BLOB.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobMetadata.Key">
+            <summary>
+            Object key.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobMetadata.IsFolder">
+            <summary>
+            Boolean indicating if the BLOB is a folder.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobMetadata.ContentType">
+            <summary>
+            Content type for the object.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobMetadata.ContentLength">
+            <summary>
+            Content length of the object.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobMetadata.ETag">
+            <summary>
+            ETag of the object.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobMetadata.CreatedUtc">
+            <summary>
+            Timestamp from when the object was created.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobMetadata.LastUpdateUtc">
+            <summary>
+            Timestamp from when the object was last updated, if available.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobMetadata.LastAccessUtc">
+            <summary>
+            Timestamp from when the object was last accessed, if available.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.BlobMetadata.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.BlobMetadata.ToString">
+            <summary>
+            Create a human-readable string of the object.
+            </summary>
+            <returns>String.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobMetadata.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:Blobject.Core.BlobMetadata.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
+        <member name="T:Blobject.Core.BlobSettings">
+            <summary>
+            BLOB storage settings.
+            </summary>
+        </member>
+        <member name="T:Blobject.Core.Common">
+            <summary>
+            Commonly-used methods.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.Common.ReadStreamFully(System.IO.Stream)">
+            <summary>
+            Read a stream fully.
+            </summary>
+            <param name="str">Input stream.</param>
+            <returns>Byte array.</returns>
+        </member>
+        <member name="M:Blobject.Core.Common.BytesToHexString(System.Byte[])">
+            <summary>
+            Convert byte array to hex string.
+            </summary>
+            <param name="bytes">Bytes.</param>
+            <returns>Hex string.</returns>
+        </member>
+        <member name="M:Blobject.Core.Common.BytesFromHexString(System.String)">
+            <summary>
+            Convert hex string to byte array.
+            </summary>
+            <param name="hex">Hex string.</param>
+            <returns>Bytes.</returns>
+        </member>
+        <member name="M:Blobject.Core.Common.IsIpV4Address(System.String)">
+            <summary>
+            Determine if a value is an IPv4 address.
+            </summary>
+            <param name="str">String.</param>
+            <returns>True if an IPv4 address.</returns>
+        </member>
+        <member name="M:Blobject.Core.Common.ResolveHostToIpV4Address(System.String)">
+            <summary>
+            Resolve a hostname to an IPv4 address.
+            </summary>
+            <param name="str">String.</param>
+            <returns>IPAddress.</returns>
+        </member>
+        <member name="T:Blobject.Core.CopyStatistics">
+            <summary>
+            BLOB copy statistics.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.Success">
+            <summary>
+            Flag indicating if the operation was successful.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.Time">
+            <summary>
+            Timestamps from the copy operation.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.Exception">
+            <summary>
+            Exception, if any was encountered.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.ContinuationTokens">
+            <summary>
+            Number of continuation tokens used.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.BlobsEnumerated">
+            <summary>
+            Number of BLOBs enumerated.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.BytesEnumerated">
+            <summary>
+            Number of bytes enumerated.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.BlobsRead">
+            <summary>
+            Number of BLOBs read.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.BytesRead">
+            <summary>
+            Number of bytes read.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.BlobsWritten">
+            <summary>
+            Number of BLOBs written.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.BytesWritten">
+            <summary>
+            Number of bytes written.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.CopyStatistics.Keys">
+            <summary>
+            Keys copied.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.CopyStatistics.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.CopyStatistics.ToString">
+            <summary>
+            Produce a human-readable string representation of the object.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:Blobject.Core.EmptyResult">
+            <summary>
+            Results from a container empty operation. 
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.EmptyResult.Count">
+            <summary>
+            The number of BLOBs.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.EmptyResult.Bytes">
+            <summary>
+            The total number of bytes represented by the BLOBs.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.EmptyResult.Blobs">
+            <summary>
+            List of BLOB metadata objects.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.EmptyResult.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
+        </member>
+        <member name="T:Blobject.Core.EnumerationFilter">
+            <summary>
+            Enumeration filter.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.EnumerationFilter.MinimumSize">
+            <summary>
+            Minimum size.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.EnumerationFilter.MaximumSize">
+            <summary>
+            Maximum size.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.EnumerationFilter.Prefix">
+            <summary>
+            Prefix.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.EnumerationFilter.Suffix">
+            <summary>
+            Suffix.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.EnumerationFilter.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
+        </member>
+        <member name="T:Blobject.Core.BlobClientBase">
+            <summary>
+            An interface for interacting with different BLOB storage providers.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobClientBase.Logger">
+            <summary>
+            Method to invoke to send log messages.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.BlobClientBase.StreamBufferSize">
+            <summary>
+            Buffer size to use when reading from a stream.  Default is 65536.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.GetAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets the content of the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
+            </summary>
+            <param name="key">The key of the BLOB to get.</param>
+            <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
+            <returns>A byte array containing the content of the BLOB.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.GetStreamAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets the stream of the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
+            </summary>
+            <param name="key">The key of the BLOB to get.</param>
+            <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
+            <returns>A <see cref="T:Blobject.Core.BlobData"/> object containing the stream of the BLOB.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Gets the metadata of the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
+            </summary>
+            <param name="key">The key of the BLOB to get metadata for.</param>
+            <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
+            <returns>A <see cref="T:Blobject.Core.BlobMetadata"/> object containing the metadata of the BLOB.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Writes the specified data to the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+            To create a folder, have the key end in the / character, and send an empty string, an empty byte array, or an empty stream with zero content length.
+            </summary>
+            <param name="key">The key of the BLOB to write to.</param>
+            <param name="contentType">The content type of the BLOB.</param>
+            <param name="data">The data to write to the BLOB.</param>
+            <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
+            <summary>
+            Writes the specified data to the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+            To create a folder, have the key end in the / character, and send an empty string, an empty byte array, or an empty stream with zero content length.
+            </summary>
+            <param name="key">The key of the BLOB to write to.</param>
+            <param name="contentType">The content type of the BLOB.</param>
+            <param name="data">The data to write to the BLOB.</param>
+            <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
+            <summary>
+            Writes the data from the specified stream to the BLOB with the specified key.
+            For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+            To create a folder, have the key end in the / character, and send an empty string, an empty byte array, or an empty stream with zero content length.
+            </summary>
+            <param name="key">The key of the BLOB to write to.</param>
+            <param name="contentType">The content type of the BLOB.</param>
+            <param name="contentLength">The length of the content in the stream.</param>
+            <param name="stream">The stream containing the data to write to the BLOB.</param>
+            <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.WriteManyAsync(System.Collections.Generic.List{Blobject.Core.WriteRequest},System.Threading.CancellationToken)">
+            <summary>
+            Writes many objects to the BLOB storage asynchronously.
+            For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+            To create a folder, have the key end in the / character, and send an empty string, an empty byte array, or an empty stream with zero content length.
+            </summary>
+            <param name="objects">The list of objects to write to the BLOB storage.</param>
+            <param name="token">The cancellation token.</param>
+            <returns>A task representing the asynchronous operation.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Deletes an object from the BLOB storage asynchronously.
+            For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+            For file storage platforms, when deleting a folder, use / at the end of the key.
+            </summary>
+            <param name="key">The key of the object to delete from the BLOB storage.</param>
+            <param name="token">The cancellation token.</param>
+            <returns>A task representing the asynchronous operation.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.ExistsAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks if an object with the specified key exists in the BLOB storage asynchronously.
+            For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+            </summary>
+            <param name="key">The key of the object to check.</param>
+            <param name="token">The cancellation token.</param>
+            <returns>A task representing the asynchronous operation. The task result is true if the object exists; otherwise, false.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.GenerateUrl(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Generates a URL to access the object with the specified key in the BLOB storage asynchronously.
+            For objects contained within subdirectories or folders, use the / character.
+            For example, path/to/folder/myfile.txt
+            </summary>
+            <param name="key">The key of the object to generate the URL for.</param>
+            <param name="token">The cancellation token.</param>
+            <returns>A string representing the URL to access the object.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.Enumerate(Blobject.Core.EnumerationFilter)">
+            <summary>
+            Enumerate all BLOBs within the repository asynchronously.
+            To enumerate only a specific prefix or contents of a specific folder, use the / character.
+            For example, path/to/folder/myfile.txt
+            </summary>
+            <param name="filter">Enumeration filter.</param>
+            <returns>IEnumerable of BlobMetadata.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.EmptyAsync(System.Threading.CancellationToken)">
+            <summary>
+            WARNING: This API deletes all objects in the BLOB storage asynchronously recursively.
+            </summary>
+            <param name="token">The cancellation token.</param>
+            <returns>A task representing the asynchronous operation.</returns>
+        </member>
+        <member name="T:Blobject.Core.SerializationHelper">
+            <summary>
+            Serialization helper.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.SerializationHelper.CopyObject``1(``0)">
+            <summary>
+            Copy an object.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="source">Source object.</param>
+            <returns>Copy.</returns>
+        </member>
+        <member name="M:Blobject.Core.SerializationHelper.SerializeJson(System.Object,System.Boolean)">
+            <summary>
+            Serialize JSON.
+            </summary>
+            <param name="obj">Object.</param>
+            <param name="pretty">Pretty print.</param>
+            <returns>JSON string.</returns>
+        </member>
+        <member name="M:Blobject.Core.SerializationHelper.DeserializeJson``1(System.String)">
+            <summary>
+            Deserialize JSON. 
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="json">JSON string.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:Blobject.Core.SerializationHelper.DeserializeJson``1(System.Byte[])">
+            <summary>
+            Deserialize JSON. 
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="data">JSON data.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="T:Blobject.Core.StorageTypeEnum">
+            <summary>
+            Storage type.
+            </summary>
+        </member>
+        <member name="F:Blobject.Core.StorageTypeEnum.AwsS3">
+            <summary>
+            Amazon Simple Storage Service.
+            </summary>
+        </member>
+        <member name="F:Blobject.Core.StorageTypeEnum.Azure">
+            <summary>
+            Microsoft Azure BLOB Storage Service.
+            </summary>
+        </member>
+        <member name="F:Blobject.Core.StorageTypeEnum.Disk">
+            <summary>
+            Local filesystem/disk storage.
+            </summary>
+        </member>
+        <member name="F:Blobject.Core.StorageTypeEnum.CIFS">
+            <summary>
+            CIFS/SMB, e.g. Windows file share or SAMBA.
+            </summary>
+        </member>
+        <member name="F:Blobject.Core.StorageTypeEnum.NFS">
+            <summary>
+            NFS, e.g. Linux export.
+            </summary>
+        </member>
+        <member name="T:Blobject.Core.WriteRequest">
+            <summary>
+            Write request object, used when writing many objects.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.WriteRequest.Key">
+            <summary>
+            Object key.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.WriteRequest.ContentType">
+            <summary>
+            Content type for the object.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.WriteRequest.ContentLength">
+            <summary>
+            Content-length of the object (how many bytes to read from DataStream).
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.WriteRequest.DataStream">
+            <summary>
+            Stream containing requested data.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.WriteRequest.Data">
+            <summary>
+            Bytes containing requested data.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.WriteRequest.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.WriteRequest.#ctor(System.String,System.String,System.Byte[])">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="key">Object key.</param>
+            <param name="contentType">Content type.</param>
+            <param name="data">Data.</param>
+        </member>
+        <member name="M:Blobject.Core.WriteRequest.#ctor(System.String,System.String,System.Int64,System.IO.Stream)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="key">Object key.</param>
+            <param name="contentType">Content type.</param>
+            <param name="contentLength">Content length.</param>
+            <param name="stream">Stream containing the data.</param> 
+        </member>
+    </members>
+</doc>

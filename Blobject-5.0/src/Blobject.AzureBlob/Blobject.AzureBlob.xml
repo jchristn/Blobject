@@ -1,0 +1,115 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Blobject.AzureBlob</name>
+    </assembly>
+    <members>
+        <member name="T:Blobject.AzureBlob.AzureBlobClient">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.#ctor(Blobject.AzureBlob.AzureBlobSettings)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Blobject.AzureBlob.AzureBlobClient"/> class.
+            </summary>
+            <param name="azureSettings">Settings for <see cref="T:Blobject.AzureBlob.AzureBlobClient"/>.</param>
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.ListContainers(System.Threading.CancellationToken)">
+            <summary>
+            List containers available on the server.
+            </summary>
+            <param name="token">Cancellation token.</param>
+            <returns>List of container names.</returns>
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.GetStreamAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.WriteManyAsync(System.Collections.Generic.List{Blobject.Core.WriteRequest},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.EmptyAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Blobject.AzureBlob.AzureBlobSettings">
+            <summary>
+            Settings when using Microsoft Azure BLOB Storage for storage.
+            </summary>
+        </member>
+        <member name="P:Blobject.AzureBlob.AzureBlobSettings.Ssl">
+            <summary>
+            Enable or disable SSL (only if using non-Azure storage).
+            </summary>
+        </member>
+        <member name="P:Blobject.AzureBlob.AzureBlobSettings.AccountName">
+            <summary>
+            Microsoft Azure BLOB storage account name (the name of the account in the Azure portal).
+            </summary>
+        </member>
+        <member name="P:Blobject.AzureBlob.AzureBlobSettings.AccessKey">
+            <summary>
+            Microsoft Azure BLOB storage access key.
+            </summary>
+        </member>
+        <member name="P:Blobject.AzureBlob.AzureBlobSettings.Endpoint">
+            <summary>
+            Microsoft Azure BLOB storage endpoint (primary or secondary from the Azure portal, likely of the form https://[accountname].blob.core.windows.net/.
+            </summary>
+        </member>
+        <member name="P:Blobject.AzureBlob.AzureBlobSettings.Container">
+            <summary>
+            Microsoft Azure BLOB storage container.
+            </summary>
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobSettings.#ctor">
+            <summary>
+            Initialize the object.
+            </summary>
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobSettings.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initialize the object.
+            </summary>
+            <param name="accountName">The account name.</param>
+            <param name="accessKey">The access key with which to access Azure BLOB storage.</param>
+            <param name="endpoint">The Azure BLOB storage endpoint for the account.</param>
+            <param name="container">The container in which BLOBs should be stored.</param>
+        </member>
+    </members>
+</doc>
