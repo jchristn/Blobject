@@ -80,7 +80,7 @@ AmazonS3BlobClient blobs = new AmazonS3BlobClient(settings);
 using Blobject.AmazonS3Lite;
 
 // Initialize settings as above
-AmazonS3LiteBlobClient blobs = new AmazonS3BlobClient(settings); 
+AmazonS3LiteBlobClient blobs = new AmazonS3LiteBlobClient(settings); 
 ```
 
 ## Getting Started - Azure
