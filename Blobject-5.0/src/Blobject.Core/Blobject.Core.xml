@@ -333,6 +333,13 @@
             Buffer size to use when reading from a stream.  Default is 65536.
             </summary>
         </member>
+        <member name="M:Blobject.Core.BlobClientBase.ValidateConnectivity(System.Threading.CancellationToken)">
+            <summary>
+            Validate connectivity to the repository.
+            </summary>
+            <param name="token">Cancellation token.</param>
+            <returns>True if connectivity can be established.</returns>
+        </member>
         <member name="M:Blobject.Core.BlobClientBase.GetAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Gets the content of the BLOB with the specified key.
