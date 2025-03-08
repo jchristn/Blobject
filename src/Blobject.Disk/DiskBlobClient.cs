@@ -12,6 +12,8 @@
     /// <inheritdoc />
     public class DiskBlobClient : BlobClientBase, IDisposable
     {
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+
         #region Public-Members
 
         #endregion
@@ -65,9 +67,21 @@
         /// </summary>
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        /// <inheritdoc />
+        public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
+        {
+            try
+            {
+                return Directory.Exists(_DiskSettings.Directory);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <inheritdoc />
@@ -358,5 +372,7 @@
         }
 
         #endregion
+
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     }
 }

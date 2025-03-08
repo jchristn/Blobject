@@ -93,9 +93,22 @@
         /// </summary>
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        /// <inheritdoc />
+        public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
+        {
+            try
+            {
+                List<string> buckets = await ListBuckets(token).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -362,7 +375,7 @@
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
-            string continuationToken = "";
+            string marker = "";
 
             while (true)
             {
@@ -370,7 +383,7 @@
                 req.BucketName = _AwsSettings.Bucket;
                 if (!String.IsNullOrEmpty(filter.Prefix)) req.Prefix = filter.Prefix;
 
-                if (!String.IsNullOrEmpty(continuationToken)) req.Marker = continuationToken;
+                if (!String.IsNullOrEmpty(marker)) req.Marker = marker;
 
                 ListObjectsResponse resp = _S3Client.ListObjectsAsync(req).Result;
 
@@ -398,9 +411,9 @@
                     }
                 }
 
-                continuationToken = resp.NextMarker;
+                marker = resp.NextMarker;
 
-                if (String.IsNullOrEmpty(continuationToken)) break;
+                if (String.IsNullOrEmpty(marker)) break;
             }
 
             yield break;

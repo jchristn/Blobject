@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>5.0.8</Version>
+		<Version>5.0.12</Version>
 		<LangVersion>8.0</LangVersion>
-		<TargetFrameworks>netstandard2.1;net6.0;net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<Authors>Joel Christner</Authors>
 		<Description>BLOB storage client for Microsoft Azure BLOB.  Refer to other Blobject packages for other storage repository types.</Description>
-		<Copyright>(c)2024 Joel Christner</Copyright>
+		<Copyright>(c)2025 Joel Christner</Copyright>
 		<PackageProjectUrl>https://github.com/jchristn/Blobject</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/jchristn/Blobject</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
@@ -31,8 +31,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Azure.Storage.Blobs" Version="12.21.2" />
-		<PackageReference Include="Blobject.Core" Version="5.0.8" />
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.23.0" />
+		<PackageReference Include="Blobject.Core" Version="5.0.10" />
 	</ItemGroup>
 
 	<ItemGroup>

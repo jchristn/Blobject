@@ -49,6 +49,13 @@
         #region Public-Methods
 
         /// <summary>
+        /// Validate connectivity to the repository.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>True if connectivity can be established.</returns>
+        public abstract Task<bool> ValidateConnectivity(CancellationToken token = default);
+
+        /// <summary>
         /// Gets the content of the BLOB with the specified key.
         /// For objects contained within subdirectories or folders, use the / character.
         /// For example, path/to/folder/myfile.txt

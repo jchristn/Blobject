@@ -1,14 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>5.0.8</Version>
+		<Version>5.0.10</Version>
 		<LangVersion>8.0</LangVersion>
-		<TargetFrameworks>netstandard2.1;net6.0;net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
 		<Authors>Joel Christner</Authors>
 		<Description>BLOB storage client for Microsoft Azure, Amazon S3 (including compatible storage e.g. Minio, Less3, Ceph, View), CIFS/SMB (Windows file shares), NFS (UNIX and Linux file shares), and local filesystem written in C#.</Description>
-		<Copyright>(c)2024 Joel Christner</Copyright>
+		<Copyright>(c)2025 Joel Christner</Copyright>
 		<PackageProjectUrl>https://github.com/jchristn/Blobject</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/jchristn/Blobject</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
@@ -25,53 +26,13 @@
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.1|AnyCPU'">
-		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.1|AnyCPU'">
-		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net462|AnyCPU'">
-		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net462|AnyCPU'">
-		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
-		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
-		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net7.0|AnyCPU'">
-		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net7.0|AnyCPU'">
-		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|AnyCPU'">
-		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|AnyCPU'">
-		<DocumentationFile>Blobject.Core.xml</DocumentationFile>
-	</PropertyGroup>
-
 	<ItemGroup>
 	  <Content Include="icon.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Text.Json" Version="8.0.4" />
-		<PackageReference Include="Timestamps" Version="1.0.9" />
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
+		<PackageReference Include="Timestamps" Version="1.0.11" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -76,9 +76,22 @@
         /// </summary>
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        /// <inheritdoc />
+        public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
+        {
+            try
+            {
+                List<string> containers = await ListContainers(token).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>

@@ -24,6 +24,9 @@
             Dispose.
             </summary>
         </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.ValidateConnectivity(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.Disk.DiskBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

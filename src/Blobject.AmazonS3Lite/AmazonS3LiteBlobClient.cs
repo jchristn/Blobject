@@ -82,10 +82,8 @@
 
             if (!_Disposed)
             {
-                _AwsSettings = null;
-                
-                _S3Client = null;
-                
+                _AwsSettings = null;                
+                _S3Client = null;                
                 _Disposed = true;
             }
 
@@ -97,9 +95,22 @@
         /// </summary>
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        /// <inheritdoc />
+        public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
+        {
+            try
+            {
+                List<string> buckets = await ListBuckets(token).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>

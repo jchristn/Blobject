@@ -46,7 +46,7 @@
         {
             InitializeClient();
 
-            // await CreateFiles();
+            if (Inputty.GetBoolean("Create files", false)) await CreateFiles();
             await Enumerate("Post create enumeration");
 
             if (_Cleanup) await DeleteFiles();
@@ -201,23 +201,21 @@
                 Suffix = suffix
             };
 
-            IEnumerable<BlobMetadata> blobs = _Blobs.Enumerate(ef);
-
-            int count = blobs.Count();
+            List<BlobMetadata> blobs = _Blobs.Enumerate(ef).ToList();
 
             if (blobs != null)
             {
                 Console.WriteLine("BLOBs:");
-
-                foreach (BlobMetadata md in blobs)
-                    Console.WriteLine("| " + md.Key + (md.IsFolder ? " (folder)" : ""));
+                foreach (BlobMetadata md in blobs) Console.Write(md.Key + (md.IsFolder ? "[dir]" : "") + " ");
+                Console.WriteLine("");
             }
             else
             {
                 Console.WriteLine("No BLOBs");
+                Console.WriteLine("");
             }
 
-            Console.WriteLine(Environment.NewLine + count + " BLOBs enumerated");
+            Console.WriteLine((blobs != null ? blobs.Count : 0) + " BLOBs enumerated" + Environment.NewLine);
         }
 
         static async Task DeleteFiles()

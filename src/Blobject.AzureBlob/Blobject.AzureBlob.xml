@@ -24,6 +24,9 @@
             Dispose.
             </summary>
         </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.ValidateConnectivity(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.AzureBlob.AzureBlobClient.ListContainers(System.Threading.CancellationToken)">
             <summary>
             List containers available on the server.

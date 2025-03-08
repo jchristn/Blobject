@@ -24,6 +24,9 @@
             Dispose.
             </summary>
         </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.ValidateConnectivity(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.ListBuckets(System.Threading.CancellationToken)">
             <summary>
             List buckets available on the server.
