@@ -5,6 +5,7 @@
     using System.ComponentModel;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -14,6 +15,8 @@
     /// <inheritdoc />
     public class CifsBlobClient : BlobClientBase, IDisposable
     {
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+
         #region Public-Members
 
         #endregion
@@ -408,6 +411,162 @@
         }
 
         /// <inheritdoc />
+        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null,
+            [EnumeratorCancellation] CancellationToken token = default)
+        {
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
+
+            string sharePath = BuildSharePath();
+            string baseDirectory = "";
+
+            if (filter.Prefix.Contains("/")) filter.Prefix = filter.Prefix.Replace("/", "\\");
+            while (filter.Prefix.StartsWith("\\")) filter.Prefix = filter.Prefix.Substring(1);
+            if (!String.IsNullOrEmpty(filter.Prefix) && !filter.Prefix.EndsWith("*")) filter.Prefix += "*";
+
+            if (filter.Prefix.Contains("\\"))
+            {
+                #region Nested
+
+                if (filter.Prefix.EndsWith("\\"))
+                {
+                    #region Path-Only
+
+                    baseDirectory += filter.Prefix;
+                    filter.Prefix = "*";
+
+                    #endregion
+                }
+                else
+                {
+                    #region Subdirectory-and-Prefix
+
+                    string[] parts = filter.Prefix.Split('\\');
+                    for (int i = 0; i < (parts.Length - 1); i++)
+                    {
+                        baseDirectory += "\\" + parts[i];
+                    }
+
+                    filter.Prefix = parts[parts.Length - 1];
+
+                    #endregion
+                }
+
+                #endregion
+            }
+            else
+            {
+                #region Root
+
+                // do nothing
+
+                #endregion
+            }
+
+            baseDirectory = baseDirectory.Replace("\\\\", "\\");
+            string path = sharePath + "\\" + baseDirectory;
+
+            Log("retrieving item list in path " + path + " prefix " + filter.Prefix);
+            if (String.IsNullOrEmpty(baseDirectory)) path += ".";
+
+            Node root = Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).Result;
+
+            if (root != null)
+            {
+                Node[] nodes = root.GetList(filter.Prefix).Result;
+                if (nodes != null && nodes.Length > 0)
+                {
+                    foreach (Node node in nodes)
+                    {
+                        if (token.IsCancellationRequested) break;
+
+                        if (node.Type == NodeType.Folder)
+                        {
+                            EnumerationFilter ef = new EnumerationFilter
+                            {
+                                MinimumSize = filter.MinimumSize,
+                                MaximumSize = filter.MaximumSize,
+                                Prefix = filter.Prefix,
+                                Suffix = filter.Suffix
+                            };
+
+                            IEnumerable<BlobMetadata> blobs = EnumerateSubdirectory(
+                                ef,
+                                sharePath,
+                                baseDirectory + "\\" + node.Name,
+                                filter.Prefix);
+
+                            if (blobs != null)
+                            {
+                                foreach (BlobMetadata blob in blobs)
+                                {
+                                    if (token.IsCancellationRequested) break;
+                                    if (blob.ContentLength < filter.MinimumSize || blob.ContentLength > filter.MaximumSize) continue;
+                                    if (!String.IsNullOrEmpty(filter.Prefix) && !blob.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
+                                    if (!String.IsNullOrEmpty(filter.Suffix) && !blob.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+
+                                    yield return blob;
+                                }
+                            }
+
+                            // return the directory after returning the files to support empty operations
+
+                            string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
+                            while (key.StartsWith("/")) key = key.Substring(1);
+
+                            BlobMetadata dir = new BlobMetadata
+                            {
+                                Key = key,
+                                IsFolder = true,
+                                ContentType = "application/octet-stream",
+                                ContentLength = (node.Size != null ? node.Size.Value : 0),
+                                CreatedUtc = node.Created,
+                                LastAccessUtc = node.LastAccessed,
+                                LastUpdateUtc = node.Updated
+                            };
+
+                            if (dir.ContentLength < filter.MinimumSize || dir.ContentLength > filter.MaximumSize) continue;
+                            if (!String.IsNullOrEmpty(filter.Prefix) && !dir.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
+                            if (!String.IsNullOrEmpty(filter.Suffix) && !dir.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+
+                            yield return dir;
+                        }
+                        else
+                        {
+                            if (node.Size < filter.MinimumSize || node.Size > filter.MaximumSize) continue;
+                            if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.ToLower().StartsWith(filter.Prefix)) continue;
+                            if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.ToLower().EndsWith(filter.Suffix)) continue;
+
+                            string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
+                            while (key.StartsWith("/")) key = key.Substring(1);
+
+                            BlobMetadata md = new BlobMetadata
+                            {
+                                Key = key,
+                                IsFolder = false,
+                                ContentType = "application/octet-stream",
+                                ContentLength = (node.Size != null ? node.Size.Value : 0),
+                                CreatedUtc = node.Created,
+                                LastAccessUtc = node.LastAccessed,
+                                LastUpdateUtc = node.LastAccessed
+                            };
+
+                            yield return md;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Log("root node for " + path + " is null");
+            }
+
+            yield break;
+        }
+
+        /// <inheritdoc />
         public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
             EmptyResult er = new EmptyResult();
@@ -523,5 +682,7 @@
         }
 
         #endregion
+
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     }
 }

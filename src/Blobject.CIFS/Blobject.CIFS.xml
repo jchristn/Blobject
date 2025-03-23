@@ -67,6 +67,9 @@
         <member name="M:Blobject.CIFS.CifsBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
             <inheritdoc />
         </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.EnumerateAsync(Blobject.Core.EnumerationFilter,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.CIFS.CifsBlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

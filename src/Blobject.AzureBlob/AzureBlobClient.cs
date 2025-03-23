@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -15,6 +16,8 @@
     /// <inheritdoc />
     public class AzureBlobClient : BlobClientBase, IDisposable
     {
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+
         #region Public-Members
 
         #endregion
@@ -300,10 +303,69 @@
 
             while (true)
             {
-                var pages = _ContainerClient.GetBlobs(BlobTraits.None, BlobStates.None, filter.Prefix).AsPages(continuationToken, 1000);
+                IEnumerable<Page<BlobItem>> pages = _ContainerClient.GetBlobs(
+                    BlobTraits.None, 
+                    BlobStates.None, 
+                    filter.Prefix).AsPages(continuationToken, 1000);
 
                 foreach (Page<BlobItem> page in pages)
                 {
+                    continuationToken = page.ContinuationToken;
+
+                    if (page.Values == null || page.Values.Count < 1) break;
+
+                    foreach (BlobItem item in page.Values)
+                    {
+                        long contentLength = (item.Properties.ContentLength != null ? Convert.ToInt64(item.Properties.ContentLength) : 0);
+
+                        if (contentLength < filter.MinimumSize || contentLength > filter.MaximumSize) continue;
+                        if (!String.IsNullOrEmpty(filter.Suffix) && !item.Name.EndsWith(filter.Suffix)) continue;
+
+                        BlobMetadata md = new BlobMetadata();
+                        md.Key = item.Name;
+                        md.ContentType = item.Properties.ContentType;
+                        md.ContentLength = contentLength;
+                        md.ETag = item.Properties.ETag.ToString();
+                        md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+                        md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+                        md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+
+                        yield return md;
+                    }
+
+                    if (String.IsNullOrEmpty(continuationToken)) break;
+                }
+
+                if (String.IsNullOrEmpty(continuationToken)) break;
+            }
+
+            yield break;
+        }
+
+        /// <inheritdoc />
+        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null,
+            [EnumeratorCancellation] CancellationToken token = default)
+        {
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
+
+            string continuationToken = "";
+
+            while (true)
+            {
+                if (token.IsCancellationRequested) break;
+
+                IEnumerable<Page<BlobItem>> pages = _ContainerClient.GetBlobs(
+                    BlobTraits.None, 
+                    BlobStates.None, 
+                    filter.Prefix, 
+                    token).AsPages(continuationToken, 1000);
+
+                foreach (Page<BlobItem> page in pages)
+                {
+                    if (token.IsCancellationRequested) break;
                     continuationToken = page.ContinuationToken;
 
                     if (page.Values == null || page.Values.Count < 1) break;
@@ -371,5 +433,7 @@
         }
 
         #endregion
+
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     }
 }

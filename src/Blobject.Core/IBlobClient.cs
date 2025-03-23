@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -11,6 +12,8 @@
     /// </summary>
     public abstract class BlobClientBase
     {
+#pragma warning disable CS8424 // The EnumeratorCancellationAttribute will have no effect. The attribute is only effective on a parameter of type CancellationToken in an async-iterator method returning IAsyncEnumerable        #region Public-Members
+
         #region Public-Members
 
         /// <summary>
@@ -160,13 +163,25 @@
         public abstract string GenerateUrl(string key, CancellationToken token = default);
 
         /// <summary>
+        /// Enumerate all BLOBs within the repository.
+        /// To enumerate only a specific prefix or contents of a specific folder, use the / character.
+        /// For example, path/to/folder/myfile.txt
+        /// </summary>
+        /// <param name="filter">Enumeration filter.</param>
+        /// <returns>Enumerable of BlobMetadata.</returns>
+        public abstract IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null);
+
+        /// <summary>
         /// Enumerate all BLOBs within the repository asynchronously.
         /// To enumerate only a specific prefix or contents of a specific folder, use the / character.
         /// For example, path/to/folder/myfile.txt
         /// </summary>
         /// <param name="filter">Enumeration filter.</param>
-        /// <returns>IEnumerable of BlobMetadata.</returns>
-        public abstract IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null);
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Enumerable of BlobMetadata.</returns>
+        public abstract IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null,
+            [EnumeratorCancellation] CancellationToken token = default);
 
         /// <summary>
         /// WARNING: This API deletes all objects in the BLOB storage asynchronously recursively.
@@ -180,5 +195,7 @@
         #region Private-Methods
 
         #endregion
+
+#pragma warning restore CS8424 // The EnumeratorCancellationAttribute will have no effect. The attribute is only effective on a parameter of type CancellationToken in an async-iterator method returning IAsyncEnumerable
     }
 }

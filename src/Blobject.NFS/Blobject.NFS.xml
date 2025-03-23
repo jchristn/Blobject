@@ -67,6 +67,9 @@
         <member name="M:Blobject.NFS.NfsBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
             <inheritdoc />
         </member>
+        <member name="M:Blobject.NFS.NfsBlobClient.EnumerateAsync(Blobject.Core.EnumerationFilter,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.NFS.NfsBlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

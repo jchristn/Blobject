@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -391,6 +392,62 @@
                 {
                     foreach (S3Object curr in resp.S3Objects)
                     {
+                        if (curr.Size < filter.MinimumSize || curr.Size > filter.MaximumSize) continue;
+                        if (!String.IsNullOrEmpty(filter.Suffix) && !curr.Key.EndsWith(filter.Suffix)) continue;
+
+                        BlobMetadata md = new BlobMetadata();
+                        md.Key = curr.Key;
+                        md.ContentLength = curr.Size;
+                        md.ETag = curr.ETag;
+                        md.CreatedUtc = curr.LastModified;
+                        md.LastAccessUtc = curr.LastModified;
+                        md.LastUpdateUtc = curr.LastModified;
+
+                        if (!String.IsNullOrEmpty(md.ETag))
+                        {
+                            if (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
+                        }
+
+                        yield return md;
+                    }
+                }
+
+                marker = resp.NextMarker;
+
+                if (String.IsNullOrEmpty(marker)) break;
+            }
+
+            yield break;
+        }
+
+        /// <inheritdoc />
+        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null, 
+            [EnumeratorCancellation] CancellationToken token = default)
+        {
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
+
+            string marker = "";
+
+            while (true)
+            {
+                if (token.IsCancellationRequested) break;
+
+                ListObjectsRequest req = new ListObjectsRequest();
+                req.BucketName = _AwsSettings.Bucket;
+                if (!String.IsNullOrEmpty(filter.Prefix)) req.Prefix = filter.Prefix;
+
+                if (!String.IsNullOrEmpty(marker)) req.Marker = marker;
+
+                ListObjectsResponse resp = await _S3Client.ListObjectsAsync(req, token).ConfigureAwait(false);
+
+                if (resp.S3Objects != null && resp.S3Objects.Count > 0)
+                {
+                    foreach (S3Object curr in resp.S3Objects)
+                    {
+                        if (token.IsCancellationRequested) break;
                         if (curr.Size < filter.MinimumSize || curr.Size > filter.MaximumSize) continue;
                         if (!String.IsNullOrEmpty(filter.Suffix) && !curr.Key.EndsWith(filter.Suffix)) continue;
 

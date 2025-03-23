@@ -60,6 +60,9 @@
         <member name="M:Blobject.Disk.DiskBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
             <inheritdoc />
         </member>
+        <member name="M:Blobject.Disk.DiskBlobClient.EnumerateAsync(Blobject.Core.EnumerationFilter,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.Disk.DiskBlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

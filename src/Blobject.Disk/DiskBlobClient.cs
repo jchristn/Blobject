@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -324,6 +325,68 @@
 
             foreach (string file in files)
             {
+                FileInfo fi = new FileInfo(file);
+
+                string filename = file;
+                if (filename.StartsWith(_DiskSettings.Directory)) filename = file.Substring(_DiskSettings.Directory.Length);
+                if (!String.IsNullOrEmpty(filename)) filename = filename.Replace("\\", "/");
+
+                if (fi.Length < filter.MinimumSize || fi.Length > filter.MaximumSize) continue;
+                if (!String.IsNullOrEmpty(filter.Suffix) && !filename.EndsWith(filter.Suffix)) continue;
+
+                BlobMetadata md = new BlobMetadata();
+                md.Key = filename;
+
+                md.ContentLength = fi.Length;
+                md.CreatedUtc = fi.CreationTimeUtc;
+                md.LastAccessUtc = fi.LastAccessTimeUtc;
+                md.LastUpdateUtc = fi.LastWriteTimeUtc;
+
+                yield return md;
+            }
+
+            yield break;
+        }
+
+        /// <inheritdoc />
+        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null,
+            [EnumeratorCancellation] CancellationToken token = default)
+        {
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
+
+            IEnumerable<string> files;
+
+            if (!String.IsNullOrEmpty(filter.Prefix))
+            {
+                if (Directory.Exists(_DiskSettings.Directory + filter.Prefix))
+                {
+                    string tempPrefix = filter.Prefix;
+                    tempPrefix = tempPrefix.Replace("\\", "/");
+                    if (!tempPrefix.EndsWith("/")) tempPrefix += "/";
+                    files = Directory.EnumerateFiles(_DiskSettings.Directory, tempPrefix + "*", SearchOption.AllDirectories);
+                }
+                else
+                {
+                    files = Directory.EnumerateFiles(_DiskSettings.Directory, filter.Prefix + "*", SearchOption.AllDirectories);
+                }
+            }
+            else
+            {
+                files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
+            }
+
+            if (files.Count() < 1)
+            {
+                yield break;
+            }
+
+            foreach (string file in files)
+            {
+                if (token.IsCancellationRequested) break;
+
                 FileInfo fi = new FileInfo(file);
 
                 string filename = file;

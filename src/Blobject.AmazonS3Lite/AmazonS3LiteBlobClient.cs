@@ -9,6 +9,7 @@
     using S3Lite;
     using S3Lite.ApiObjects;
     using Blobject.Core;
+    using System.Runtime.CompilerServices;
 
     /// <inheritdoc />
     public class AmazonS3LiteBlobClient : BlobClientBase, IDisposable
@@ -252,6 +253,60 @@
 
                 foreach (ObjectMetadata curr in lbr.Contents)
                 {
+                    if (curr.Size < filter.MinimumSize || curr.Size > filter.MaximumSize) continue;
+                    if (!String.IsNullOrEmpty(filter.Suffix) && !curr.Key.EndsWith(filter.Suffix)) continue;
+
+                    BlobMetadata md = new BlobMetadata
+                    {
+                        Key = curr.Key,
+                        ContentLength = curr.Size,
+                        ETag = curr.ETag,
+                        CreatedUtc = curr.LastModified,
+                        LastAccessUtc = curr.LastModified,
+                        LastUpdateUtc = curr.LastModified
+                    };
+
+                    if (!String.IsNullOrEmpty(md.ETag))
+                    {
+                        while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
+                    }
+
+                    yield return md;
+                }
+
+                continuationToken = lbr.NextContinuationToken;
+
+                if (String.IsNullOrEmpty(continuationToken)) break;
+            }
+
+            yield break;
+        }
+
+        /// <inheritdoc />
+        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null,
+            [EnumeratorCancellation] CancellationToken token = default)
+        {
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
+
+            string continuationToken = "";
+
+            while (true)
+            {
+                if (token.IsCancellationRequested) break;
+
+                ListBucketResult lbr = await _S3Client.Bucket.ListAsync(
+                    _AwsSettings.Bucket, 
+                    filter.Prefix, null, 
+                    continuationToken, 
+                    1000, 
+                    null).ConfigureAwait(false);
+
+                foreach (ObjectMetadata curr in lbr.Contents)
+                {
+                    if (token.IsCancellationRequested) break;
                     if (curr.Size < filter.MinimumSize || curr.Size > filter.MaximumSize) continue;
                     if (!String.IsNullOrEmpty(filter.Suffix) && !curr.Key.EndsWith(filter.Suffix)) continue;
 

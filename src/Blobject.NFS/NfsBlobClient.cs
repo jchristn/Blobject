@@ -21,6 +21,7 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading;
@@ -369,6 +370,102 @@
             {
                 foreach (BlobMetadata blob in blobs)
                 {
+                    if (blob.IsFolder)
+                    {
+                        EnumerationFilter childFilter = new EnumerationFilter
+                        {
+                            MinimumSize = filter.MinimumSize,
+                            MaximumSize = filter.MaximumSize,
+                            Prefix = blob.Key,
+                            Suffix = filter.Suffix
+                        };
+
+                        IEnumerable<BlobMetadata> childBlobs = Enumerate(childFilter);
+                        if (childBlobs != null)
+                        {
+                            foreach (BlobMetadata childBlob in childBlobs)
+                            {
+                                yield return childBlob;
+                            }
+                        }
+
+                        // return the directories last to support empty operations which need to first
+                        // delete any documents contained in the subdirectory
+                        yield return blob;
+
+                    }
+                    else
+                    {
+                        yield return blob;
+                    }
+                }
+            }
+
+            #endregion
+
+            yield break;
+        }
+
+        /// <inheritdoc />
+        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null,
+            [EnumeratorCancellation] CancellationToken token = default)
+        {
+            #region Set-Filter
+
+            if (filter == null) filter = new EnumerationFilter();
+            if (String.IsNullOrEmpty(filter.Prefix))
+            {
+                filter.Prefix = ".";
+                Log("beginning enumeration");
+            }
+            else
+            {
+                Log("beginning enumeration using prefix " + filter.Prefix);
+            }
+
+            while (filter.Prefix.StartsWith("/")) filter.Prefix = filter.Prefix.Substring(1);
+
+            filter.Prefix = filter.Prefix.Replace("\\", "/");
+
+            string baseDirectory = "";
+            string filePrefix = "";
+
+            if (!filter.Prefix.Equals("."))
+            {
+                string[] parts = filter.Prefix.Split('/');
+
+                if (filter.Prefix.EndsWith("/"))
+                {
+                    baseDirectory = filter.Prefix;
+                }
+                else
+                {
+                    for (int i = 0; i < parts.Length - 1; i++)
+                    {
+                        baseDirectory += parts[i] + "/";
+                    }
+
+                    filePrefix = parts[parts.Length - 1];
+                }
+            }
+            else
+            {
+                baseDirectory = ".";
+            }
+
+            #endregion
+
+            #region Iterate
+
+            IEnumerable<BlobMetadata> blobs = EnumerateSubdirectory(filter, baseDirectory, filePrefix);
+
+            if (blobs != null)
+            {
+                foreach (BlobMetadata blob in blobs)
+                {
+                    if (token.IsCancellationRequested) break;
+
                     if (blob.IsFolder)
                     {
                         EnumerationFilter childFilter = new EnumerationFilter

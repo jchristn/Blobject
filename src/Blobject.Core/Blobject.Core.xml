@@ -445,12 +445,22 @@
         </member>
         <member name="M:Blobject.Core.BlobClientBase.Enumerate(Blobject.Core.EnumerationFilter)">
             <summary>
+            Enumerate all BLOBs within the repository.
+            To enumerate only a specific prefix or contents of a specific folder, use the / character.
+            For example, path/to/folder/myfile.txt
+            </summary>
+            <param name="filter">Enumeration filter.</param>
+            <returns>Enumerable of BlobMetadata.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.EnumerateAsync(Blobject.Core.EnumerationFilter,System.Threading.CancellationToken)">
+            <summary>
             Enumerate all BLOBs within the repository asynchronously.
             To enumerate only a specific prefix or contents of a specific folder, use the / character.
             For example, path/to/folder/myfile.txt
             </summary>
             <param name="filter">Enumeration filter.</param>
-            <returns>IEnumerable of BlobMetadata.</returns>
+            <param name="token">Cancellation token.</param>
+            <returns>Enumerable of BlobMetadata.</returns>
         </member>
         <member name="M:Blobject.Core.BlobClientBase.EmptyAsync(System.Threading.CancellationToken)">
             <summary>

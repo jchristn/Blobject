@@ -67,6 +67,9 @@
         <member name="M:Blobject.AzureBlob.AzureBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
             <inheritdoc />
         </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.EnumerateAsync(Blobject.Core.EnumerationFilter,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.AzureBlob.AzureBlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
