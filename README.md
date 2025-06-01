@@ -1,8 +1,19 @@
-![](https://github.com/jchristn/BlobHelper/blob/master/assets/icon.png?raw=true)
+![](https://github.com/jchristn/Blobject/blob/main/assets/icon.png?raw=true)
 
 # Blobject
 
-Blobject (formerly BlobHelper) is a common, consistent storage interface for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3, View), CIFS (Windows file shares), NFS (Linux and UNIX file shares), Google Cloud Storage, and local filesystem written in C#.
+Blobject is a common, consistent storage interface for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3, View), CIFS (Windows file shares), NFS (Linux and UNIX file shares), Google Cloud Storage, and local filesystem written in C#.
+
+| Library | Version | Downloads |
+|---|---|---|
+| Blobject.Core | [![NuGet Version](https://img.shields.io/nuget/v/Blobject.Core.svg?style=flat)](https://www.nuget.org/packages/Blobject.Core/)  | [![NuGet](https://img.shields.io/nuget/dt/Blobject.Core.svg)](https://www.nuget.org/packages/Blobject.Core) |
+| Blobject.AmazonS3 | [![NuGet Version](https://img.shields.io/nuget/v/Blobject.AmazonS3.svg?style=flat)](https://www.nuget.org/packages/Blobject.AmazonS3/)  | [![NuGet](https://img.shields.io/nuget/dt/Blobject.AmazonS3.svg)](https://www.nuget.org/packages/Blobject.AmazonS3) |
+| Blobject.AmazonS3Lite | [![NuGet Version](https://img.shields.io/nuget/v/Blobject.AmazonS3Lite.svg?style=flat)](https://www.nuget.org/packages/Blobject.AmazonS3Lite/)  | [![NuGet](https://img.shields.io/nuget/dt/Blobject.AmazonS3Lite.svg)](https://www.nuget.org/packages/Blobject.AmazonS3Lite) |
+| Blobject.AzureBlob | [![NuGet Version](https://img.shields.io/nuget/v/Blobject.AzureBlob.svg?style=flat)](https://www.nuget.org/packages/Blobject.AzureBlob/)  | [![NuGet](https://img.shields.io/nuget/dt/Blobject.AzureBlob.svg)](https://www.nuget.org/packages/Blobject.AzureBlob) |
+| Blobject.CIFS | [![NuGet Version](https://img.shields.io/nuget/v/Blobject.CIFS.svg?style=flat)](https://www.nuget.org/packages/Blobject.CIFS/)  | [![NuGet](https://img.shields.io/nuget/dt/Blobject.CIFS.svg)](https://www.nuget.org/packages/Blobject.CIFS) |
+| Blobject.Disk | [![NuGet Version](https://img.shields.io/nuget/v/Blobject.Disk.svg?style=flat)](https://www.nuget.org/packages/Blobject.Disk/)  | [![NuGet](https://img.shields.io/nuget/dt/Blobject.Disk.svg)](https://www.nuget.org/packages/Blobject.Disk) |
+| Blobject.GoogleCloud | [![NuGet Version](https://img.shields.io/nuget/v/Blobject.GoogleCloud.svg?style=flat)](https://www.nuget.org/packages/Blobject.GoogleCloud/)  | [![NuGet](https://img.shields.io/nuget/dt/Blobject.GoogleCloud.svg)](https://www.nuget.org/packages/Blobject.GoogleCloud) |
+| Blobject.NFS | [![NuGet Version](https://img.shields.io/nuget/v/Blobject.NFS.svg?style=flat)](https://www.nuget.org/packages/Blobject.NFS/)  | [![NuGet](https://img.shields.io/nuget/dt/Blobject.NFS.svg)](https://www.nuget.org/packages/Blobject.NFS) |
 
 ## Help, Feedback, Contribute
 
