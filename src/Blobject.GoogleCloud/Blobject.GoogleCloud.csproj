@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>5.0.14</Version>
+		<Version>5.0.15</Version>
 		<LangVersion>8.0</LangVersion>
 		<TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<Authors>Joel Christner</Authors>
-		<Description>BLOB storage client for Amazon S3 (including compatible storage e.g. Minio, Less3, Ceph, View).  Refer to other Blobject packages for other storage repository types.</Description>
+		<Description>BLOB storage client for Google Cloud.  Refer to other Blobject packages for other storage repository types.</Description>
 		<Copyright>(c)2025 Joel Christner</Copyright>
 		<PackageProjectUrl>https://github.com/jchristn/Blobject</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/jchristn/Blobject</RepositoryUrl>
@@ -18,22 +18,35 @@
 		<PackageTags>blob azure storage s3 object rest minio less3 ceph view cifs nfs google cloud gcp</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PackageIcon>icon.png</PackageIcon>
-		<Title>Blobject.AmazonS3</Title>
+		<Title>Blobject.GoogleCloud</Title>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<DocumentationFile>Blobject.GoogleCloud.xml</DocumentationFile>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<DocumentationFile>Blobject.AmazonS3.xml</DocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Content Include="icon.ico" />
+	  <Content Remove="C:\Users\joelc\.nuget\packages\blobject.core\5.0.14\contentFiles\any\netstandard2.0\icon.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\..\assets\icon.png">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
+	  <None Remove="C:\Users\joelc\.nuget\packages\blobject.core\5.0.14\contentFiles\any\netstandard2.0\Assets\icon.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="icon.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Blobject.Core" Version="5.0.14" />
+		<PackageReference Include="Google.Cloud.Storage.V1" Version="4.13.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\assets\icon.png" Link="icon.png">
+		  <PackagePath>\</PackagePath>
+		  <Pack>True</Pack>
 		</None>
 		<None Include="..\..\LICENSE.md">
 			<Pack>True</Pack>
@@ -46,21 +59,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AWSSDK.S3" Version="3.7.415.23" />
-		<PackageReference Include="Blobject.Core" Version="5.0.14" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="assets\icon.ico">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Include="assets\icon.png">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="Blobject.AmazonS3.xml">
+		<None Include="Blobject.GoogleCloud.xml">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
