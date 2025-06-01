@@ -15,7 +15,7 @@
 		<PackageLicenseUrl></PackageLicenseUrl>
 		<PackageReleaseNotes>Refactor, update, rename, and new repository types.</PackageReleaseNotes>
 		<PackageIconUrl></PackageIconUrl>
-		<PackageTags>blob azure storage s3 object rest minio less3 ceph view cifs nfs</PackageTags>
+		<PackageTags>blob azure storage s3 object rest minio less3 ceph view cifs nfs google cloud gcp</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PackageIcon>icon.png</PackageIcon>
 		<Title>Blobject.AmazonS3Lite</Title>

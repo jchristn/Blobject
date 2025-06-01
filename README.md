@@ -2,7 +2,7 @@
 
 # Blobject
 
-Blobject (formerly BlobHelper) is a common, consistent storage interface for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3, View), CIFS (Windows file shares), NFS (Linux and UNIX file shares), and local filesystem written in C#.
+Blobject (formerly BlobHelper) is a common, consistent storage interface for Microsoft Azure, Amazon S3, S3 compatible storage (i.e. Minio, Less3, View), CIFS (Windows file shares), NFS (Linux and UNIX file shares), Google Cloud Storage, and local filesystem written in C#.
 
 ## Help, Feedback, Contribute
 
@@ -27,6 +27,7 @@ Though this library is MIT licensed, it is dependent upon other libraries, some 
 | AWSSDK.S3 | https://github.com/aws/aws-sdk-net | Apache 2.0 |
 | Azure.Storage.Blobs | https://github.com/Azure/azure-sdk-for-net | MIT |
 | EzSmb | https://github.com/ume05rw/EzSmb | LGPL-3.0 |
+| Google.Cloud.Storage.V1 | https://github.com/googleapis/google-cloud-dotnet | Apache 2.0 |
 | SMBLibrary | https://github.com/TalAloni/SMBLibrary | LGPL-3.0 |
 | NFS-Client | https://github.com/SonnyX/NFS-Client | Unknown, public |
 | Nekodrive | https://github.com/nekoni/nekodrive | Unknown, public | 
@@ -35,7 +36,7 @@ Though this library is MIT licensed, it is dependent upon other libraries, some 
 ## New in v5.0.x
 
 - Rename from `BlobHelper` to `Blobject`
-- Added support for CIFS and NFS
+- Added support for CIFS, NFS, and Google Cloud Storage
 - Remove use of continuation tokens for disk
 - Add `S3Lite` variant, not dependent on AWSSDK
 - Enumerate APIs now return an `IEnumerable<BlobMetadata>`, no pagination required
@@ -94,6 +95,21 @@ AzureBlobSettings settings = new AzureBlobSettings(
 	containerName);
 
 AzureBlobClient blobs = new AzureBlobClient(settings); 
+```
+
+## Getting Started - Google Cloud
+
+Important - you must have the JSON credentials for the service account, which includes the private key.  Creation of these credentials requires the organization policy administrator role.
+
+```csharp
+using Blobject.GoogleCloud;
+
+GcpBlobSettings settings = new GcpBlobSettings(
+	projectId, 
+	bucket, 
+	"... JSON credentials for service account ..."
+
+GcpBlobClient blobs = new GcpBlobClient(settings); 
 ```
 
 ## Getting Started - CIFS

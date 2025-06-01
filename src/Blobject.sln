@@ -37,6 +37,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.Script", "Test.Script\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.LargeEnumeration", "Test.LargeEnumeration\Test.LargeEnumeration.csproj", "{8EF94A9E-D518-4298-BD96-A0965BDC1F8D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blobject.GoogleCloud", "Blobject.GoogleCloud\Blobject.GoogleCloud.csproj", "{1A85E003-A260-4C5C-81DC-FDE1FC1C4776}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.GoogleCloud", "Test.GoogleCloud\Test.GoogleCloud.csproj", "{7E7178B9-EA17-4183-8C1A-B7747C76BE85}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -111,6 +115,14 @@ Global
 		{8EF94A9E-D518-4298-BD96-A0965BDC1F8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8EF94A9E-D518-4298-BD96-A0965BDC1F8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8EF94A9E-D518-4298-BD96-A0965BDC1F8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A85E003-A260-4C5C-81DC-FDE1FC1C4776}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A85E003-A260-4C5C-81DC-FDE1FC1C4776}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A85E003-A260-4C5C-81DC-FDE1FC1C4776}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A85E003-A260-4C5C-81DC-FDE1FC1C4776}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E7178B9-EA17-4183-8C1A-B7747C76BE85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E7178B9-EA17-4183-8C1A-B7747C76BE85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E7178B9-EA17-4183-8C1A-B7747C76BE85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E7178B9-EA17-4183-8C1A-B7747C76BE85}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,7 +5,7 @@
 v5.0.x
 
 - Rename from `BlobHelper` to `Blobject`
-- Added support for CIFS and NFS
+- Added support for CIFS, NFS, and Google Cloud Storage
 - Remove use of continuation tokens for disk
 - Add `S3Lite` variant, not dependent on AWSSDK
 - Refactor
