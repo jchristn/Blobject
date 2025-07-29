@@ -145,10 +145,12 @@
                 DirectoryInfo di = new DirectoryInfo(filename);
                 BlobMetadata md = new BlobMetadata();
                 md.Key = key;
+                md.IsFolder = true;
                 md.ContentLength = 0;
                 md.CreatedUtc = di.CreationTimeUtc;
                 md.LastAccessUtc = di.LastAccessTimeUtc;
                 md.LastUpdateUtc = di.LastWriteTimeUtc;
+                
                 return md;
             }
             else
