@@ -87,13 +87,14 @@
         static void InitializeClient()
         {
             Console.WriteLine("For S3-compatible storage, endpoint should be of the form http://[hostname]:[port]/");
+            Console.WriteLine("For anonymous access to public buckets, leave Access key and Secret key empty.");
             string endpoint = Inputty.GetString("Endpoint   :", null, true);
 
             if (String.IsNullOrEmpty(endpoint))
             {
                 _Settings = new AwsSettings(
-                    Inputty.GetString("Access key :", null, false),
-                    Inputty.GetString("Secret key :", null, false),
+                    Inputty.GetString("Access key :", null, true),
+                    Inputty.GetString("Secret key :", null, true),
                     Inputty.GetString("Region     :", "us-west-1", false),
                     Inputty.GetString("Bucket     :", null, false)
                     );
@@ -103,14 +104,15 @@
                 _Settings = new AwsSettings(
                     endpoint,
                     Inputty.GetBoolean("SSL        :", true),
-                    Inputty.GetString("Access key :", null, false),
-                    Inputty.GetString("Secret key :", null, false),
+                    Inputty.GetString("Access key :", null, true),
+                    Inputty.GetString("Secret key :", null, true),
                     Inputty.GetString("Region     :", "us-west-1", false),
                     Inputty.GetString("Bucket     :", null, false),
                     Inputty.GetString("Base URL   :", "http://localhost:8000/{bucket}/{key}", false)
                     );
             }
             _Client = new AmazonS3BlobClient(_Settings);
+            Console.WriteLine("Has credentials: " + _Settings.HasCredentials);
             if (_Debug) _Client.Logger = Console.WriteLine;
         }
 

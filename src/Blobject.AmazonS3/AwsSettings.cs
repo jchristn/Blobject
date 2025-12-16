@@ -62,6 +62,15 @@
         /// </summary>
         public string BaseUrl { get; set; } = null;
 
+        /// <summary>
+        /// Check if credentials are configured.
+        /// Returns true if both AccessKey and SecretKey are non-null and non-empty.
+        /// </summary>
+        public bool HasCredentials
+        {
+            get { return !String.IsNullOrEmpty(AccessKey) && !String.IsNullOrEmpty(SecretKey); }
+        }
+
         #endregion
 
         #region Private-Members
@@ -81,14 +90,12 @@
         /// <summary>
         /// Initialize the object.
         /// </summary>
-        /// <param name="accessKey">Access key with which to access AWS S3.</param>
-        /// <param name="secretKey">Secret key with which to access AWS S3.</param>
+        /// <param name="accessKey">Access key with which to access AWS S3.  Leave null for anonymous access.</param>
+        /// <param name="secretKey">Secret key with which to access AWS S3.  Leave null for anonymous access.</param>
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
         public AwsSettings(string accessKey, string secretKey, string region, string bucket)
         {
-            if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
-            if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
             if (String.IsNullOrEmpty(region)) throw new ArgumentNullException(nameof(region));
             if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
 
@@ -97,30 +104,30 @@
             Bucket = bucket;
             Region = region;
 
+            ValidateCredentials();
             ValidateRegion(Region);
         }
          
         /// <summary>
         /// Initialize the object.
         /// </summary>
-        /// <param name="accessKey">Access key with which to access AWS S3.</param>
-        /// <param name="secretKey">Secret key with which to access AWS S3.</param>
+        /// <param name="accessKey">Access key with which to access AWS S3.  Leave null for anonymous access.</param>
+        /// <param name="secretKey">Secret key with which to access AWS S3.  Leave null for anonymous access.</param>
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
-        /// <param name="ssl">Enable or disable SSL.</param> 
+        /// <param name="ssl">Enable or disable SSL.</param>
         public AwsSettings(string accessKey, string secretKey, string region, string bucket, bool ssl)
         {
-            if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
-            if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
             if (String.IsNullOrEmpty(region)) throw new ArgumentNullException(nameof(region));
-            if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket)); 
-            
+            if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
+
             AccessKey = accessKey;
             SecretKey = secretKey;
             Bucket = bucket;
             Region = region;
             Ssl = ssl;
 
+            ValidateCredentials();
             ValidateRegion(Region);
         }
          
@@ -129,16 +136,15 @@
         /// </summary>
         /// <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
         /// <param name="ssl">Enable or disable SSL.</param>
-        /// <param name="accessKey">Access key with which to access AWS S3.</param>
-        /// <param name="secretKey">Secret key with which to access AWS S3.</param>
+        /// <param name="accessKey">Access key with which to access AWS S3.  Leave null for anonymous access.</param>
+        /// <param name="secretKey">Secret key with which to access AWS S3.  Leave null for anonymous access.</param>
         /// <param name="region">AWS region.</param>
         /// <param name="bucket">Bucket in which to store BLOBs.</param>
         /// <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>
         public AwsSettings(string endpoint, bool ssl, string accessKey, string secretKey, string region, string bucket, string baseUrl)
         {
             if (String.IsNullOrEmpty(endpoint)) throw new ArgumentNullException(nameof(endpoint));
-            if (String.IsNullOrEmpty(accessKey)) throw new ArgumentNullException(nameof(accessKey));
-            if (String.IsNullOrEmpty(secretKey)) throw new ArgumentNullException(nameof(secretKey));
+            if (String.IsNullOrEmpty(region)) throw new ArgumentNullException(nameof(region));
             if (String.IsNullOrEmpty(bucket)) throw new ArgumentNullException(nameof(bucket));
             if (String.IsNullOrEmpty(baseUrl)) throw new ArgumentNullException(nameof(baseUrl));
 
@@ -152,6 +158,7 @@
 
             if (!BaseUrl.EndsWith("/")) BaseUrl += "/";
 
+            ValidateCredentials();
             ValidateRegion(Region);
         }
 
@@ -162,7 +169,15 @@
         #endregion
 
         #region Private-Methods
-         
+
+        private void ValidateCredentials()
+        {
+            bool hasAccessKey = !String.IsNullOrEmpty(AccessKey);
+            bool hasSecretKey = !String.IsNullOrEmpty(SecretKey);
+            if (hasAccessKey != hasSecretKey)
+                throw new ArgumentException("Both AccessKey and SecretKey must be provided, or neither for anonymous access.");
+        }
+
         private void ValidateRegion(string region)
         {
             RegionEndpoint endpoint = Amazon.RegionEndpoint.GetBySystemName(region);

@@ -122,6 +122,12 @@
             Path-style URLs are of the form http://{hostname}:{port}/{bucket}/{key}.
             </summary>
         </member>
+        <member name="P:Blobject.AmazonS3Lite.AwsSettings.HasCredentials">
+            <summary>
+            Check if credentials are configured.
+            Returns true if both AccessKey and SecretKey are non-null and non-empty.
+            </summary>
+        </member>
         <member name="M:Blobject.AmazonS3Lite.AwsSettings.#ctor">
             <summary>
             Initialize the object.
@@ -131,8 +137,8 @@
             <summary>
             Initialize the object.
             </summary>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="accessKey">Access key with which to access AWS S3.  Leave null for anonymous access.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.  Leave null for anonymous access.</param>
             <param name="region">AWS region.</param>
             <param name="bucket">Bucket in which to store BLOBs.</param>
         </member>
@@ -140,8 +146,8 @@
             <summary>
             Initialize the object.
             </summary>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="accessKey">Access key with which to access AWS S3.  Leave null for anonymous access.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.  Leave null for anonymous access.</param>
             <param name="region">AWS region.</param>
             <param name="bucket">Bucket in which to store BLOBs.</param>
             <param name="ssl">Enable or disable SSL.</param>
@@ -152,8 +158,8 @@
             </summary>
             <param name="endpoint">Override the AWS S3 endpoint (if using non-Amazon storage).  Use the form http://localhost:8000/.</param>
             <param name="ssl">Enable or disable SSL.</param>
-            <param name="accessKey">Access key with which to access AWS S3.</param>
-            <param name="secretKey">Secret key with which to access AWS S3.</param>
+            <param name="accessKey">Access key with which to access AWS S3.  Leave null for anonymous access.</param>
+            <param name="secretKey">Secret key with which to access AWS S3.  Leave null for anonymous access.</param>
             <param name="region">AWS region.</param>
             <param name="bucket">Bucket in which to store BLOBs.</param>
             <param name="baseUrl">Base URL to use for objects, i.e. https://[bucketname].s3.[regionname].amazonaws.com/.  For non-S3 endpoints, use {bucket} and {key} to indicate where these values should be inserted, i.e. http://{bucket}.[hostname]:[port]/{key} or https://[hostname]:[port]/{bucket}/key.</param>

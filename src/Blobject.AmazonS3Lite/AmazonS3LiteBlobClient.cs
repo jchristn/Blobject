@@ -45,10 +45,15 @@
             {
                 _S3Client = new S3Client()
                       .WithRegion(_AwsSettings.Region)
-                      .WithAccessKey(_AwsSettings.AccessKey)
-                      .WithSecretKey(_AwsSettings.SecretKey)
                       .WithRequestStyle(_AwsSettings.RequestStyle)
                       .WithSignatureVersion(SignatureVersionEnum.Version4);
+
+                if (_AwsSettings.HasCredentials)
+                {
+                    _S3Client
+                        .WithAccessKey(_AwsSettings.AccessKey)
+                        .WithSecretKey(_AwsSettings.SecretKey);
+                }
             }
             else
             {
@@ -59,13 +64,18 @@
 
                 _S3Client = new S3Client()
                       .WithRegion(_AwsSettings.Region)
-                      .WithAccessKey(_AwsSettings.AccessKey)
-                      .WithSecretKey(_AwsSettings.SecretKey)
                       .WithHostname(uri.Host)
                       .WithPort(uri.Port)
                       .WithProtocol(proto)
                       .WithRequestStyle(_AwsSettings.RequestStyle)
                       .WithSignatureVersion(SignatureVersionEnum.Version4);
+
+                if (_AwsSettings.HasCredentials)
+                {
+                    _S3Client
+                        .WithAccessKey(_AwsSettings.AccessKey)
+                        .WithSecretKey(_AwsSettings.SecretKey);
+                }
             }
         }
         

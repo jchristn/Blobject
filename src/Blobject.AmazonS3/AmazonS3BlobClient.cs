@@ -41,7 +41,16 @@
 
             AmazonS3Config s3Config;
             _AwsSettings = awsSettings;
-            BasicAWSCredentials s3Credentials = new Amazon.Runtime.BasicAWSCredentials(_AwsSettings.AccessKey, _AwsSettings.SecretKey);
+
+            AWSCredentials s3Credentials;
+            if (_AwsSettings.HasCredentials)
+            {
+                s3Credentials = new BasicAWSCredentials(_AwsSettings.AccessKey, _AwsSettings.SecretKey);
+            }
+            else
+            {
+                s3Credentials = new AnonymousAWSCredentials();
+            }
 
             if (String.IsNullOrEmpty(_AwsSettings.Endpoint))
             {
@@ -51,7 +60,6 @@
                     UseHttp = !_AwsSettings.Ssl,
                 };
 
-                // _S3Client = new AmazonS3Client(_S3Credentials, _S3Region);
                 _S3Client = new AmazonS3Client(s3Credentials, s3Config);
             }
             else

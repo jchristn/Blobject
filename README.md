@@ -92,8 +92,34 @@ AmazonS3BlobClient blobs = new AmazonS3BlobClient(settings);
 using Blobject.AmazonS3Lite;
 
 // Initialize settings as above
-AmazonS3LiteBlobClient blobs = new AmazonS3LiteBlobClient(settings); 
+AmazonS3LiteBlobClient blobs = new AmazonS3LiteBlobClient(settings);
 ```
+
+## Getting Started - AWS S3 Anonymous Access
+
+For accessing public buckets that don't require authentication, you can omit the access key and secret key:
+
+```csharp
+using Blobject.AmazonS3Lite;
+
+// Anonymous access to a public bucket
+AwsSettings settings = new AwsSettings(
+    null,          // accessKey - null for anonymous access
+    null,          // secretKey - null for anonymous access
+    "us-west-1",
+    "public-bucket-name"
+    );
+
+AmazonS3LiteBlobClient blobs = new AmazonS3LiteBlobClient(settings);
+
+// Check if credentials are configured
+Console.WriteLine("Has credentials: " + settings.HasCredentials);  // False
+
+// Read operations work on public buckets
+byte[] data = await blobs.GetAsync("public-file.txt");
+```
+
+**Note:** Write and delete operations require authentication. Anonymous access is read-only.
 
 ## Getting Started - Azure
 ```csharp
