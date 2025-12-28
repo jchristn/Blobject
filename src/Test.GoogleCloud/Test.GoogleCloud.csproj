@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Inputty" Version="1.0.12" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Blobject.GoogleCloud\Blobject.GoogleCloud.csproj" />
+	</ItemGroup>
+
+</Project>

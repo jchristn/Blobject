@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Inputty" Version="1.0.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Blobject.AmazonS3\Blobject.AmazonS3.csproj" />
+	  <ProjectReference Include="..\Blobject.AzureBlob\Blobject.AzureBlob.csproj" />
+	  <ProjectReference Include="..\Blobject.CIFS\Blobject.CIFS.csproj" />
+	  <ProjectReference Include="..\Blobject.Disk\Blobject.Disk.csproj" />
+	  <ProjectReference Include="..\Blobject.NFS\Blobject.NFS.csproj" />
+	</ItemGroup>
+ 
+</Project>

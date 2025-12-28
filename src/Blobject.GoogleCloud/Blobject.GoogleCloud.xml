@@ -1,0 +1,126 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Blobject.GoogleCloud</name>
+    </assembly>
+    <members>
+        <member name="T:Blobject.GoogleCloud.GcpBlobClient">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.#ctor(Blobject.GoogleCloud.GcpBlobSettings)">
+            <summary>
+            Google Cloud Storage BLOB client.
+            </summary>
+            <param name="googleSettings">Settings.</param>
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.ValidateConnectivity(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.ListBuckets(System.Threading.CancellationToken)">
+            <summary>
+            List buckets available in the project.
+            </summary>
+            <param name="token">Cancellation token.</param>
+            <returns>List of bucket names.</returns>
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.GetStreamAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.WriteAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.WriteAsync(System.String,System.String,System.Int64,System.IO.Stream,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.WriteManyAsync(System.Collections.Generic.List{Blobject.Core.WriteRequest},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.EnumerateAsync(Blobject.Core.EnumerationFilter,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.EmptyAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Blobject.GoogleCloud.GcpBlobSettings">
+            <summary>
+            Settings when using Google Cloud Storage for storage.
+            </summary>
+        </member>
+        <member name="P:Blobject.GoogleCloud.GcpBlobSettings.ProjectId">
+            <summary>
+            Google Cloud project ID.
+            </summary>
+        </member>
+        <member name="P:Blobject.GoogleCloud.GcpBlobSettings.Bucket">
+            <summary>
+            Google Cloud Storage bucket name.
+            </summary>
+        </member>
+        <member name="P:Blobject.GoogleCloud.GcpBlobSettings.JsonCredentials">
+            <summary>
+            JSON credentials for service account authentication.
+            This should be the full JSON content of the service account key file.
+            </summary>
+        </member>
+        <member name="P:Blobject.GoogleCloud.GcpBlobSettings.CustomEndpoint">
+            <summary>
+            Optional: Custom endpoint URL for Google Cloud Storage.
+            Default is null, which uses the standard GCS endpoint.
+            </summary>
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobSettings.#ctor">
+            <summary>
+            Settings when using Google Cloud Storage for storage.
+            </summary>
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobSettings.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Settings when using Google Cloud Storage for storage.
+            </summary>
+            <param name="projectId">The Google Cloud project ID.</param>
+            <param name="bucket">The bucket in which BLOBs should be stored.</param>
+            <param name="jsonCredentials">The JSON credentials for service account authentication.</param>
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobSettings.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Settings when using Google Cloud Storage for storage.
+            </summary>
+            <param name="projectId">The Google Cloud project ID.</param>
+            <param name="bucket">The bucket in which BLOBs should be stored.</param>
+            <param name="jsonCredentials">The JSON credentials for service account authentication.</param>
+            <param name="customEndpoint">Custom endpoint URL for Google Cloud Storage.</param>
+        </member>
+    </members>
+</doc>
