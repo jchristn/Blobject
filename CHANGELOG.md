@@ -4,6 +4,9 @@
 
 v5.0.x
 
+- `Blobject.AmazonS3` and `Blobject.AmazonS3Lite` v5.0.19 normalize AWS region aliases such as `USEast2` to DNS-safe names such as `us-east-2`
+- Updated S3 region normalization for the current Amazon S3 regular endpoint region list
+- Default AWS S3 settings to HTTPS unless explicitly disabled
 - Rename from `BlobHelper` to `Blobject`
 - Added support for CIFS, NFS, and Google Cloud Storage
 - Remove use of continuation tokens for disk

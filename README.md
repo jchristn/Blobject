@@ -51,6 +51,7 @@ Though this library is MIT licensed, it is dependent upon other libraries, some 
 - Remove use of continuation tokens for disk
 - Add `S3Lite` variant, not dependent on AWSSDK
 - Enumerate APIs now return an `IEnumerable<BlobMetadata>`, no pagination required
+- `Blobject.AmazonS3` and `Blobject.AmazonS3Lite` v5.0.19 normalize AWS region aliases such as `USEast2` to DNS-safe names such as `us-east-2` and default AWS S3 settings to HTTPS
 - Refactor
 
 ## Example Project
@@ -69,6 +70,8 @@ AwsSettings settings = new AwsSettings(
 
 BlobClient blobs = new BlobClient(settings); 
 ```
+
+AWS S3 region names are normalized against the current Amazon S3 regular endpoint region list. For example, `USEast2`, `us_east_2`, and `us-east-2` are stored as `us-east-2`.
 
 ## Getting Started - AWS S3 Compatible Storage (Minio, Less3, etc)
 ```csharp
