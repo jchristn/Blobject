@@ -19,6 +19,11 @@
             Buffer size to use when reading from a stream.  Default is 65536.
             </summary>
         </member>
+        <member name="P:Blobject.Core.BlobClientBase.MaxConcurrency">
+            <summary>
+            Maximum number of concurrent operations used by common bulk APIs.  Default is 4.
+            </summary>
+        </member>
         <member name="M:Blobject.Core.BlobClientBase.ValidateConnectivity(System.Threading.CancellationToken)">
             <summary>
             Validate connectivity to the repository.
@@ -155,6 +160,39 @@
             <param name="token">The cancellation token.</param>
             <returns>A task representing the asynchronous operation.</returns>
         </member>
+        <member name="M:Blobject.Core.BlobClientBase.CloneFilter(Blobject.Core.EnumerationFilter)">
+            <summary>
+            Clone an enumeration filter or create a default filter.
+            </summary>
+            <param name="filter">Input filter.</param>
+            <returns>Cloned filter.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.MatchesFilter(Blobject.Core.BlobMetadata,Blobject.Core.EnumerationFilter,System.StringComparison)">
+            <summary>
+            Determine if metadata matches a filter.
+            </summary>
+            <param name="metadata">Metadata.</param>
+            <param name="filter">Filter.</param>
+            <param name="comparison">String comparison.</param>
+            <returns>True if the metadata matches the filter.</returns>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.CopyStreamAsync(System.IO.Stream,System.IO.Stream,System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Copy exactly the specified number of bytes from one stream to another.
+            </summary>
+            <param name="source">Source stream.</param>
+            <param name="destination">Destination stream.</param>
+            <param name="contentLength">Content length.</param>
+            <param name="token">Cancellation token.</param>
+        </member>
+        <member name="M:Blobject.Core.BlobClientBase.ReadStreamFullyAsync(System.IO.Stream,System.Threading.CancellationToken)">
+            <summary>
+            Read a stream fully into a byte array.
+            </summary>
+            <param name="source">Source stream.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Byte array.</returns>
+        </member>
         <member name="T:Blobject.Core.BlobCopy">
             <summary>
             BLOB copy.
@@ -193,6 +231,15 @@
             <param name="token">Cancellation token.</param>
             <returns>Copy statistics.</returns>
         </member>
+        <member name="M:Blobject.Core.BlobCopy.StartAsync(System.Int32,Blobject.Core.EnumerationFilter,System.Threading.CancellationToken)">
+            <summary>
+            Start the copy operation asynchronously.
+            </summary>
+            <param name="stopAfter">Stop after this many objects have been copied.</param>
+            <param name="filter">Enumeration filter.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Copy statistics.</returns>
+        </member>
         <member name="T:Blobject.Core.BlobData">
             <summary>
             Contains content-length (how many bytes to read) and data stream for a given object.
@@ -208,6 +255,11 @@
             Stream containing requested data.
             </summary>
         </member>
+        <member name="P:Blobject.Core.BlobData.Owner">
+            <summary>
+            Optional owner to dispose when the data stream is disposed.
+            </summary>
+        </member>
         <member name="M:Blobject.Core.BlobData.#ctor">
             <summary>
             Instantiate.
@@ -219,6 +271,14 @@
             </summary>
             <param name="contentLength">Content length.</param>
             <param name="data">Data stream.</param>
+        </member>
+        <member name="M:Blobject.Core.BlobData.#ctor(System.Int64,System.IO.Stream,System.IDisposable)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="contentLength">Content length.</param>
+            <param name="data">Data stream.</param>
+            <param name="owner">Optional owner to dispose with the data stream.</param>
         </member>
         <member name="M:Blobject.Core.BlobData.Dispose">
             <summary>
@@ -343,6 +403,13 @@
             <param name="str">String.</param>
             <returns>IPAddress.</returns>
         </member>
+        <member name="M:Blobject.Core.Common.NormalizeAwsRegion(System.String)">
+            <summary>
+            Normalize an AWS region name to its DNS-safe system name.
+            </summary>
+            <param name="region">Region.</param>
+            <returns>Normalized region.</returns>
+        </member>
         <member name="T:Blobject.Core.CopyStatistics">
             <summary>
             BLOB copy statistics.
@@ -416,7 +483,7 @@
         </member>
         <member name="T:Blobject.Core.EmptyResult">
             <summary>
-            Results from a container empty operation. 
+            Results from a container empty operation.
             </summary>
         </member>
         <member name="P:Blobject.Core.EmptyResult.Count">
@@ -469,6 +536,12 @@
             Instantiate the object.
             </summary>
         </member>
+        <member name="M:Blobject.Core.EnumerationFilter.Clone">
+            <summary>
+            Create a copy of the filter.
+            </summary>
+            <returns>Enumeration filter.</returns>
+        </member>
         <member name="T:Blobject.Core.SerializationHelper">
             <summary>
             Serialization helper.
@@ -492,7 +565,7 @@
         </member>
         <member name="M:Blobject.Core.SerializationHelper.DeserializeJson``1(System.String)">
             <summary>
-            Deserialize JSON. 
+            Deserialize JSON.
             </summary>
             <typeparam name="T">Type.</typeparam>
             <param name="json">JSON string.</param>
@@ -500,7 +573,7 @@
         </member>
         <member name="M:Blobject.Core.SerializationHelper.DeserializeJson``1(System.Byte[])">
             <summary>
-            Deserialize JSON. 
+            Deserialize JSON.
             </summary>
             <typeparam name="T">Type.</typeparam>
             <param name="data">JSON data.</param>
@@ -586,7 +659,7 @@
             <param name="key">Object key.</param>
             <param name="contentType">Content type.</param>
             <param name="contentLength">Content length.</param>
-            <param name="stream">Stream containing the data.</param> 
+            <param name="stream">Stream containing the data.</param>
         </member>
     </members>
 </doc>

@@ -8,8 +8,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Inputty" Version="1.0.12" />
-		<PackageReference Include="SerializationHelper" Version="2.0.0" />
+		<PackageReference Include="Inputty" Version="1.0.13" />
+		<PackageReference Include="SerializationHelper" Version="2.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>

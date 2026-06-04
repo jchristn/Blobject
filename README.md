@@ -41,7 +41,7 @@ Though this library is MIT licensed, it is dependent upon other libraries, some 
 | Google.Cloud.Storage.V1 | https://github.com/googleapis/google-cloud-dotnet | Apache 2.0 |
 | SMBLibrary | https://github.com/TalAloni/SMBLibrary | LGPL-3.0 |
 | NFS-Client | https://github.com/SonnyX/NFS-Client | Unknown, public |
-| Nekodrive | https://github.com/nekoni/nekodrive | Unknown, public | 
+| Nekodrive | https://github.com/nekoni/nekodrive | Unknown, public |
 | S3Lite | https://github.com/jchristn/S3Lite | MIT |
 
 ## New in v5.0.x
@@ -52,23 +52,67 @@ Though this library is MIT licensed, it is dependent upon other libraries, some 
 - Add `S3Lite` variant, not dependent on AWSSDK
 - Enumerate APIs now return an `IEnumerable<BlobMetadata>`, no pagination required
 - `Blobject.AmazonS3` and `Blobject.AmazonS3Lite` v5.0.19 normalize AWS region aliases such as `USEast2` to DNS-safe names such as `us-east-2` and default AWS S3 settings to HTTPS
+- `Blobject.Core` v5.0.19 fixes streaming-first copy, bounded bulk operations, empty-write consistency, filter cloning, and case handling
+- Provider patch releases v5.0.19/v5.0.20 align stream APIs, empty writes, filter matching, and shared bulk behavior
+- Provider packages now share common `WriteManyAsync` and `EmptyAsync` behavior with configurable `MaxConcurrency`
 - Refactor
 
 ## Example Project
 
 Refer to the `Test` project for exercising the library.
 
+## Automated Tests
+
+The repository includes Touchstone-based automated contract tests. `Test.Shared` contains the runner-agnostic provider contract definitions. By default, the tests run against `Blobject.Disk` in a temporary directory and clean up after each case.
+
+```bash
+dotnet run --project src/Test.Automated/Test.Automated.csproj --framework net10.0
+dotnet test src/Test.Xunit/Test.Xunit.csproj --framework net10.0
+dotnet test src/Test.Nunit/Test.Nunit.csproj --framework net10.0
+```
+
+The default suite contains 80 contract cases. Add `--include-stress true` to `Test.Automated` to include large enumeration and large `WriteManyAsync` coverage.
+
+```bash
+dotnet run --project src/Test.Automated/Test.Automated.csproj --framework net10.0 -- --include-stress true
+```
+
+`Test.Automated` accepts provider-specific command-line overrides. Remote providers are isolated by a generated prefix and cleaned up by default.
+
+```bash
+dotnet run --project src/Test.Automated/Test.Automated.csproj --framework net10.0 -- \
+  --provider s3 \
+  --s3-access-key <access-key> \
+  --s3-secret-key <secret-key> \
+  --s3-region us-east-2 \
+  --s3-bucket <bucket> \
+  --prefix blobject-contract-tests
+```
+
+For S3-compatible storage, also supply `--s3-endpoint`, `--s3-ssl`, and `--s3-base-url`. Supported providers are `disk`, `s3`, `s3lite`, `azure`, `gcp`, `cifs`, and `nfs`; run `Test.Automated --help` for the full argument list. The xUnit and NUnit adapters use the same shared suite and can be configured with the equivalent `BLOBJECT_TEST_*` environment variables, such as `BLOBJECT_TEST_PROVIDER`, `BLOBJECT_TEST_S3_BUCKET`, and `BLOBJECT_TEST_PREFIX`.
+
+```bash
+dotnet test src/Test.Xunit/Test.Xunit.csproj --framework net10.0 \
+  -e BLOBJECT_TEST_PROVIDER=s3 \
+  -e BLOBJECT_TEST_S3_ACCESS_KEY=<access-key> \
+  -e BLOBJECT_TEST_S3_SECRET_KEY=<secret-key> \
+  -e BLOBJECT_TEST_S3_REGION=us-east-2 \
+  -e BLOBJECT_TEST_S3_BUCKET=<bucket>
+```
+
+The existing `Test.*` console applications remain available for interactive provider-specific testing.
+
 ## Getting Started - AWS S3
 ```csharp
 using Blobject;
 
 AwsSettings settings = new AwsSettings(
-	accessKey, 
-	secretKey, 
+	accessKey,
+	secretKey,
 	"us-west-1",
 	bucket);
 
-BlobClient blobs = new BlobClient(settings); 
+BlobClient blobs = new BlobClient(settings);
 ```
 
 AWS S3 region names are normalized against the current Amazon S3 regular endpoint region list. For example, `USEast2`, `us_east_2`, and `us-east-2` are stored as `us-east-2`.
@@ -80,14 +124,14 @@ using Blobject.AmazonS3;
 AwsSettings settings = new AwsSettings(
 	endpoint,      // http://localhost:8000/
 	true,          // enable or disable SSL
-	accessKey, 
-	secretKey, 
+	accessKey,
+	secretKey,
 	"us-west-1",
 	bucket,
 	baseUrl        // i.e. http://localhost:8000/{bucket}/{key}
 	);
 
-AmazonS3BlobClient blobs = new AmazonS3BlobClient(settings); 
+AmazonS3BlobClient blobs = new AmazonS3BlobClient(settings);
 ```
 
 ## Getting Started - AWS S3 Lite (non-AWS library to reduce dependency drag)
@@ -129,12 +173,12 @@ byte[] data = await blobs.GetAsync("public-file.txt");
 using Blobject.AzureBlob;
 
 AzureBlobSettings settings = new AzureBlobSettings(
-	accountName, 
-	accessKey, 
-	"https://[accountName].blob.core.windows.net/", 
+	accountName,
+	accessKey,
+	"https://[accountName].blob.core.windows.net/",
 	containerName);
 
-AzureBlobClient blobs = new AzureBlobClient(settings); 
+AzureBlobClient blobs = new AzureBlobClient(settings);
 ```
 
 ## Getting Started - Google Cloud
@@ -145,11 +189,11 @@ Important - you must have the JSON credentials for the service account, which in
 using Blobject.GoogleCloud;
 
 GcpBlobSettings settings = new GcpBlobSettings(
-	projectId, 
-	bucket, 
+	projectId,
+	bucket,
 	"... JSON credentials for service account ..."
 
-GcpBlobClient blobs = new GcpBlobClient(settings); 
+GcpBlobClient blobs = new GcpBlobClient(settings);
 ```
 
 ## Getting Started - CIFS
@@ -169,7 +213,7 @@ CifsBlobClient blobs = new CifsBlobClient(settings);
 ```csharp
 using Blobject.Disk;
 
-DiskSettings settings = new DiskSettings("blobs"); 
+DiskSettings settings = new DiskSettings("blobs");
 
 DiskBlobClient blobs = new DiskBlobClient(settings);
 ```
@@ -192,6 +236,7 @@ NfsBlobClient = new NfsBlobClient(settings);
 ## Getting Started (Byte Arrays for Smaller Objects)
 ```csharp
 await blobs.WriteAsync("test", "text/plain", "This is some data");  // throws IOException
+await blobs.WriteAsync("empty", "application/octet-stream", Array.Empty<byte>());
 byte[] data = await blobs.GetAsync("test");                         // throws IOException
 bool exists = await blobs.ExistsAsync("test");
 await blobs.DeleteAsync("test");
@@ -230,9 +275,11 @@ Enumeration is always full; the library will manage any continuation tokens (e.g
 BlobMetadata md = await _Blobs.GetMetadataAsync("key");
 
 // Enumerate BLOBs
-foreach (BlobMetadata blob in await _Blobs.EnumerateAsync())
+await foreach (BlobMetadata blob in _Blobs.EnumerateAsync())
   Console.WriteLine(blob.Key + " " + blob.ContentLength + " folder? " + blob.IsFolder);
 ```
+
+Enumeration filters are cloned internally so provider calls do not mutate caller-supplied filter instances. Object-storage providers use case-sensitive key matching; disk and CIFS use case-insensitive matching for compatibility with their typical filesystems.
 
 ## Copying BLOBs from Repository to Repository
 
@@ -243,7 +290,7 @@ Thanks to @phpfui for contributing code and the idea for this enhancement!
 ```csharp
 // instantiate two BLOB clients
 BlobCopy copy = new BlobCopy(from, to);
-CopyStatistics stats = copy.Start();
+CopyStatistics stats = await copy.StartAsync();
 /*
 	{
 	  "Success": true,
@@ -265,6 +312,17 @@ CopyStatistics stats = copy.Start();
 	  ]
 	}
  */
+```
+
+`BlobCopy.Start(...)` remains available for compatibility and delegates to `StartAsync(...)`. Copy now uses `GetStreamAsync` and stream writes where the provider supports them.
+
+## Bulk Operations
+
+`WriteManyAsync` and `EmptyAsync` use bounded concurrency through `BlobClientBase.MaxConcurrency`, which defaults to `4`.
+
+```csharp
+blobs.MaxConcurrency = 8;
+await blobs.WriteManyAsync(writes);
 ```
 
 ## Version History

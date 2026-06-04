@@ -1,4 +1,4 @@
-﻿namespace Blobject.NFS
+namespace Blobject.NFS
 {
     using System;
     using System.Collections.Generic;
@@ -95,7 +95,7 @@
             {
                 if (String.IsNullOrEmpty(value)) throw new ArgumentNullException(nameof(Share));
                 value = value.Replace("\\", "/");
-                while (value.EndsWith("/")) 
+                while (value.EndsWith("/"))
                     value = value.Substring(0, value.Length - 1); // remove trailing slash
 
                 _Share = value;

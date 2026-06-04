@@ -1,4 +1,4 @@
-﻿namespace Test.NFS
+namespace Test.NFS
 {
     using System.Net;
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -81,7 +81,7 @@
                         break;
                     case "enum":
                         Enumerate();
-                        break; 
+                        break;
                     case "url":
                         GenerateUrl();
                         break;

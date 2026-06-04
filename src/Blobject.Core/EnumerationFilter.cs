@@ -55,7 +55,7 @@
             }
             set
             {
-                if (!String.IsNullOrEmpty(value)) _Prefix = value.ToLower();
+                if (!String.IsNullOrEmpty(value)) _Prefix = value;
                 else _Prefix = "";
             }
         }
@@ -71,7 +71,7 @@
             }
             set
             {
-                if (!String.IsNullOrEmpty(value)) _Suffix = value.ToLower();
+                if (!String.IsNullOrEmpty(value)) _Suffix = value;
                 else _Suffix = "";
             }
         }
@@ -99,7 +99,22 @@
         #endregion
 
         #region Public-Methods
-         
+
+        /// <summary>
+        /// Create a copy of the filter.
+        /// </summary>
+        /// <returns>Enumeration filter.</returns>
+        public EnumerationFilter Clone()
+        {
+            return new EnumerationFilter
+            {
+                MinimumSize = MinimumSize,
+                MaximumSize = MaximumSize,
+                Prefix = Prefix,
+                Suffix = Suffix
+            };
+        }
+
         #endregion
 
         #region Private-Methods

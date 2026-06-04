@@ -1,4 +1,4 @@
-﻿namespace Test.Script
+namespace Test.Script
 {
     using System.IO;
     using System.Text;
@@ -203,7 +203,7 @@
                 |-- 2.txt
                 |-- dir3
                     |-- 3.txt
-                
+
              */
 
             Console.WriteLine("");
@@ -281,8 +281,8 @@
         }
 
         static async Task Enumerate(
-            string msg, 
-            string prefix = null, 
+            string msg,
+            string prefix = null,
             string suffix = null,
             long? minSize = null,
             long? maxSize = null)
@@ -395,7 +395,7 @@
                 |-- 2.txt
                 |-- dir3
                     |-- 3.txt
-                
+
              */
 
             await _Blobs.DeleteAsync("root.txt");

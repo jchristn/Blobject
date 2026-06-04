@@ -1,4 +1,4 @@
-﻿namespace Blobject.Disk
+namespace Blobject.Disk
 {
     using System;
     using System.Collections.Generic;
@@ -42,7 +42,7 @@
         public DiskSettings(string directory)
         {
             if (String.IsNullOrEmpty(directory)) throw new ArgumentNullException(nameof(directory));
-            Directory = directory; 
+            Directory = directory;
         }
 
         #endregion

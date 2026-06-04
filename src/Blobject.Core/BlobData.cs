@@ -33,6 +33,11 @@
         /// </summary>
         public Stream Data { get; set; } = null;
 
+        /// <summary>
+        /// Optional owner to dispose when the data stream is disposed.
+        /// </summary>
+        public IDisposable Owner { get; set; } = null;
+
         #endregion
 
         #region Private-Members
@@ -64,6 +69,19 @@
             Data = data;
         }
 
+        /// <summary>
+        /// Instantiate.
+        /// </summary>
+        /// <param name="contentLength">Content length.</param>
+        /// <param name="data">Data stream.</param>
+        /// <param name="owner">Optional owner to dispose with the data stream.</param>
+        public BlobData(long contentLength, Stream data, IDisposable owner)
+        {
+            ContentLength = contentLength;
+            Data = data;
+            Owner = owner;
+        }
+
         #endregion
 
         #region Public-Methods
@@ -92,9 +110,15 @@
                     {
                         Data.Dispose();
                     }
+
+                    if (Owner != null)
+                    {
+                        Owner.Dispose();
+                    }
                 }
 
                 Data = null;
+                Owner = null;
 
                 _Disposed = true;
             }

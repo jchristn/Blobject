@@ -1,6 +1,7 @@
-﻿namespace Blobject.Core
+namespace Blobject.Core
 {
     using System;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Timestamps;
@@ -47,7 +48,7 @@
             _To = copyTo;
             _Prefix = prefix;
         }
-         
+
         #endregion
 
         #region Public-Methods
@@ -86,8 +87,22 @@
         /// <returns>Copy statistics.</returns>
         public async Task<CopyStatistics> Start(int stopAfter = -1, EnumerationFilter filter = null, CancellationToken token = default)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            return await StartAsync(stopAfter, filter, token).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Start the copy operation asynchronously.
+        /// </summary>
+        /// <param name="stopAfter">Stop after this many objects have been copied.</param>
+        /// <param name="filter">Enumeration filter.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Copy statistics.</returns>
+        public async Task<CopyStatistics> StartAsync(int stopAfter = -1, EnumerationFilter filter = null, CancellationToken token = default)
+        {
             if (stopAfter < -1 || stopAfter == 0) throw new ArgumentException("Value for stopAfter must be -1 or a positive integer.");
+
+            filter = filter != null ? filter.Clone() : new EnumerationFilter();
+            if (!String.IsNullOrEmpty(_Prefix) && String.IsNullOrEmpty(filter.Prefix)) filter.Prefix = _Prefix;
 
             CopyStatistics ret = new CopyStatistics();
 
@@ -95,40 +110,56 @@
 
             try
             {
-                while (true)
+                await foreach (BlobMetadata sourceBlob in _From.EnumerateAsync(filter, token).ConfigureAwait(false))
                 {
                     if (token.IsCancellationRequested) break;
+                    if (sourceBlob == null) continue;
 
-                    bool maxCopiesReached = false;
+                    ret.BlobsEnumerated += 1;
+                    ret.BytesEnumerated += sourceBlob.ContentLength;
 
-                    foreach (BlobMetadata sourceBlob in _From.Enumerate(filter))
+                    string targetKey = sourceBlob.Key;
+                    string contentType = String.IsNullOrEmpty(sourceBlob.ContentType)
+                        ? "application/octet-stream"
+                        : sourceBlob.ContentType;
+
+                    if (sourceBlob.IsFolder)
                     {
-                        if (ret.BlobsWritten >= stopAfter) maxCopiesReached = true;
-                        if (maxCopiesReached) break;
-
-                        ret.BlobsEnumerated += 1;
-                        ret.BytesEnumerated += sourceBlob.ContentLength;
-
-                        byte[] blobData = await _From.GetAsync(sourceBlob.Key, token).ConfigureAwait(false);
-
+                        if (!targetKey.EndsWith("/") && !targetKey.EndsWith("\\")) targetKey += "/";
+                        await _To.WriteAsync(targetKey, contentType, Array.Empty<byte>(), token).ConfigureAwait(false);
                         ret.BlobsRead += 1;
-                        ret.BytesRead += blobData.Length;
-
-                        await _To.WriteAsync(sourceBlob.Key, sourceBlob.ContentType, blobData, token).ConfigureAwait(false);
-
                         ret.BlobsWritten += 1;
-                        ret.BytesWritten += blobData.Length;
-                        ret.Keys.Add(sourceBlob.Key);
-
-                        if (stopAfter != -1)
+                        ret.Keys.Add(targetKey);
+                    }
+                    else
+                    {
+                        using (BlobData blobData = await _From.GetStreamAsync(sourceBlob.Key, token).ConfigureAwait(false))
                         {
-                            if (ret.BlobsWritten >= stopAfter)
+                            long contentLength = blobData != null ? blobData.ContentLength : 0;
+                            if (blobData != null && blobData.Data != null)
                             {
-                                maxCopiesReached = true;
-                                break;
+                                if (blobData.Data.CanSeek && blobData.Data.Length == blobData.Data.Position)
+                                    blobData.Data.Seek(0, SeekOrigin.Begin);
+
+                                await _To.WriteAsync(targetKey, contentType, contentLength, blobData.Data, token).ConfigureAwait(false);
                             }
+                            else
+                            {
+                                using (MemoryStream empty = new MemoryStream(Array.Empty<byte>()))
+                                {
+                                    await _To.WriteAsync(targetKey, contentType, 0, empty, token).ConfigureAwait(false);
+                                }
+                            }
+
+                            ret.BlobsRead += 1;
+                            ret.BytesRead += contentLength;
+                            ret.BlobsWritten += 1;
+                            ret.BytesWritten += contentLength;
+                            ret.Keys.Add(targetKey);
                         }
                     }
+
+                    if (stopAfter != -1 && ret.BlobsWritten >= stopAfter) break;
                 }
 
                 ret.Success = true;
@@ -149,7 +180,7 @@
         #endregion
 
         #region Private-Methods
-         
+
         private void Log(string msg)
         {
             if (String.IsNullOrEmpty(msg)) return;

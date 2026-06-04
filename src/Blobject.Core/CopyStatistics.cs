@@ -1,4 +1,4 @@
-﻿namespace Blobject.Core
+namespace Blobject.Core
 {
     using System;
     using System.Collections.Generic;
@@ -106,7 +106,7 @@
             sb.Append("    Start      : " + Time.Start.ToString() + Environment.NewLine);
             sb.Append("    End        : " + Time.End.ToString() + Environment.NewLine);
             sb.Append("    Total MS   : " + Time.TotalMs + Environment.NewLine);
-            
+
             sb.Append("  Continuation Tokens : " + ContinuationTokens + Environment.NewLine);
             sb.Append("  BLOBs" + Environment.NewLine);
             sb.Append("    Enumerated : " + BlobsEnumerated + Environment.NewLine);

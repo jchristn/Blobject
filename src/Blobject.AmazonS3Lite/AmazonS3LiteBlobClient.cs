@@ -1,4 +1,4 @@
-﻿namespace Blobject.AmazonS3Lite
+namespace Blobject.AmazonS3Lite
 {
     using System;
     using System.Collections.Generic;
@@ -78,7 +78,7 @@
                 }
             }
         }
-        
+
         #endregion
 
         #region Public-Methods
@@ -93,8 +93,8 @@
 
             if (!_Disposed)
             {
-                _AwsSettings = null;                
-                _S3Client = null;                
+                _AwsSettings = null;
+                _S3Client = null;
                 _Disposed = true;
             }
 
@@ -148,13 +148,16 @@
         /// <inheritdoc />
         public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             return await _S3Client.Object.GetAsync(_AwsSettings.Bucket, key, null, null, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            byte[] data = await GetAsync(key, token).ConfigureAwait(false);
+            if (data == null) data = Array.Empty<byte>();
+            return new BlobData(data.Length, new MemoryStream(data));
         }
 
         /// <inheritdoc />
@@ -179,37 +182,43 @@
         /// <inheritdoc />
         public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
+            if (data == null) data = "";
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
         /// <inheritdoc />
         public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
+            if (data == null) data = Array.Empty<byte>();
+
             await _S3Client.Object.WriteAsync(_AwsSettings.Bucket, key, data, contentType, null, null, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
-            byte[] bytes = Common.ReadStreamFully(stream);
-            await WriteAsync(key, contentType, bytes, token).ConfigureAwait(false);
+            if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
+            if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
+
+            if (contentLength == 0)
+            {
+                await WriteAsync(key, contentType, Array.Empty<byte>(), token).ConfigureAwait(false);
+                return;
+            }
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                await CopyStreamAsync(stream, ms, contentLength, token).ConfigureAwait(false);
+                await WriteAsync(key, contentType, ms.ToArray(), token).ConfigureAwait(false);
+            }
         }
 
         /// <inheritdoc />
         public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
-            foreach (WriteRequest obj in objects)
-            {
-                if (obj.Data != null)
-                {
-                    await WriteAsync(obj.Key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
-                }
-                else
-                {
-                    await WriteAsync(obj.Key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
-                }
-            }
+            await base.WriteManyAsync(objects, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -251,7 +260,7 @@
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
@@ -263,9 +272,6 @@
 
                 foreach (ObjectMetadata curr in lbr.Contents)
                 {
-                    if (curr.Size < filter.MinimumSize || curr.Size > filter.MaximumSize) continue;
-                    if (!String.IsNullOrEmpty(filter.Suffix) && !curr.Key.EndsWith(filter.Suffix)) continue;
-
                     BlobMetadata md = new BlobMetadata
                     {
                         Key = curr.Key,
@@ -280,6 +286,8 @@
                     {
                         while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
                     }
+
+                    if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
 
                     yield return md;
                 }
@@ -297,7 +305,7 @@
             EnumerationFilter filter = null,
             [EnumeratorCancellation] CancellationToken token = default)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
@@ -308,18 +316,15 @@
                 if (token.IsCancellationRequested) break;
 
                 ListBucketResult lbr = await _S3Client.Bucket.ListAsync(
-                    _AwsSettings.Bucket, 
-                    filter.Prefix, null, 
-                    continuationToken, 
-                    1000, 
+                    _AwsSettings.Bucket,
+                    filter.Prefix, null,
+                    continuationToken,
+                    1000,
                     null).ConfigureAwait(false);
 
                 foreach (ObjectMetadata curr in lbr.Contents)
                 {
                     if (token.IsCancellationRequested) break;
-                    if (curr.Size < filter.MinimumSize || curr.Size > filter.MaximumSize) continue;
-                    if (!String.IsNullOrEmpty(filter.Suffix) && !curr.Key.EndsWith(filter.Suffix)) continue;
-
                     BlobMetadata md = new BlobMetadata
                     {
                         Key = curr.Key,
@@ -335,6 +340,8 @@
                         while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
                     }
 
+                    if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
+
                     yield return md;
                 }
 
@@ -349,15 +356,7 @@
         /// <inheritdoc />
         public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
-            EmptyResult er = new EmptyResult();
-
-            foreach (BlobMetadata md in Enumerate())
-            {
-                await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                er.Blobs.Add(md);
-            }
-
-            return er;
+            return await base.EmptyAsync(token).ConfigureAwait(false);
         }
 
         #endregion

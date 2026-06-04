@@ -1,4 +1,4 @@
-﻿namespace Blobject.AzureBlob
+namespace Blobject.AzureBlob
 {
     using System;
     using System.Collections.Generic;
@@ -25,7 +25,6 @@
         #region Private-Members
 
         private string _Header = "[AzureBlobClient] ";
-        private int _StreamBufferSize = 65536;
         private bool _Disposed = false;
         private AzureBlobSettings _Settings = null;
         private string _ConnectionString = null;
@@ -152,7 +151,7 @@
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
-            byte[] buff = new byte[_StreamBufferSize];
+            byte[] buff = new byte[StreamBufferSize];
             byte[] ret = null;
 
             int totalRead = 0;
@@ -209,7 +208,7 @@
         /// <inheritdoc />
         public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
+            if (data == null) data = "";
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
@@ -217,6 +216,9 @@
         public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
+            if (data == null) data = Array.Empty<byte>();
+
             Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
 
             using (Stream str = await bc.OpenWriteAsync(true, null, token).ConfigureAwait(false))
@@ -232,13 +234,15 @@
         public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
             if (contentLength < 0) throw new ArgumentException("Content length must be zero or greater.");
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
+            if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
+            if (stream == null) stream = new MemoryStream(Array.Empty<byte>());
             if (!stream.CanRead) throw new IOException("Cannot read from supplied stream.");
             if (stream.CanSeek && stream.Length == stream.Position) stream.Seek(0, SeekOrigin.Begin);
 
             Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
-            byte[] buff = new byte[_StreamBufferSize];
+            byte[] buff = new byte[StreamBufferSize];
             int read = 0;
             long bytesRemaining = contentLength;
 
@@ -246,9 +250,9 @@
             {
                 while (bytesRemaining > 0)
                 {
-                    if (bytesRemaining >= _StreamBufferSize)
+                    if (bytesRemaining >= StreamBufferSize)
                     {
-                        read = await stream.ReadAsync(buff, 0, _StreamBufferSize, token).ConfigureAwait(false);
+                        read = await stream.ReadAsync(buff, 0, StreamBufferSize, token).ConfigureAwait(false);
                     }
                     else
                     {
@@ -270,17 +274,7 @@
         /// <inheritdoc />
         public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
-            foreach (WriteRequest obj in objects)
-            {
-                if (obj.Data != null)
-                {
-                    await WriteAsync(obj.Key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
-                }
-                else
-                {
-                    await WriteAsync(obj.Key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
-                }
-            }
+            await base.WriteManyAsync(objects, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -296,7 +290,7 @@
         {
             try
             {
-                BlobMetadata md = await GetMetadataAsync(key);
+                BlobMetadata md = await GetMetadataAsync(key, token).ConfigureAwait(false);
                 return true;
             }
             catch (Exception)
@@ -315,7 +309,7 @@
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
@@ -324,9 +318,10 @@
             while (true)
             {
                 IEnumerable<Page<BlobItem>> pages = _ContainerClient.GetBlobs(
-                    BlobTraits.None, 
-                    BlobStates.None, 
-                    filter.Prefix).AsPages(continuationToken, 1000);
+                    BlobTraits.None,
+                    BlobStates.None,
+                    filter.Prefix,
+                    CancellationToken.None).AsPages(continuationToken, 1000);
 
                 foreach (Page<BlobItem> page in pages)
                 {
@@ -338,9 +333,6 @@
                     {
                         long contentLength = (item.Properties.ContentLength != null ? Convert.ToInt64(item.Properties.ContentLength) : 0);
 
-                        if (contentLength < filter.MinimumSize || contentLength > filter.MaximumSize) continue;
-                        if (!String.IsNullOrEmpty(filter.Suffix) && !item.Name.EndsWith(filter.Suffix)) continue;
-
                         BlobMetadata md = new BlobMetadata();
                         md.Key = item.Name;
                         md.ContentType = item.Properties.ContentType;
@@ -349,6 +341,8 @@
                         md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
                         md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
                         md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+
+                        if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
 
                         yield return md;
                     }
@@ -367,7 +361,7 @@
             EnumerationFilter filter = null,
             [EnumeratorCancellation] CancellationToken token = default)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
@@ -377,13 +371,13 @@
             {
                 if (token.IsCancellationRequested) break;
 
-                IEnumerable<Page<BlobItem>> pages = _ContainerClient.GetBlobs(
-                    BlobTraits.None, 
-                    BlobStates.None, 
-                    filter.Prefix, 
+                var pages = _ContainerClient.GetBlobsAsync(
+                    BlobTraits.None,
+                    BlobStates.None,
+                    filter.Prefix,
                     token).AsPages(continuationToken, 1000);
 
-                foreach (Page<BlobItem> page in pages)
+                await foreach (Page<BlobItem> page in pages.ConfigureAwait(false))
                 {
                     if (token.IsCancellationRequested) break;
                     continuationToken = page.ContinuationToken;
@@ -394,9 +388,6 @@
                     {
                         long contentLength = (item.Properties.ContentLength != null ? Convert.ToInt64(item.Properties.ContentLength) : 0);
 
-                        if (contentLength < filter.MinimumSize || contentLength > filter.MaximumSize) continue;
-                        if (!String.IsNullOrEmpty(filter.Suffix) && !item.Name.EndsWith(filter.Suffix)) continue;
-
                         BlobMetadata md = new BlobMetadata();
                         md.Key = item.Name;
                         md.ContentType = item.Properties.ContentType;
@@ -405,6 +396,8 @@
                         md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
                         md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
                         md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+
+                        if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
 
                         yield return md;
                     }
@@ -421,15 +414,7 @@
         /// <inheritdoc />
         public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
-            EmptyResult er = new EmptyResult();
-
-            foreach (BlobMetadata md in Enumerate())
-            {
-                await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                er.Blobs.Add(md);
-            }
-
-            return er;
+            return await base.EmptyAsync(token).ConfigureAwait(false);
         }
 
         #endregion

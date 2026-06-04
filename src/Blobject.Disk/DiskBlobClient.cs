@@ -1,4 +1,4 @@
-﻿namespace Blobject.Disk
+namespace Blobject.Disk
 {
     using System;
     using System.Collections.Generic;
@@ -96,7 +96,10 @@
             }
             else if (File.Exists(filename))
             {
-                return File.ReadAllBytes(filename);
+                using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, StreamBufferSize, true))
+                {
+                    return await ReadStreamFullyAsync(fs, token).ConfigureAwait(false);
+                }
             }
             else
             {
@@ -111,7 +114,7 @@
             if (File.Exists(filename))
             {
                 long contentLength = new FileInfo(filename).Length;
-                FileStream stream = new FileStream(filename, FileMode.Open);
+                FileStream stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, StreamBufferSize, true);
                 return new BlobData(contentLength, stream);
             }
             else if (Directory.Exists(filename))
@@ -150,7 +153,7 @@
                 md.CreatedUtc = di.CreationTimeUtc;
                 md.LastAccessUtc = di.LastAccessTimeUtc;
                 md.LastUpdateUtc = di.LastWriteTimeUtc;
-                
+
                 return md;
             }
             else
@@ -162,7 +165,7 @@
         /// <inheritdoc />
         public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
+            if (data == null) data = "";
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
@@ -170,21 +173,23 @@
         public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
             long contentLength = 0;
-            MemoryStream stream = new MemoryStream(Array.Empty<byte>());
+            if (data == null) data = Array.Empty<byte>();
 
-            if (data != null && data.Length > 0)
+            using (MemoryStream stream = new MemoryStream(data))
             {
                 contentLength = data.Length;
-                stream = new MemoryStream(data);
                 stream.Seek(0, SeekOrigin.Begin);
+                await WriteAsync(key, contentType, contentLength, stream, token).ConfigureAwait(false);
             }
-
-            await WriteAsync(key, contentType, contentLength, stream, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
+            if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
+
             string filename = GenerateUrl(key);
 
             if (
@@ -203,29 +208,9 @@
                     Directory.CreateDirectory(dirName);
                 }
 
-                int read = 0;
-                long bytesRemaining = contentLength;
-                byte[] buffer = new byte[StreamBufferSize];
-
-                using (FileStream fs = new FileStream(filename, FileMode.OpenOrCreate))
+                using (FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, StreamBufferSize, true))
                 {
-                    while (bytesRemaining > 0)
-                    {
-                        if (bytesRemaining >= StreamBufferSize)
-                        {
-                            read = await stream.ReadAsync(buffer, 0, StreamBufferSize, token).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            read = await stream.ReadAsync(buffer, 0, (int)bytesRemaining, token).ConfigureAwait(false);
-                        }
-
-                        if (read > 0)
-                        {
-                            await fs.WriteAsync(buffer, 0, read, token).ConfigureAwait(false);
-                            bytesRemaining -= read;
-                        }
-                    }
+                    if (contentLength > 0) await CopyStreamAsync(stream, fs, contentLength, token).ConfigureAwait(false);
                 }
             }
         }
@@ -233,17 +218,7 @@
         /// <inheritdoc />
         public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
-            foreach (WriteRequest obj in objects)
-            {
-                if (obj.Data != null)
-                {
-                    await WriteAsync(obj.Key, string.Empty, obj.Data, token).ConfigureAwait(false);
-                }
-                else
-                {
-                    await WriteAsync(obj.Key, string.Empty, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
-                }
-            }
+            await base.WriteManyAsync(objects, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -257,10 +232,6 @@
             else if (Directory.Exists(filename))
             {
                 Directory.Delete(filename);
-            }
-            else
-            {
-                throw new FileNotFoundException("Could not find file '" + key + "'.");
             }
         }
 
@@ -295,35 +266,11 @@
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
-            IEnumerable<string> files;
-
-            if (!String.IsNullOrEmpty(filter.Prefix))
-            {
-                if (Directory.Exists(_DiskSettings.Directory + filter.Prefix))
-                {
-                    string tempPrefix = filter.Prefix;
-                    tempPrefix = tempPrefix.Replace("\\", "/");
-                    if (!tempPrefix.EndsWith("/")) tempPrefix += "/";
-                    files = Directory.EnumerateFiles(_DiskSettings.Directory, tempPrefix + "*", SearchOption.AllDirectories);
-                }
-                else
-                {
-                    files = Directory.EnumerateFiles(_DiskSettings.Directory, filter.Prefix + "*", SearchOption.AllDirectories);
-                }
-            }
-            else
-            {
-                files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
-            }
-
-            if (files.Count() < 1)
-            {
-                yield break;
-            }
+            IEnumerable<string> files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
 
             foreach (string file in files)
             {
@@ -332,9 +279,7 @@
                 string filename = file;
                 if (filename.StartsWith(_DiskSettings.Directory)) filename = file.Substring(_DiskSettings.Directory.Length);
                 if (!String.IsNullOrEmpty(filename)) filename = filename.Replace("\\", "/");
-
-                if (fi.Length < filter.MinimumSize || fi.Length > filter.MaximumSize) continue;
-                if (!String.IsNullOrEmpty(filter.Suffix) && !filename.EndsWith(filter.Suffix)) continue;
+                while (!String.IsNullOrEmpty(filename) && filename.StartsWith("/")) filename = filename.Substring(1);
 
                 BlobMetadata md = new BlobMetadata();
                 md.Key = filename;
@@ -343,6 +288,8 @@
                 md.CreatedUtc = fi.CreationTimeUtc;
                 md.LastAccessUtc = fi.LastAccessTimeUtc;
                 md.LastUpdateUtc = fi.LastWriteTimeUtc;
+
+                if (!MatchesFilter(md, filter, StringComparison.OrdinalIgnoreCase)) continue;
 
                 yield return md;
             }
@@ -355,35 +302,11 @@
             EnumerationFilter filter = null,
             [EnumeratorCancellation] CancellationToken token = default)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
-            IEnumerable<string> files;
-
-            if (!String.IsNullOrEmpty(filter.Prefix))
-            {
-                if (Directory.Exists(_DiskSettings.Directory + filter.Prefix))
-                {
-                    string tempPrefix = filter.Prefix;
-                    tempPrefix = tempPrefix.Replace("\\", "/");
-                    if (!tempPrefix.EndsWith("/")) tempPrefix += "/";
-                    files = Directory.EnumerateFiles(_DiskSettings.Directory, tempPrefix + "*", SearchOption.AllDirectories);
-                }
-                else
-                {
-                    files = Directory.EnumerateFiles(_DiskSettings.Directory, filter.Prefix + "*", SearchOption.AllDirectories);
-                }
-            }
-            else
-            {
-                files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
-            }
-
-            if (files.Count() < 1)
-            {
-                yield break;
-            }
+            IEnumerable<string> files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
 
             foreach (string file in files)
             {
@@ -394,9 +317,7 @@
                 string filename = file;
                 if (filename.StartsWith(_DiskSettings.Directory)) filename = file.Substring(_DiskSettings.Directory.Length);
                 if (!String.IsNullOrEmpty(filename)) filename = filename.Replace("\\", "/");
-
-                if (fi.Length < filter.MinimumSize || fi.Length > filter.MaximumSize) continue;
-                if (!String.IsNullOrEmpty(filter.Suffix) && !filename.EndsWith(filter.Suffix)) continue;
+                while (!String.IsNullOrEmpty(filename) && filename.StartsWith("/")) filename = filename.Substring(1);
 
                 BlobMetadata md = new BlobMetadata();
                 md.Key = filename;
@@ -405,6 +326,8 @@
                 md.CreatedUtc = fi.CreationTimeUtc;
                 md.LastAccessUtc = fi.LastAccessTimeUtc;
                 md.LastUpdateUtc = fi.LastWriteTimeUtc;
+
+                if (!MatchesFilter(md, filter, StringComparison.OrdinalIgnoreCase)) continue;
 
                 yield return md;
             }
@@ -415,15 +338,15 @@
         /// <inheritdoc />
         public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
-            EmptyResult er = new EmptyResult();
+            EmptyResult result = await base.EmptyAsync(token).ConfigureAwait(false);
 
-            foreach (BlobMetadata md in Enumerate())
-            { 
-                await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                er.Blobs.Add(md);
+            foreach (string directory in Directory.EnumerateDirectories(_DiskSettings.Directory, "*", SearchOption.AllDirectories).OrderByDescending(d => d.Length))
+            {
+                if (token.IsCancellationRequested) break;
+                if (Directory.Exists(directory)) Directory.Delete(directory);
             }
 
-            return er;
+            return result;
         }
 
         #endregion

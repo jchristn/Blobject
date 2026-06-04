@@ -31,6 +31,9 @@
             InitializeClient();
 
             int count = Inputty.GetInteger("Count:", 1000, true, false);
+            int maxConcurrency = Inputty.GetInteger("Max concurrency:", 4, true, false);
+            bool includeEmptyObject = Inputty.GetBoolean("Include empty object:", true);
+            _Blobs.MaxConcurrency = maxConcurrency;
 
             List<WriteRequest> writes = new List<WriteRequest>();
             for (int i = 0; i < count; i++)
@@ -39,7 +42,12 @@
                 writes.Add(new WriteRequest(guid, "application/octet-stream", Encoding.UTF8.GetBytes(guid)));
             }
 
-            Console.WriteLine("Performing " + count + " write(s)");
+            if (includeEmptyObject)
+            {
+                writes.Add(new WriteRequest("empty-" + Guid.NewGuid().ToString(), "application/octet-stream", Array.Empty<byte>()));
+            }
+
+            Console.WriteLine("Performing " + writes.Count + " write(s)");
             _Blobs.WriteManyAsync(writes).Wait();
         }
 

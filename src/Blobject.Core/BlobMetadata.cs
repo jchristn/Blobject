@@ -1,4 +1,4 @@
-﻿namespace Blobject.Core
+namespace Blobject.Core
 {
     using System;
 
@@ -107,7 +107,7 @@
                     "   Key            : " + Key + " " + isFolder + Environment.NewLine;
             }
 
-            ret += 
+            ret +=
                 "   Is Folder      : " + IsFolder + Environment.NewLine +
                 "   Content Type   : " + ContentType + Environment.NewLine +
                 "   Content Length : " + ContentLength + Environment.NewLine +
@@ -122,7 +122,7 @@
             if (LastAccessUtc != null) ret +=
                 "   Last Access    : " + LastAccessUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine;
 
-            return ret; 
+            return ret;
         }
 
         /// <summary>

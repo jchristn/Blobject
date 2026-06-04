@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>5.0.18</Version>
+		<Version>5.0.19</Version>
 		<LangVersion>8.0</LangVersion>
 		<TargetFrameworks>netstandard2.1;net8.0;net10.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -13,7 +13,7 @@
 		<RepositoryUrl>https://github.com/jchristn/Blobject</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
 		<PackageLicenseUrl></PackageLicenseUrl>
-		<PackageReleaseNotes>Refactor, update, rename, and new repository types.</PackageReleaseNotes>
+		<PackageReleaseNotes>Fix empty writes, async enumeration, filter handling, and shared bulk operations.</PackageReleaseNotes>
 		<PackageIconUrl></PackageIconUrl>
 		<PackageTags>blob azure storage s3 object rest minio less3 ceph view cifs nfs google cloud gcp</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
@@ -31,8 +31,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
-		<PackageReference Include="Blobject.Core" Version="5.0.17" />
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.28.0" />
+		<ProjectReference Include="..\Blobject.Core\Blobject.Core.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

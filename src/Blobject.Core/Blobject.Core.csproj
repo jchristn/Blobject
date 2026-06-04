@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>5.0.18</Version>
+		<Version>5.0.19</Version>
 		<LangVersion>8.0</LangVersion>
 		<TargetFrameworks>netstandard2.1;net8.0;net10.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -14,7 +14,7 @@
 		<RepositoryUrl>https://github.com/jchristn/Blobject</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
 		<PackageLicenseUrl></PackageLicenseUrl>
-		<PackageReleaseNotes>Add support for CIFS and NFS.</PackageReleaseNotes>
+		<PackageReleaseNotes>Fix streaming copy, provider consistency, filter handling, and shared bulk operations.</PackageReleaseNotes>
 		<PackageIconUrl></PackageIconUrl>
 		<PackageTags>blob azure storage s3 object rest minio less3 ceph view cifs nfs google cloud gcp</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
@@ -31,8 +31,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Text.Json" Version="10.0.1" />
-		<PackageReference Include="Timestamps" Version="1.0.11" />
+		<PackageReference Include="System.Text.Json" Version="10.0.8" />
+		<PackageReference Include="Timestamps" Version="1.0.12" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -4,6 +4,20 @@
 
 v5.0.x
 
+- `Blobject.Core` v5.0.19 adds `BlobCopy.StartAsync`, fixes prefix handling and normal termination in `BlobCopy`, and makes copy streaming-first
+- `Blobject.Core` v5.0.19 adds shared bounded-concurrency behavior for `WriteManyAsync` and `EmptyAsync` via `BlobClientBase.MaxConcurrency`
+- `Blobject.Core` v5.0.19 preserves enumeration filter casing, adds filter cloning, and centralizes AWS region normalization
+- `Blobject.AmazonS3` v5.0.20 fixes stream reads, empty writes, filter handling, and shared bulk behavior
+- `Blobject.AmazonS3Lite` v5.0.20 implements `GetStreamAsync` and fixes empty writes, stream length handling, filter handling, and shared bulk behavior
+- `Blobject.AzureBlob` v5.0.19 fixes empty writes, async enumeration, filter handling, and shared bulk behavior
+- `Blobject.CIFS` v5.0.19 fixes `GetStreamAsync`, empty writes, filter handling, and shared bulk behavior
+- `Blobject.Disk` v5.0.19 fixes overwrite truncation, empty writes, filter handling, duplicate enumeration, and folder marker cleanup in `EmptyAsync`
+- `Blobject.GoogleCloud` v5.0.19 fixes empty writes, filter handling, and shared bulk behavior
+- `Blobject.NFS` v5.0.19 fixes empty writes, case-sensitive filtering, and shared bulk behavior
+- Added Touchstone-based automated contract tests: `Test.Shared`, `Test.Automated`, `Test.Xunit`, and `Test.Nunit`
+- Expanded `Test.Shared` to 80 default provider contract cases, plus optional stress cases, with Disk temporary storage by default and provider-specific overrides for remote repositories
+- Updated and consolidated NuGet package references across library and test projects, including provider SDKs, `System.Text.Json`, `Timestamps`, console test helpers, and test adapters
+- `Blobject.GoogleCloud` now uses the current service-account credential factory path required by the updated Google auth packages
 - `Blobject.AmazonS3` and `Blobject.AmazonS3Lite` v5.0.19 normalize AWS region aliases such as `USEast2` to DNS-safe names such as `us-east-2`
 - Updated S3 region normalization for the current Amazon S3 regular endpoint region list
 - Default AWS S3 settings to HTTPS unless explicitly disabled

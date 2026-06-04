@@ -1,4 +1,4 @@
-﻿namespace Blobject.CIFS
+namespace Blobject.CIFS
 {
     using System;
     using System.Collections.Generic;
@@ -137,14 +137,10 @@
 
             if (file != null)
             {
-                using (MemoryStream stream = await file.Read().ConfigureAwait(false))
-                {
-                    BlobData ret = new BlobData();
-                    ret.ContentLength = (file.Size != null ? file.Size.Value : 0);
-                    await stream.CopyToAsync(ret.Data).ConfigureAwait(false);
-                    ret.Data.Seek(0, SeekOrigin.Begin);
-                    return ret;
-                }
+                MemoryStream stream = await file.Read().ConfigureAwait(false);
+                if (stream == null) stream = new MemoryStream(Array.Empty<byte>());
+                stream.Seek(0, SeekOrigin.Begin);
+                return new BlobData((file.Size != null ? file.Size.Value : 0), stream);
             }
 
             throw new FileNotFoundException("The specified file '" + key + "' was not found.");
@@ -181,13 +177,15 @@
         /// <inheritdoc />
         public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
+            if (data == null) data = "";
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
         /// <inheritdoc />
         public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
+            if (data == null) data = Array.Empty<byte>();
+
             string path = BuildSharePath();
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
 
@@ -207,6 +205,8 @@
         /// <inheritdoc />
         public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
+            if (stream == null) stream = new MemoryStream(Array.Empty<byte>());
+
             string path = BuildSharePath();
             Node file = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
 
@@ -223,17 +223,7 @@
         /// <inheritdoc />
         public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
-            foreach (WriteRequest obj in objects)
-            {
-                if (obj.Data != null)
-                {
-                    await WriteAsync(obj.Key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
-                }
-                else
-                {
-                    await WriteAsync(obj.Key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
-                }
-            }
+            await base.WriteManyAsync(objects, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -262,9 +252,10 @@
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
+            EnumerationFilter matchFilter = filter.Clone();
 
             string sharePath = BuildSharePath();
             string baseDirectory = "";
@@ -272,7 +263,7 @@
             if (filter.Prefix.Contains("/")) filter.Prefix = filter.Prefix.Replace("/", "\\");
             while (filter.Prefix.StartsWith("\\")) filter.Prefix = filter.Prefix.Substring(1);
             if (!String.IsNullOrEmpty(filter.Prefix) && !filter.Prefix.EndsWith("*")) filter.Prefix += "*";
-             
+
             if (filter.Prefix.Contains("\\"))
             {
                 #region Nested
@@ -314,10 +305,10 @@
 
             baseDirectory = baseDirectory.Replace("\\\\", "\\");
             string path = sharePath + "\\" + baseDirectory;
-            
+
             Log("retrieving item list in path " + path + " prefix " + filter.Prefix);
             if (String.IsNullOrEmpty(baseDirectory)) path += ".";
-            
+
             Node root = Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).Result;
 
             if (root != null)
@@ -347,9 +338,7 @@
                             {
                                 foreach (BlobMetadata blob in blobs)
                                 {
-                                    if (blob.ContentLength < filter.MinimumSize || blob.ContentLength > filter.MaximumSize) continue;
-                                    if (!String.IsNullOrEmpty(filter.Prefix) && !blob.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
-                                    if (!String.IsNullOrEmpty(filter.Suffix) && !blob.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+                                    if (!MatchesFilter(blob, matchFilter, StringComparison.OrdinalIgnoreCase)) continue;
 
                                     yield return blob;
                                 }
@@ -371,18 +360,12 @@
                                 LastUpdateUtc = node.Updated
                             };
 
-                            if (dir.ContentLength < filter.MinimumSize || dir.ContentLength > filter.MaximumSize) continue;
-                            if (!String.IsNullOrEmpty(filter.Prefix) && !dir.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
-                            if (!String.IsNullOrEmpty(filter.Suffix) && !dir.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+                            if (!MatchesFilter(dir, matchFilter, StringComparison.OrdinalIgnoreCase)) continue;
 
                             yield return dir;
                         }
                         else
                         {
-                            if (node.Size < filter.MinimumSize || node.Size > filter.MaximumSize) continue;
-                            if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.ToLower().StartsWith(filter.Prefix)) continue;
-                            if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.ToLower().EndsWith(filter.Suffix)) continue;
-
                             string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
                             while (key.StartsWith("/")) key = key.Substring(1);
 
@@ -396,6 +379,8 @@
                                 LastAccessUtc = node.LastAccessed,
                                 LastUpdateUtc = node.LastAccessed
                             };
+
+                            if (!MatchesFilter(md, matchFilter, StringComparison.OrdinalIgnoreCase)) continue;
 
                             yield return md;
                         }
@@ -415,9 +400,10 @@
             EnumerationFilter filter = null,
             [EnumeratorCancellation] CancellationToken token = default)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
+            EnumerationFilter matchFilter = filter.Clone();
 
             string sharePath = BuildSharePath();
             string baseDirectory = "";
@@ -471,11 +457,11 @@
             Log("retrieving item list in path " + path + " prefix " + filter.Prefix);
             if (String.IsNullOrEmpty(baseDirectory)) path += ".";
 
-            Node root = Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).Result;
+            Node root = await Node.GetNode(path, _CifsSettings.Username, _CifsSettings.Password).ConfigureAwait(false);
 
             if (root != null)
             {
-                Node[] nodes = root.GetList(filter.Prefix).Result;
+                Node[] nodes = await root.GetList(filter.Prefix).ConfigureAwait(false);
                 if (nodes != null && nodes.Length > 0)
                 {
                     foreach (Node node in nodes)
@@ -503,9 +489,7 @@
                                 foreach (BlobMetadata blob in blobs)
                                 {
                                     if (token.IsCancellationRequested) break;
-                                    if (blob.ContentLength < filter.MinimumSize || blob.ContentLength > filter.MaximumSize) continue;
-                                    if (!String.IsNullOrEmpty(filter.Prefix) && !blob.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
-                                    if (!String.IsNullOrEmpty(filter.Suffix) && !blob.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+                                    if (!MatchesFilter(blob, matchFilter, StringComparison.OrdinalIgnoreCase)) continue;
 
                                     yield return blob;
                                 }
@@ -527,18 +511,12 @@
                                 LastUpdateUtc = node.Updated
                             };
 
-                            if (dir.ContentLength < filter.MinimumSize || dir.ContentLength > filter.MaximumSize) continue;
-                            if (!String.IsNullOrEmpty(filter.Prefix) && !dir.Key.ToLower().StartsWith(filter.Prefix.ToLower())) continue;
-                            if (!String.IsNullOrEmpty(filter.Suffix) && !dir.Key.ToLower().EndsWith(filter.Suffix.ToLower())) continue;
+                            if (!MatchesFilter(dir, matchFilter, StringComparison.OrdinalIgnoreCase)) continue;
 
                             yield return dir;
                         }
                         else
                         {
-                            if (node.Size < filter.MinimumSize || node.Size > filter.MaximumSize) continue;
-                            if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.ToLower().StartsWith(filter.Prefix)) continue;
-                            if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.ToLower().EndsWith(filter.Suffix)) continue;
-
                             string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
                             while (key.StartsWith("/")) key = key.Substring(1);
 
@@ -552,6 +530,8 @@
                                 LastAccessUtc = node.LastAccessed,
                                 LastUpdateUtc = node.LastAccessed
                             };
+
+                            if (!MatchesFilter(md, matchFilter, StringComparison.OrdinalIgnoreCase)) continue;
 
                             yield return md;
                         }
@@ -569,15 +549,7 @@
         /// <inheritdoc />
         public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
-            EmptyResult er = new EmptyResult();
-
-            foreach (BlobMetadata md in Enumerate())
-            {
-                await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                er.Blobs.Add(md);
-            }
-
-            return er;
+            return await base.EmptyAsync(token).ConfigureAwait(false);
         }
 
         #endregion
@@ -650,8 +622,8 @@
                     else
                     {
                         if (node.Size < filter.MinimumSize || node.Size > filter.MaximumSize) continue;
-                        if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.ToLower().StartsWith(filter.Prefix)) continue;
-                        if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.ToLower().EndsWith(filter.Suffix)) continue;
+                        if (!String.IsNullOrEmpty(filter.Prefix) && !node.Name.StartsWith(filter.Prefix, StringComparison.OrdinalIgnoreCase)) continue;
+                        if (!String.IsNullOrEmpty(filter.Suffix) && !node.Name.EndsWith(filter.Suffix, StringComparison.OrdinalIgnoreCase)) continue;
 
                         string key = (baseDirectory + "/" + node.Name).Replace("\\", "/").Replace("//", "/");
                         while (key.StartsWith("/")) key = key.Substring(1);

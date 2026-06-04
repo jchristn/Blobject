@@ -1,8 +1,8 @@
-﻿namespace Blobject.NFS
+namespace Blobject.NFS
 {
     /*
      * Helpful links
-     * 
+     *
      * https://www.dummies.com/article/technology/computers/operating-systems/linux/how-to-share-files-with-nfs-on-linux-systems-255851/
      * https://github.com/SonnyX/NFS-Client
      * https://github.com/nekoni/nekodrive
@@ -12,7 +12,7 @@
      * https://serverfault.com/questions/240897/how-to-properly-set-permissions-for-nfs-folder-permission-denied-on-mounting-en
      * https://temasre.medium.com/connecting-to-nfs-client-v4-using-net-core-and-c-bc1f4af814c9
      * https://superuser.com/questions/1454750/how-to-get-nfs-server-on-windows-10
-     * 
+     *
      */
 
     using System;
@@ -45,7 +45,7 @@
         private NfsSettings _NfsSettings = null;
         private bool _Disposed = false;
 
-        private NFSClient _Client = null;
+        private NfsClient _Client = null;
 
         #endregion
 
@@ -62,6 +62,7 @@
             _NfsSettings = nfsSettings;
             _Client = InitializeClient();
             _Client.MountDevice(nfsSettings.Share);
+            MaxConcurrency = 1;
         }
 
         #endregion
@@ -184,7 +185,7 @@
         {
             string normalizedKey = PathNormalizer(key);
 
-            NFSAttributes attrib = null; 
+            NFSAttributes attrib = null;
             BlobMetadata md = null;
 
             attrib = _Client.GetItemAttributes(normalizedKey);
@@ -235,6 +236,7 @@
         public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
             string normalizedKey = PathNormalizer(key);
+            if (stream == null) stream = new MemoryStream(Array.Empty<byte>());
 
             if (!String.IsNullOrEmpty(key) && key.EndsWith("/") && contentLength == 0)
             {
@@ -249,19 +251,7 @@
         /// <inheritdoc />
         public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
-            foreach (WriteRequest obj in objects)
-            {
-                string key = PathNormalizer(obj.Key);
-
-                if (obj.Data != null)
-                {
-                    await WriteAsync(key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
-                }
-                else
-                {
-                    await WriteAsync(key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
-                }
-            }
+            await base.WriteManyAsync(objects, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -302,7 +292,7 @@
             {
 
             }
-            
+
             return exists;
         }
 
@@ -319,7 +309,7 @@
         {
             #region Set-Filter
 
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix))
             {
                 filter.Prefix = ".";
@@ -413,7 +403,7 @@
         {
             #region Set-Filter
 
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix))
             {
                 filter.Prefix = ".";
@@ -505,44 +495,27 @@
         /// <inheritdoc />
         public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
-            EmptyResult er = new EmptyResult();
-             
-            foreach (BlobMetadata md in Enumerate())
-            {
-                if (md.IsFolder)
-                {
-                    await EmptyDirectory(er, md.Key, 0);
-                    _Client.DeleteDirectory(PathNormalizer(md.Key));
-                }
-                else
-                {
-                    Log("deleting file " + md.Key);
-                    _Client.DeleteFile(PathNormalizer(md.Key));
-                    er.Blobs.Add(md);
-                }
-            }
-
-            return er;
+            return await base.EmptyAsync(token).ConfigureAwait(false);
         }
 
         #endregion
 
         #region Private-Methods
 
-        private NFSClient InitializeClient()
+        private NfsClient InitializeClient()
         {
-            NFSClient client = null;
+            NfsClient client = null;
 
             switch (_NfsSettings.Version)
             {
                 case NfsVersionEnum.V2:
-                    client = new NFSClient(NFSClient.NFSVersion.v2);
+                    client = new NfsClient(NfsClient.NfsVersion.V2);
                     break;
                 case NfsVersionEnum.V3:
-                    client = new NFSClient(NFSClient.NFSVersion.v3);
+                    client = new NfsClient(NfsClient.NfsVersion.V3);
                     break;
                 case NfsVersionEnum.V4:
-                    client = new NFSClient(NFSClient.NFSVersion.v4);
+                    client = new NfsClient(NfsClient.NfsVersion.V4);
                     break;
                 default:
                     throw new ArgumentException("Unknown NFS version '" + _NfsSettings.Version.ToString() + "'.");
@@ -550,28 +523,6 @@
 
             client.Connect(_NfsSettings.Ip, _NfsSettings.UserId, _NfsSettings.GroupId, 5000);
             return client;
-        }
-
-        private void DisconnectClient(NFSClient client)
-        {
-            client.Disconnect();
-        }
-
-        private void MountShare(NFSClient client)
-        {
-            List<string> devices = client.GetExportedDevices();
-            if (devices != null && devices.Count > 0 && devices.Contains(_NfsSettings.Share))
-            {
-                client.MountDevice(_NfsSettings.Share);
-                return;
-            }
-
-            throw new ArgumentException("The specified share '" + _NfsSettings.Share + "' was not found.");
-        }
-
-        private void UnmountShare(NFSClient client)
-        {
-            client.UnMountDevice();
         }
 
         private void Log(string msg)
@@ -608,8 +559,8 @@
 
             foreach (string item in _Client.GetItemList(path))
             {
-                if (!String.IsNullOrEmpty(filePrefix) && !item.ToLower().StartsWith(filePrefix.ToLower())) continue;
-                if (!String.IsNullOrEmpty(filter.Suffix) && !item.ToLower().EndsWith(filter.Suffix)) continue;
+                if (!String.IsNullOrEmpty(filePrefix) && !item.StartsWith(filePrefix, StringComparison.Ordinal)) continue;
+                if (!String.IsNullOrEmpty(filter.Suffix) && !item.EndsWith(filter.Suffix, StringComparison.Ordinal)) continue;
 
                 NFSAttributes attrib = _Client.GetItemAttributes(PathNormalizer(baseDirectory + "/" + item));
                 if (attrib == null) continue;
@@ -637,43 +588,6 @@
 
                 yield return md;
             }
-        }
-
-        private async Task<EmptyResult> EmptyDirectory(EmptyResult er, string path, int spaceCount)
-        {
-            string spaces = "";
-            for (int i = 0; i < spaceCount; i++) spaces += " ";
-
-            if (er == null) er = new EmptyResult();
-            List<string> folders = new List<string>();
-
-            EnumerationFilter filter = new EnumerationFilter();
-            filter.Prefix = path;
-
-            foreach (BlobMetadata md in Enumerate(filter))
-            {
-                if (md.IsFolder)
-                {
-                    string folder = (md.Key + "/").Replace("//", "/");
-
-                    Log("emptying directory " + folder);
-                    await EmptyDirectory(er, folder, spaceCount + 2);
-
-                    while (folder.EndsWith("/")) folder = folder.Substring(0, folder.Length - 1);
-                    folder = ".\\" + folder.Replace("/", "\\");
-
-                    Log("deleting directory " + folder);
-                    _Client.DeleteDirectory(folder);
-                }
-                else
-                {
-                    Log("deleting file " + md.Key);
-                    _Client.DeleteFile(md.Key);
-                    er.Blobs.Add(md);
-                }
-            }
-
-            return er;
         }
 
         #endregion

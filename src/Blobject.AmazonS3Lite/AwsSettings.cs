@@ -47,7 +47,7 @@
             }
             set
             {
-                _Region = NormalizeRegion(value);
+                _Region = Common.NormalizeAwsRegion(value);
             }
         }
 
@@ -185,96 +185,6 @@
             bool hasSecretKey = !String.IsNullOrEmpty(SecretKey);
             if (hasAccessKey != hasSecretKey)
                 throw new ArgumentException("Both AccessKey and SecretKey must be provided, or neither for anonymous access.");
-        }
-
-        private static string NormalizeRegion(string region)
-        {
-            if (String.IsNullOrEmpty(region)) return region;
-
-            region = region.Trim();
-            string normalized = region.ToLowerInvariant()
-                .Replace("_", "")
-                .Replace("-", "")
-                .Replace(" ", "");
-
-            switch (normalized)
-            {
-                case "afsouth1":
-                    return "af-south-1";
-                case "apeast1":
-                    return "ap-east-1";
-                case "apeast2":
-                    return "ap-east-2";
-                case "apnortheast1":
-                    return "ap-northeast-1";
-                case "apnortheast2":
-                    return "ap-northeast-2";
-                case "apnortheast3":
-                    return "ap-northeast-3";
-                case "apsouth1":
-                    return "ap-south-1";
-                case "apsouth2":
-                    return "ap-south-2";
-                case "apsoutheast1":
-                    return "ap-southeast-1";
-                case "apsoutheast2":
-                    return "ap-southeast-2";
-                case "apsoutheast3":
-                    return "ap-southeast-3";
-                case "apsoutheast4":
-                    return "ap-southeast-4";
-                case "apsoutheast5":
-                    return "ap-southeast-5";
-                case "apsoutheast6":
-                    return "ap-southeast-6";
-                case "apsoutheast7":
-                    return "ap-southeast-7";
-                case "cacentral1":
-                    return "ca-central-1";
-                case "cawest1":
-                    return "ca-west-1";
-                case "eucentral1":
-                    return "eu-central-1";
-                case "eucentral2":
-                    return "eu-central-2";
-                case "eunorth1":
-                    return "eu-north-1";
-                case "eusouth1":
-                    return "eu-south-1";
-                case "eusouth2":
-                    return "eu-south-2";
-                case "euwest1":
-                    return "eu-west-1";
-                case "euwest2":
-                    return "eu-west-2";
-                case "euwest3":
-                    return "eu-west-3";
-                case "ilcentral1":
-                    return "il-central-1";
-                case "mecentral1":
-                    return "me-central-1";
-                case "mesouth1":
-                    return "me-south-1";
-                case "mxcentral1":
-                    return "mx-central-1";
-                case "saeast1":
-                    return "sa-east-1";
-                case "useast1":
-                    return "us-east-1";
-                case "useast2":
-                    return "us-east-2";
-                case "usgoveast1":
-                    return "us-gov-east-1";
-                case "usgovwest1":
-                    return "us-gov-west-1";
-                case "uswest1":
-                    return "us-west-1";
-                case "uswest2":
-                    return "us-west-2";
-                default:
-                    if (region.Contains("-")) return region.ToLowerInvariant();
-                    return region;
-            }
         }
 
         #endregion

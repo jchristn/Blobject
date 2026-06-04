@@ -1,4 +1,4 @@
-﻿namespace Blobject.AmazonS3
+namespace Blobject.AmazonS3
 {
     using System;
     using System.Collections.Generic;
@@ -74,7 +74,7 @@
                 _S3Client = new AmazonS3Client(s3Credentials, s3Config);
             }
         }
-        
+
         #endregion
 
         #region Public-Methods
@@ -145,6 +145,8 @@
         /// <inheritdoc />
         public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+
             GetObjectRequest request = new GetObjectRequest
             {
                 BucketName = _AwsSettings.Bucket,
@@ -153,66 +155,33 @@
 
             using (GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false))
             {
-                if (response != null && response.HttpStatusCode == System.Net.HttpStatusCode.OK)
-                {
-                    using (Stream responseStream = response.ResponseStream)
-                    {
-                        using (StreamReader reader = new StreamReader(responseStream))
-                        {
-                            if (response.ContentLength > 0)
-                            {
-                                // first copy the stream
-                                byte[] data = new byte[response.ContentLength];
-
-                                using (Stream bodyStream = response.ResponseStream)
-                                {
-                                    data = Common.ReadStreamFully(bodyStream);
-
-                                    int statusCode = (int)response.HttpStatusCode;
-                                    return data;
-                                }
-                            }
-                            else
-                            {
-                                return null;
-                            }
-                        }
-                    }
-                }
-                else
+                if (response == null || response.HttpStatusCode != System.Net.HttpStatusCode.OK)
                 {
                     throw new IOException("Unable to read object.");
                 }
+
+                if (response.ContentLength < 1) return Array.Empty<byte>();
+                return await ReadStreamFullyAsync(response.ResponseStream, token).ConfigureAwait(false);
             }
         }
 
         /// <inheritdoc />
         public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+
             GetObjectRequest request = new GetObjectRequest
             {
                 BucketName = _AwsSettings.Bucket,
                 Key = key,
             };
 
-            using (GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false))
-            {
-                BlobData ret = new BlobData();
+            GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false);
 
-                if (response.ContentLength > 0)
-                {
-                    ret.ContentLength = response.ContentLength;
-                    await response.ResponseStream.CopyToAsync(ret.Data);
-                    ret.Data.Seek(0, SeekOrigin.Begin);
-                }
-                else
-                {
-                    ret.ContentLength = 0;
-                    ret.Data = new MemoryStream(Array.Empty<byte>());
-                }
-
-                return ret;
-            }
+            if (response.ContentLength > 0)
+                return new BlobData(response.ContentLength, response.ResponseStream, response);
+            else
+                return new BlobData(0, new MemoryStream(Array.Empty<byte>()), response);
         }
 
         /// <inheritdoc />
@@ -249,7 +218,7 @@
         /// <inheritdoc />
         public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(data)) throw new ArgumentNullException(nameof(data));
+            if (data == null) data = "";
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
@@ -279,6 +248,9 @@
         /// <inheritdoc />
         public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
+
             PutObjectRequest request = new PutObjectRequest();
 
             if (stream == null || contentLength < 1)
@@ -304,17 +276,7 @@
         /// <inheritdoc />
         public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
-            foreach (WriteRequest obj in objects)
-            {
-                if (obj.Data != null)
-                {
-                    await WriteAsync(obj.Key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
-                }
-                else
-                {
-                    await WriteAsync(obj.Key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
-                }
-            }
+            await base.WriteManyAsync(objects, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -380,7 +342,7 @@
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
@@ -400,9 +362,6 @@
                 {
                     foreach (S3Object curr in resp.S3Objects)
                     {
-                        if (curr.Size < filter.MinimumSize || curr.Size > filter.MaximumSize) continue;
-                        if (!String.IsNullOrEmpty(filter.Suffix) && !curr.Key.EndsWith(filter.Suffix)) continue;
-
                         BlobMetadata md = new BlobMetadata();
                         md.Key = curr.Key;
                         md.ContentLength = curr.Size != null ? curr.Size.Value : 0;
@@ -415,6 +374,8 @@
                         {
                             if (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
                         }
+
+                        if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
 
                         yield return md;
                     }
@@ -430,10 +391,10 @@
 
         /// <inheritdoc />
         public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
-            EnumerationFilter filter = null, 
+            EnumerationFilter filter = null,
             [EnumeratorCancellation] CancellationToken token = default)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
@@ -456,9 +417,6 @@
                     foreach (S3Object curr in resp.S3Objects)
                     {
                         if (token.IsCancellationRequested) break;
-                        if (curr.Size < filter.MinimumSize || curr.Size > filter.MaximumSize) continue;
-                        if (!String.IsNullOrEmpty(filter.Suffix) && !curr.Key.EndsWith(filter.Suffix)) continue;
-
                         BlobMetadata md = new BlobMetadata();
                         md.Key = curr.Key;
                         md.ContentLength = curr.Size != null ? curr.Size.Value : 0;
@@ -471,6 +429,8 @@
                         {
                             if (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
                         }
+
+                        if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
 
                         yield return md;
                     }
@@ -487,15 +447,7 @@
         /// <inheritdoc />
         public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
-            EmptyResult er = new EmptyResult();
-
-            foreach (BlobMetadata md in Enumerate())
-            {
-                await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                er.Blobs.Add(md);
-            }
-
-            return er;
+            return await base.EmptyAsync(token).ConfigureAwait(false);
         }
 
         #endregion

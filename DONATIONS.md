@@ -1,6 +1,6 @@
 ## Donations
 
-If you're interested in financially supporting this work on other open source projects I manage, first of all, thank you!  It brings me delight to know that this software has helped you in some way.  Please find below address details for donations using 
+If you're interested in financially supporting this work on other open source projects I manage, first of all, thank you!  It brings me delight to know that this software has helped you in some way.  Please find below address details for donations using
 
 ### Traditional
 

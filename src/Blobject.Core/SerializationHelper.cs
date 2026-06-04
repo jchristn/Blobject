@@ -1,4 +1,4 @@
-﻿namespace Blobject.Core
+namespace Blobject.Core
 {
     using System;
     using System.Collections.Generic;
@@ -9,7 +9,7 @@
     using System.Linq;
     using System.Text;
     using System.Text.Json;
-    using System.Text.Json.Serialization; 
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Serialization helper.
@@ -79,7 +79,7 @@
         }
 
         /// <summary>
-        /// Deserialize JSON. 
+        /// Deserialize JSON.
         /// </summary>
         /// <typeparam name="T">Type.</typeparam>
         /// <param name="json">JSON string.</param>
@@ -99,7 +99,7 @@
         }
 
         /// <summary>
-        /// Deserialize JSON. 
+        /// Deserialize JSON.
         /// </summary>
         /// <typeparam name="T">Type.</typeparam>
         /// <param name="data">JSON data.</param>

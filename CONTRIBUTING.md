@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing!
 
-The following is a set of guidelines for contributing to our project on Github. These are mostly guidelines, not rules. 
+The following is a set of guidelines for contributing to our project on Github. These are mostly guidelines, not rules.
 
 ## Code of Conduct
 
@@ -14,7 +14,7 @@ Please follow these guidelines when submitting pull requests (PRs):
 
 - PRs should be manageable in size to make it easy for us to validate and integrate
 - Each PR should be contained to a single fix or a single feature
-- Describe the motivation for the PR 
+- Describe the motivation for the PR
 - Describe a methodology to test and validate, if appropriate
 
 Please ensure that the code in your PR follows a style similar to that of the project.  If you find a material discrepancy between the style followed by the project and a de facto standard style given the project language and framework, please let us know so we can amend and make our code more maintainable.
@@ -34,7 +34,7 @@ Framework and runtime: .NET Core 2.0
 Issue encountered: The widget shifted left
 Expected behavior: The widget should have shifted right
 Steps to reproduce: Instantiate the widget and call .ShiftRight()
-Sample code encapsulating the problem: 
+Sample code encapsulating the problem:
 ```
 Widget widget = new Widget();
 widget.ShiftRight();
@@ -52,8 +52,8 @@ Some basic guidelines for suggesting enhancements:
 
 - Use a clear and descriptive title for the issue to identify the suggestion.
 - Provide a step-by-step description of the suggested enhancement in as many details as possible.
-- Provide specific examples to demonstrate the steps including copy/pasteable snippets where possible 
-- Describe the current behavior and the behavior you would like to see 
+- Provide specific examples to demonstrate the steps including copy/pasteable snippets where possible
+- Describe the current behavior and the behavior you would like to see
 - Describe the usefulness of the enhancement to yourself and potentially to others
 
 --- Enhancement Request ---

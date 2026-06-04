@@ -2,6 +2,7 @@
 {
     using System;
     using System.Net;
+    using System.Threading.Tasks;
     using Blobject.AmazonS3;
     using Blobject.AzureBlob;
     using Blobject.CIFS;
@@ -15,7 +16,7 @@
         static BlobClientBase _From;
         static BlobClientBase _To;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Console.WriteLine("Provide storage settings for the source");
             _From = InitializeClient();
@@ -40,7 +41,7 @@
                         Console.Clear();
                         break;
                     case "go":
-                        StartCopy();
+                        await StartCopy();
                         break;
                 }
             }
@@ -156,11 +157,11 @@
             Console.WriteLine("");
         }
 
-        static void StartCopy()
+        static async Task StartCopy()
         {
             string prefix = Inputty.GetString("Prefix:", null, true);
             BlobCopy copy = new BlobCopy(_From, _To, prefix);
-            CopyStatistics stats = copy.Start().Result;
+            CopyStatistics stats = await copy.StartAsync();
             if (stats == null)
             {
                 Console.WriteLine("(null)");

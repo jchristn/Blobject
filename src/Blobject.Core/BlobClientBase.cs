@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -37,11 +38,28 @@
             }
         }
 
+        /// <summary>
+        /// Maximum number of concurrent operations used by common bulk APIs.  Default is 4.
+        /// </summary>
+        public int MaxConcurrency
+        {
+            get
+            {
+                return _MaxConcurrency;
+            }
+            set
+            {
+                if (value < 1) throw new ArgumentOutOfRangeException(nameof(MaxConcurrency));
+                _MaxConcurrency = value;
+            }
+        }
+
         #endregion
 
         #region Private-Members
 
         private int _StreamBufferSize = 65536;
+        private int _MaxConcurrency = 4;
 
         #endregion
 
@@ -131,7 +149,24 @@
         /// <param name="objects">The list of objects to write to the BLOB storage.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public abstract Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default);
+        public virtual async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
+        {
+            if (objects == null) throw new ArgumentNullException(nameof(objects));
+
+            await ForEachAsync(objects, MaxConcurrency, async obj =>
+            {
+                if (obj == null) return;
+
+                if (obj.Data != null)
+                {
+                    await WriteAsync(obj.Key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
+                }
+                else
+                {
+                    await WriteAsync(obj.Key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
+                }
+            }, token).ConfigureAwait(false);
+        }
 
         /// <summary>
         /// Deletes an object from the BLOB storage asynchronously.
@@ -188,11 +223,169 @@
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public abstract Task<EmptyResult> EmptyAsync(CancellationToken token = default);
+        public virtual async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        {
+            EmptyResult er = new EmptyResult();
+            List<BlobMetadata> files = new List<BlobMetadata>();
+            List<BlobMetadata> folders = new List<BlobMetadata>();
+
+            await foreach (BlobMetadata md in EnumerateAsync(null, token).ConfigureAwait(false))
+            {
+                if (md == null) continue;
+                if (md.IsFolder) folders.Add(md);
+                else files.Add(md);
+            }
+
+            object syncLock = new object();
+
+            await ForEachAsync(files, MaxConcurrency, async md =>
+            {
+                await DeleteAsync(md.Key, token).ConfigureAwait(false);
+                lock (syncLock)
+                {
+                    er.Blobs.Add(md);
+                }
+            }, token).ConfigureAwait(false);
+
+            foreach (BlobMetadata folder in folders.OrderByDescending(f => f.Key != null ? f.Key.Length : 0))
+            {
+                if (token.IsCancellationRequested) break;
+                await DeleteAsync(folder.Key, token).ConfigureAwait(false);
+                er.Blobs.Add(folder);
+            }
+
+            return er;
+        }
+
+        #endregion
+
+        #region Protected-Methods
+
+        /// <summary>
+        /// Clone an enumeration filter or create a default filter.
+        /// </summary>
+        /// <param name="filter">Input filter.</param>
+        /// <returns>Cloned filter.</returns>
+        protected static EnumerationFilter CloneFilter(EnumerationFilter filter)
+        {
+            if (filter == null) return new EnumerationFilter();
+            return filter.Clone();
+        }
+
+        /// <summary>
+        /// Determine if metadata matches a filter.
+        /// </summary>
+        /// <param name="metadata">Metadata.</param>
+        /// <param name="filter">Filter.</param>
+        /// <param name="comparison">String comparison.</param>
+        /// <returns>True if the metadata matches the filter.</returns>
+        protected static bool MatchesFilter(
+            BlobMetadata metadata,
+            EnumerationFilter filter,
+            StringComparison comparison = StringComparison.Ordinal)
+        {
+            if (metadata == null) return false;
+            if (filter == null) filter = new EnumerationFilter();
+
+            if (metadata.ContentLength < filter.MinimumSize || metadata.ContentLength > filter.MaximumSize) return false;
+
+            if (!String.IsNullOrEmpty(filter.Prefix))
+            {
+                if (String.IsNullOrEmpty(metadata.Key)) return false;
+                if (!metadata.Key.StartsWith(filter.Prefix, comparison)) return false;
+            }
+
+            if (!String.IsNullOrEmpty(filter.Suffix))
+            {
+                if (String.IsNullOrEmpty(metadata.Key)) return false;
+                if (!metadata.Key.EndsWith(filter.Suffix, comparison)) return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Copy exactly the specified number of bytes from one stream to another.
+        /// </summary>
+        /// <param name="source">Source stream.</param>
+        /// <param name="destination">Destination stream.</param>
+        /// <param name="contentLength">Content length.</param>
+        /// <param name="token">Cancellation token.</param>
+        protected async Task CopyStreamAsync(Stream source, Stream destination, long contentLength, CancellationToken token = default)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (destination == null) throw new ArgumentNullException(nameof(destination));
+            if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
+
+            byte[] buffer = new byte[StreamBufferSize];
+            long bytesRemaining = contentLength;
+
+            while (bytesRemaining > 0)
+            {
+                int toRead = bytesRemaining > buffer.Length ? buffer.Length : (int)bytesRemaining;
+                int read = await source.ReadAsync(buffer, 0, toRead, token).ConfigureAwait(false);
+                if (read < 1) break;
+
+                await destination.WriteAsync(buffer, 0, read, token).ConfigureAwait(false);
+                bytesRemaining -= read;
+            }
+        }
+
+        /// <summary>
+        /// Read a stream fully into a byte array.
+        /// </summary>
+        /// <param name="source">Source stream.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Byte array.</returns>
+        protected async Task<byte[]> ReadStreamFullyAsync(Stream source, CancellationToken token = default)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                await source.CopyToAsync(ms, StreamBufferSize, token).ConfigureAwait(false);
+                return ms.ToArray();
+            }
+        }
 
         #endregion
 
         #region Private-Methods
+
+        private static async Task ForEachAsync<T>(
+            IEnumerable<T> source,
+            int maxConcurrency,
+            Func<T, Task> action,
+            CancellationToken token)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (action == null) throw new ArgumentNullException(nameof(action));
+
+            using (SemaphoreSlim semaphore = new SemaphoreSlim(maxConcurrency))
+            {
+                List<Task> tasks = new List<Task>();
+
+                foreach (T item in source)
+                {
+                    token.ThrowIfCancellationRequested();
+                    await semaphore.WaitAsync(token).ConfigureAwait(false);
+
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await action(item).ConfigureAwait(false);
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                        }
+                    }, token));
+                }
+
+                await Task.WhenAll(tasks).ConfigureAwait(false);
+            }
+        }
 
         #endregion
 

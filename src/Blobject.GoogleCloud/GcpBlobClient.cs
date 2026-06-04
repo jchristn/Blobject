@@ -47,7 +47,7 @@
             _Settings = googleSettings;
 
             // Create credential from JSON string
-            _Credential = GoogleCredential.FromJson(_Settings.JsonCredentials);
+            _Credential = GoogleCredential.FromServiceAccountCredential(CredentialFactory.FromJson<ServiceAccountCredential>(_Settings.JsonCredentials));
 
             // Build storage client
             StorageClientBuilder builder = new StorageClientBuilder
@@ -199,7 +199,8 @@
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             if (contentLength < 0) throw new ArgumentException("Content length must be zero or greater.");
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
+            if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
+            if (stream == null) stream = new MemoryStream(Array.Empty<byte>());
             if (!stream.CanRead) throw new IOException("Cannot read from supplied stream.");
             if (stream.CanSeek && stream.Length == stream.Position) stream.Seek(0, SeekOrigin.Begin);
 
@@ -212,17 +213,7 @@
         /// <inheritdoc />
         public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
         {
-            foreach (WriteRequest obj in objects)
-            {
-                if (obj.Data != null)
-                {
-                    await WriteAsync(obj.Key, obj.ContentType, obj.Data, token).ConfigureAwait(false);
-                }
-                else
-                {
-                    await WriteAsync(obj.Key, obj.ContentType, obj.ContentLength, obj.DataStream, token).ConfigureAwait(false);
-                }
-            }
+            await base.WriteManyAsync(objects, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -263,7 +254,7 @@
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
@@ -276,9 +267,6 @@
             {
                 long contentLength = (long)(obj.Size ?? 0);
 
-                if (contentLength < filter.MinimumSize || contentLength > filter.MaximumSize) continue;
-                if (!String.IsNullOrEmpty(filter.Suffix) && !obj.Name.EndsWith(filter.Suffix)) continue;
-
                 BlobMetadata md = new BlobMetadata();
                 md.Key = obj.Name;
                 md.ContentType = obj.ContentType;
@@ -287,6 +275,8 @@
                 md.CreatedUtc = obj.TimeCreatedDateTimeOffset?.UtcDateTime;
                 md.LastUpdateUtc = obj.UpdatedDateTimeOffset?.UtcDateTime;
                 md.LastAccessUtc = obj.UpdatedDateTimeOffset?.UtcDateTime;
+
+                if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
 
                 yield return md;
             }
@@ -297,7 +287,7 @@
             EnumerationFilter filter = null,
             [EnumeratorCancellation] CancellationToken token = default)
         {
-            if (filter == null) filter = new EnumerationFilter();
+            filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
             else Log("beginning enumeration using prefix " + filter.Prefix);
 
@@ -314,9 +304,6 @@
 
                 long contentLength = (long)(obj.Size ?? 0);
 
-                if (contentLength < filter.MinimumSize || contentLength > filter.MaximumSize) continue;
-                if (!String.IsNullOrEmpty(filter.Suffix) && !obj.Name.EndsWith(filter.Suffix)) continue;
-
                 BlobMetadata md = new BlobMetadata();
                 md.Key = obj.Name;
                 md.ContentType = obj.ContentType;
@@ -326,6 +313,8 @@
                 md.LastUpdateUtc = obj.UpdatedDateTimeOffset?.UtcDateTime;
                 md.LastAccessUtc = obj.UpdatedDateTimeOffset?.UtcDateTime;
 
+                if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
+
                 yield return md;
             }
         }
@@ -333,15 +322,7 @@
         /// <inheritdoc />
         public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
-            EmptyResult er = new EmptyResult();
-
-            await foreach (BlobMetadata md in EnumerateAsync(null, token))
-            {
-                await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                er.Blobs.Add(md);
-            }
-
-            return er;
+            return await base.EmptyAsync(token).ConfigureAwait(false);
         }
 
         #endregion

@@ -1,4 +1,4 @@
-﻿namespace Blobject.Core
+namespace Blobject.Core
 {
     using System;
     using System.Collections.Generic;
@@ -6,7 +6,7 @@
     using System.Text;
 
     /// <summary>
-    /// Results from a container empty operation. 
+    /// Results from a container empty operation.
     /// </summary>
     public class EmptyResult
     {

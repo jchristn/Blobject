@@ -1,4 +1,4 @@
-﻿namespace Test.AmazonS3
+namespace Test.AmazonS3
 {
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 #pragma warning disable CS8629 // Nullable value type may be null.
@@ -21,7 +21,7 @@
         static bool _Debug = true;
 
         static void Main(string[] args)
-        { 
+        {
             InitializeClient();
 
             bool runForever = true;
@@ -83,7 +83,7 @@
                 }
             }
         }
-         
+
         static void InitializeClient()
         {
             Console.WriteLine("For S3-compatible storage, endpoint should be of the form http://[hostname]:[port]/");
@@ -305,7 +305,7 @@
             Console.WriteLine("Bytes: " + bytes);
             Console.WriteLine("");
         }
-         
+
         static void GenerateUrl()
         {
             Console.WriteLine(_Client.GenerateUrl(

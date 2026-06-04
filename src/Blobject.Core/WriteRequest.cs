@@ -1,4 +1,4 @@
-﻿namespace Blobject.Core
+namespace Blobject.Core
 {
     using System;
     using System.Collections.Generic;
@@ -89,7 +89,7 @@
         /// <param name="key">Object key.</param>
         /// <param name="contentType">Content type.</param>
         /// <param name="contentLength">Content length.</param>
-        /// <param name="stream">Stream containing the data.</param> 
+        /// <param name="stream">Stream containing the data.</param>
         public WriteRequest(string key, string contentType, long contentLength, Stream stream)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
