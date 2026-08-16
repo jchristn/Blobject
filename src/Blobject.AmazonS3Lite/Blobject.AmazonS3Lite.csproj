@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>5.0.20</Version>
+		<Version>5.0.21</Version>
 		<LangVersion>8.0</LangVersion>
 		<TargetFrameworks>netstandard2.1;net8.0;net10.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -13,7 +13,7 @@
 		<RepositoryUrl>https://github.com/jchristn/Blobject</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
 		<PackageLicenseUrl></PackageLicenseUrl>
-		<PackageReleaseNotes>Fix stream API behavior, empty writes, filter handling, and shared bulk operations.</PackageReleaseNotes>
+		<PackageReleaseNotes>Update S3Lite and refresh dependencies.</PackageReleaseNotes>
 		<PackageIconUrl></PackageIconUrl>
 		<PackageTags>blob azure storage s3 object rest minio less3 ceph view cifs nfs google cloud gcp</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
@@ -33,7 +33,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Blobject.Core\Blobject.Core.csproj" />
-		<PackageReference Include="S3Lite" Version="1.1.0" />
+		<PackageReference Include="S3Lite" Version="1.2.1" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -82,6 +82,13 @@ namespace Test.Shared
                     LocalCase(suiteId, "WriteRequestRejectsEmptyKey", "WriteRequest rejects empty key", WriteRequestRejectsEmptyKey),
                     LocalCase(suiteId, "WriteRequestDefaultsContentType", "WriteRequest defaults empty content type", WriteRequestDefaultsContentType),
                     LocalCase(suiteId, "WriteRequestSeeksEofStream", "WriteRequest seeks EOF stream back to start", WriteRequestSeeksEofStream),
+                    LocalCase(suiteId, "WriteRequestNullDataBecomesEmpty", "WriteRequest treats null data as empty", WriteRequestNullDataBecomesEmpty),
+                    LocalCase(suiteId, "WriteRequestRejectsNullStream", "WriteRequest rejects null stream", WriteRequestRejectsNullStream),
+                    LocalCase(suiteId, "WriteRequestRejectsUnreadableStream", "WriteRequest rejects unreadable stream", WriteRequestRejectsUnreadableStream),
+                    LocalCase(suiteId, "WriteRequestContentLengthRejectsNegative", "WriteRequest.ContentLength rejects negative value", WriteRequestContentLengthRejectsNegative),
+                    LocalCase(suiteId, "NormalizeAwsRegionPassThrough", "AWS region normalization passes through unknown and empty values", NormalizeAwsRegionPassThrough),
+                    LocalCase(suiteId, "HexStringInvalidThrows", "hex conversion rejects invalid input", HexStringInvalidThrows),
+                    LocalCase(suiteId, "IsIpV4AddressDetection", "IPv4 address detection distinguishes v4, v6, and invalid values", IsIpV4AddressDetection),
                     ProviderCase(options, suiteId, "MaxConcurrencyRejectsZero", "MaxConcurrency rejects zero", MaxConcurrencyRejectsZero),
                     ProviderCase(options, suiteId, "StreamBufferSizeRejectsZero", "StreamBufferSize rejects zero", StreamBufferSizeRejectsZero)
                 });
@@ -106,6 +113,7 @@ namespace Test.Shared
                     ProviderCase(options, suiteId, "NestedKeyRoundTrip", "nested key round trips", NestedKeyRoundTrip),
                     ProviderCase(options, suiteId, "DeepNestedKeyRoundTrip", "deep nested key round trips", DeepNestedKeyRoundTrip),
                     ProviderCase(options, suiteId, "KeyWithSpacesRoundTrip", "key with spaces round trips", KeyWithSpacesRoundTrip),
+                    ProviderCase(options, suiteId, "UnicodeKeyRoundTrip", "unicode key round trips", UnicodeKeyRoundTrip),
                     ProviderCase(options, suiteId, "StreamRoundTrip", "stream write and stream read preserve content", StreamRoundTrip),
                     ProviderCase(options, suiteId, "EmptyStreamWrite", "empty stream write creates empty blob", EmptyStreamWrite),
                     ProviderCase(options, suiteId, "NullStreamZeroLengthWrite", "null stream with zero length creates empty blob", NullStreamZeroLengthWrite),
@@ -157,6 +165,7 @@ namespace Test.Shared
                     ProviderCase(options, suiteId, "PrefixFolder", "folder prefix filters nested objects", PrefixFolder),
                     ProviderCase(options, suiteId, "PrefixPartial", "partial prefix filters objects", PrefixPartial),
                     ProviderCase(options, suiteId, "SuffixFilter", "suffix filters objects", SuffixFilter),
+                    ProviderCase(options, suiteId, "PrefixAndSuffixFilter", "prefix and suffix filters combine", PrefixAndSuffixFilter),
                     ProviderCase(options, suiteId, "MinimumSizeFilter", "minimum size filters objects", MinimumSizeFilter),
                     ProviderCase(options, suiteId, "MaximumSizeFilter", "maximum size filters objects", MaximumSizeFilter),
                     ProviderCase(options, suiteId, "SizeRangeFilter", "size range filters objects", SizeRangeFilter),
@@ -402,6 +411,62 @@ namespace Test.Shared
             return Task.CompletedTask;
         }
 
+        private static Task WriteRequestNullDataBecomesEmpty(CancellationToken token)
+        {
+            WriteRequest request = new WriteRequest("key", "text/plain", (byte[])null);
+            AssertTrue(request.Data != null, "data not null");
+            AssertEqual(0, request.Data.Length, "data length");
+            return Task.CompletedTask;
+        }
+
+        private static Task WriteRequestRejectsNullStream(CancellationToken token)
+        {
+            AssertThrows<ArgumentNullException>(() => new WriteRequest("key", "text/plain", 5, null), "null stream");
+            return Task.CompletedTask;
+        }
+
+        private static Task WriteRequestRejectsUnreadableStream(CancellationToken token)
+        {
+            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("abc"));
+            stream.Dispose();
+            AssertFalse(stream.CanRead, "stream unreadable");
+            AssertThrows<IOException>(() => new WriteRequest("key", "text/plain", 3, stream), "unreadable stream");
+            return Task.CompletedTask;
+        }
+
+        private static Task WriteRequestContentLengthRejectsNegative(CancellationToken token)
+        {
+            WriteRequest request = new WriteRequest();
+            AssertThrows<ArgumentOutOfRangeException>(() => request.ContentLength = -1, "negative content length");
+            return Task.CompletedTask;
+        }
+
+        private static Task NormalizeAwsRegionPassThrough(CancellationToken token)
+        {
+            AssertEqual("us-east-1", Common.NormalizeAwsRegion("us-east-1"), "already normalized");
+            AssertEqual("xx-custom-1", Common.NormalizeAwsRegion("XX-Custom-1"), "unknown dashed region lowercased");
+            AssertEqual("CustomRegion", Common.NormalizeAwsRegion("CustomRegion"), "unknown region without dash unchanged");
+            AssertEqual(null, Common.NormalizeAwsRegion(null), "null region");
+            AssertEqual("", Common.NormalizeAwsRegion(""), "empty region");
+            return Task.CompletedTask;
+        }
+
+        private static Task HexStringInvalidThrows(CancellationToken token)
+        {
+            AssertThrows<FormatException>(() => Common.BytesFromHexString("zz"), "invalid hex");
+            return Task.CompletedTask;
+        }
+
+        private static Task IsIpV4AddressDetection(CancellationToken token)
+        {
+            AssertTrue(Common.IsIpV4Address("192.168.1.1"), "valid ipv4");
+            AssertFalse(Common.IsIpV4Address("::1"), "ipv6 is not ipv4");
+            AssertFalse(Common.IsIpV4Address("999.999.999.999"), "out of range is not ipv4");
+            AssertFalse(Common.IsIpV4Address("not-an-address"), "hostname is not ipv4");
+            AssertFalse(Common.IsIpV4Address(""), "empty is not ipv4");
+            return Task.CompletedTask;
+        }
+
         private static Task MaxConcurrencyRejectsZero(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
         {
             AssertThrows<ArgumentOutOfRangeException>(() => blobs.MaxConcurrency = 0, "max concurrency");
@@ -478,6 +543,13 @@ namespace Test.Shared
         {
             await blobs.WriteAsync("folder/file with spaces.txt", "text/plain", "spaces", token).ConfigureAwait(false);
             AssertEqual("spaces", Encoding.UTF8.GetString(await blobs.GetAsync("folder/file with spaces.txt", token).ConfigureAwait(false)), "spaces payload");
+        }
+
+        private static async Task UnicodeKeyRoundTrip(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            const string key = "folder/ünïcödé-文件.txt";
+            await blobs.WriteAsync(key, "text/plain", "unicode", token).ConfigureAwait(false);
+            AssertEqual("unicode", Encoding.UTF8.GetString(await blobs.GetAsync(key, token).ConfigureAwait(false)), "unicode payload");
         }
 
         private static async Task StreamRoundTrip(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
@@ -687,6 +759,12 @@ namespace Test.Shared
             List<string> expected = new List<string> { "alpha/file-a.txt", "beta/file-c.txt" };
             if (options.IsCaseInsensitiveProvider) expected.Add("gamma/case.TXT");
             AssertKeys(await EnumerateAsync(blobs, new EnumerationFilter { Suffix = ".txt" }, token).ConfigureAwait(false), expected.ToArray());
+        }
+
+        private static async Task PrefixAndSuffixFilter(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            await SeedEnumeration(blobs, token).ConfigureAwait(false);
+            AssertKeys(await EnumerateAsync(blobs, new EnumerationFilter { Prefix = "alpha/", Suffix = ".txt" }, token).ConfigureAwait(false), "alpha/file-a.txt");
         }
 
         private static async Task MinimumSizeFilter(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
