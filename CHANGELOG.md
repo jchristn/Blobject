@@ -2,6 +2,17 @@
 
 ## Current Version
 
+v5.1.x
+
+- `Blobject.Core` v5.1.0 adds `DeleteManyAsync`, a bulk delete API returning a per-key `DeleteManyResult` (with `Success`, `Deleted`, and `Failed` helpers), fanned out over `DeleteAsync` using `BlobClientBase.MaxConcurrency`
+- `Blobject.AmazonS3` v5.1.0 overrides `DeleteManyAsync` to use the native S3 `DeleteObjects` batch delete (up to 1000 keys per request)
+- `Blobject.AzureBlob` v5.1.0 overrides `DeleteManyAsync` to use the native Azure Blob Batch delete (up to 256 keys per request) and adds the `Azure.Storage.Blobs.Batch` dependency
+- `Blobject.AmazonS3Lite`, `Blobject.GoogleCloud`, `Blobject.Disk`, `Blobject.CIFS`, and `Blobject.NFS` v5.1.0 expose `DeleteManyAsync` using the shared fan-out behavior
+- Deleting a key that does not exist is treated as a successful deletion, matching `DeleteAsync`
+- Expanded contract test coverage with positive and negative `DeleteManyAsync` cases
+
+## Previous Versions
+
 v5.0.x
 
 - `Blobject.Core` v5.0.19 adds `BlobCopy.StartAsync`, fixes prefix handling and normal termination in `BlobCopy`, and makes copy streaming-first
@@ -26,8 +37,6 @@ v5.0.x
 - Remove use of continuation tokens for disk
 - Add `S3Lite` variant, not dependent on AWSSDK
 - Refactor
-
-## Previous Versions
 
 v4.1.x
 

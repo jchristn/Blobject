@@ -58,6 +58,9 @@
         <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.DeleteManyAsync(System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.AmazonS3.AmazonS3BlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

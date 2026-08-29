@@ -19,42 +19,42 @@ $retryDelaySeconds = 30
 $packages = @(
     @{
         Id = 'Blobject.Core'
-        Version = '5.0.19'
+        Version = '5.1.0'
         Directory = 'src\Blobject.Core\bin\Release'
     },
     @{
         Id = 'Blobject.Disk'
-        Version = '5.0.19'
+        Version = '5.1.0'
         Directory = 'src\Blobject.Disk\bin\Release'
     },
     @{
         Id = 'Blobject.AzureBlob'
-        Version = '5.0.19'
+        Version = '5.1.0'
         Directory = 'src\Blobject.AzureBlob\bin\Release'
     },
     @{
         Id = 'Blobject.CIFS'
-        Version = '5.0.19'
+        Version = '5.1.0'
         Directory = 'src\Blobject.CIFS\bin\Release'
     },
     @{
         Id = 'Blobject.GoogleCloud'
-        Version = '5.0.19'
+        Version = '5.1.0'
         Directory = 'src\Blobject.GoogleCloud\bin\Release'
     },
     @{
         Id = 'Blobject.NFS'
-        Version = '5.0.19'
+        Version = '5.1.0'
         Directory = 'src\Blobject.NFS\bin\Release'
     },
     @{
         Id = 'Blobject.AmazonS3'
-        Version = '5.0.20'
+        Version = '5.1.0'
         Directory = 'src\Blobject.AmazonS3\bin\Release'
     },
     @{
         Id = 'Blobject.AmazonS3Lite'
-        Version = '5.0.20'
+        Version = '5.1.0'
         Directory = 'src\Blobject.AmazonS3Lite\bin\Release'
     }
 )

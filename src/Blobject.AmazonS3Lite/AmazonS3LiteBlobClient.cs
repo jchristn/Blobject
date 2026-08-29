@@ -228,6 +228,12 @@ namespace Blobject.AmazonS3Lite
         }
 
         /// <inheritdoc />
+        public override async Task<DeleteManyResult> DeleteManyAsync(IEnumerable<string> keys, CancellationToken token = default)
+        {
+            return await base.DeleteManyAsync(keys, token).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
         public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
             return await _S3Client.Object.ExistsAsync(_AwsSettings.Bucket, key, null, null, token).ConfigureAwait(false);

@@ -58,6 +58,9 @@
         <member name="M:Blobject.GoogleCloud.GcpBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.DeleteManyAsync(System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.GoogleCloud.GcpBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

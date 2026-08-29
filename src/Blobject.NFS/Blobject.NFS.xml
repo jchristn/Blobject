@@ -58,6 +58,9 @@
         <member name="M:Blobject.NFS.NfsBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:Blobject.NFS.NfsBlobClient.DeleteManyAsync(System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.NFS.NfsBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

@@ -89,6 +89,29 @@ namespace Test.Shared
         }
 
         /// <inheritdoc />
+        public override async Task<DeleteManyResult> DeleteManyAsync(IEnumerable<string> keys, CancellationToken token = default)
+        {
+            if (keys == null) throw new ArgumentNullException(nameof(keys));
+
+            List<string> prefixed = new List<string>();
+            foreach (string key in keys)
+            {
+                if (String.IsNullOrEmpty(key)) continue;
+                prefixed.Add(ApplyPrefix(key));
+            }
+
+            DeleteManyResult inner = await _Inner.DeleteManyAsync(prefixed, token).ConfigureAwait(false);
+
+            DeleteManyResult ret = new DeleteManyResult();
+            foreach (DeleteResult result in inner.Results)
+            {
+                ret.Results.Add(new DeleteResult(StripPrefix(result.Key), result.Success, result.Error));
+            }
+
+            return ret;
+        }
+
+        /// <inheritdoc />
         public override Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
             return _Inner.ExistsAsync(ApplyPrefix(key), token);
@@ -146,6 +169,13 @@ namespace Test.Shared
             filter = filter != null ? filter.Clone() : new EnumerationFilter();
             filter.Prefix = _Prefix + filter.Prefix;
             return filter;
+        }
+
+        private string StripPrefix(string key)
+        {
+            if (String.IsNullOrEmpty(key)) return key;
+            if (!key.StartsWith(_Prefix, StringComparison.Ordinal)) return key;
+            return key.Substring(_Prefix.Length);
         }
 
         private BlobMetadata StripPrefix(BlobMetadata metadata)

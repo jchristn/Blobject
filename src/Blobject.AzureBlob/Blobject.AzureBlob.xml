@@ -76,6 +76,9 @@
         <member name="M:Blobject.AzureBlob.AzureBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.DeleteManyAsync(System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.AzureBlob.AzureBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

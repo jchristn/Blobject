@@ -115,6 +115,19 @@
             <param name="token">The cancellation token.</param>
             <returns>A task representing the asynchronous operation.</returns>
         </member>
+        <member name="M:Blobject.Core.BlobClientBase.DeleteManyAsync(System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <summary>
+            Deletes multiple objects from the BLOB storage asynchronously.
+            For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+            For file storage platforms, when deleting a folder, use / at the end of the key.
+            Providers with a native bulk-delete API override this method to use it; otherwise deletions are fanned out over
+            <see cref="M:Blobject.Core.BlobClientBase.DeleteAsync(System.String,System.Threading.CancellationToken)"/> using <see cref="P:Blobject.Core.BlobClientBase.MaxConcurrency"/>.
+            Deleting a key that does not exist is treated as a successful deletion.
+            </summary>
+            <param name="keys">The keys of the objects to delete from the BLOB storage.  Null or empty keys are ignored.</param>
+            <param name="token">The cancellation token.</param>
+            <returns>A <see cref="T:Blobject.Core.DeleteManyResult"/> describing the outcome for each key.</returns>
+        </member>
         <member name="M:Blobject.Core.BlobClientBase.ExistsAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Checks if an object with the specified key exists in the BLOB storage asynchronously.
@@ -480,6 +493,76 @@
             Produce a human-readable string representation of the object.
             </summary>
             <returns></returns>
+        </member>
+        <member name="T:Blobject.Core.DeleteManyResult">
+            <summary>
+            Results from a delete-many operation.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.DeleteManyResult.Count">
+            <summary>
+            The number of keys included in the operation.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.DeleteManyResult.Success">
+            <summary>
+            Boolean indicating whether or not every key was deleted successfully.
+            Returns true when the operation deleted nothing.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.DeleteManyResult.Results">
+            <summary>
+            Per-key delete results.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.DeleteManyResult.Deleted">
+            <summary>
+            Keys that were deleted successfully.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.DeleteManyResult.Failed">
+            <summary>
+            Keys that could not be deleted.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.DeleteManyResult.#ctor">
+            <summary>
+            Instantiate the object.
+            </summary>
+        </member>
+        <member name="T:Blobject.Core.DeleteResult">
+            <summary>
+            Result for a single key within a delete-many operation.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.DeleteResult.Key">
+            <summary>
+            Object key.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.DeleteResult.Success">
+            <summary>
+            Boolean indicating whether or not the object was successfully deleted.
+            A missing object is treated as a successful deletion.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.DeleteResult.Error">
+            <summary>
+            Error detail when the object could not be deleted, or null on success.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.DeleteResult.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.DeleteResult.#ctor(System.String,System.Boolean,System.String)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="key">Object key.</param>
+            <param name="success">Boolean indicating whether or not the object was successfully deleted.</param>
+            <param name="error">Error detail when the object could not be deleted, or null on success.</param>
         </member>
         <member name="T:Blobject.Core.EmptyResult">
             <summary>

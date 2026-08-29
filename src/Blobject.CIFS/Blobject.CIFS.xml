@@ -58,6 +58,9 @@
         <member name="M:Blobject.CIFS.CifsBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:Blobject.CIFS.CifsBlobClient.DeleteManyAsync(System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.CIFS.CifsBlobClient.ExistsAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>

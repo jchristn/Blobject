@@ -3,6 +3,7 @@ namespace Blobject.AmazonS3
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
@@ -289,6 +290,66 @@ namespace Blobject.AmazonS3
             };
 
             await _S3Client.DeleteObjectAsync(request, token).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public override async Task<DeleteManyResult> DeleteManyAsync(IEnumerable<string> keys, CancellationToken token = default)
+        {
+            if (keys == null) throw new ArgumentNullException(nameof(keys));
+
+            DeleteManyResult result = new DeleteManyResult();
+            List<string> keyList = keys.Where(k => !String.IsNullOrEmpty(k)).Distinct().ToList();
+            if (keyList.Count < 1) return result;
+
+            // S3 DeleteObjects supports up to 1000 keys per request.
+            const int batchSize = 1000;
+
+            for (int offset = 0; offset < keyList.Count; offset += batchSize)
+            {
+                token.ThrowIfCancellationRequested();
+
+                List<string> chunk = keyList.GetRange(offset, Math.Min(batchSize, keyList.Count - offset));
+
+                DeleteObjectsRequest request = new DeleteObjectsRequest
+                {
+                    BucketName = _AwsSettings.Bucket
+                };
+
+                foreach (string key in chunk) request.AddKey(key);
+
+                DeleteObjectsResponse response;
+
+                try
+                {
+                    response = await _S3Client.DeleteObjectsAsync(request, token).ConfigureAwait(false);
+                }
+                catch (DeleteObjectsException dex)
+                {
+                    // Partial failure: the response carries both the deleted objects and the errors.
+                    response = dex.Response;
+                }
+
+                if (response.DeletedObjects != null)
+                {
+                    foreach (DeletedObject deleted in response.DeletedObjects)
+                    {
+                        result.Results.Add(new DeleteResult(deleted.Key, true));
+                    }
+                }
+
+                if (response.DeleteErrors != null)
+                {
+                    foreach (DeleteError deleteError in response.DeleteErrors)
+                    {
+                        result.Results.Add(new DeleteResult(
+                            deleteError.Key,
+                            false,
+                            (deleteError.Code + " " + deleteError.Message).Trim()));
+                    }
+                }
+            }
+
+            return result;
         }
 
         /// <inheritdoc />

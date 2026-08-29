@@ -3,6 +3,7 @@ namespace Blobject.AzureBlob
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
@@ -11,6 +12,7 @@ namespace Blobject.AzureBlob
     using Azure;
     using Azure.Storage.Blobs;
     using Azure.Storage.Blobs.Models;
+    using Azure.Storage.Blobs.Specialized;
     using Blobject.Core;
 
     /// <inheritdoc />
@@ -283,6 +285,62 @@ namespace Blobject.AzureBlob
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
             await bc.DeleteIfExistsAsync(DeleteSnapshotsOption.None, null, token).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public override async Task<DeleteManyResult> DeleteManyAsync(IEnumerable<string> keys, CancellationToken token = default)
+        {
+            if (keys == null) throw new ArgumentNullException(nameof(keys));
+
+            DeleteManyResult result = new DeleteManyResult();
+            List<string> keyList = keys.Where(k => !String.IsNullOrEmpty(k)).Distinct().ToList();
+            if (keyList.Count < 1) return result;
+
+            BlobBatchClient batchClient = _ServiceClient.GetBlobBatchClient();
+
+            // Azure supports up to 256 sub-requests per batch.
+            const int batchSize = 256;
+
+            for (int offset = 0; offset < keyList.Count; offset += batchSize)
+            {
+                token.ThrowIfCancellationRequested();
+
+                List<string> chunk = keyList.GetRange(offset, Math.Min(batchSize, keyList.Count - offset));
+
+                BlobBatch batch = batchClient.CreateBatch();
+                List<KeyValuePair<string, Response>> handles = new List<KeyValuePair<string, Response>>();
+
+                foreach (string key in chunk)
+                {
+                    Response handle = batch.DeleteBlob(_ContainerClient.Name, key);
+                    handles.Add(new KeyValuePair<string, Response>(key, handle));
+                }
+
+                try
+                {
+                    await batchClient.SubmitBatchAsync(batch, false, token).ConfigureAwait(false);
+                }
+                catch (AggregateException)
+                {
+                    // Individual sub-request status is inspected below; submitting with throwOnAnyFailure false
+                    // means this is only reached for batch-level transport errors already reflected in the handles.
+                }
+
+                foreach (KeyValuePair<string, Response> handle in handles)
+                {
+                    int status = handle.Value.Status;
+
+                    // Treat a missing blob (404) as a successful deletion to match DeleteAsync semantics.
+                    bool success = (status >= 200 && status < 300) || status == 404;
+
+                    result.Results.Add(new DeleteResult(
+                        handle.Key,
+                        success,
+                        success ? null : (status + " " + handle.Value.ReasonPhrase).Trim()));
+                }
+            }
+
+            return result;
         }
 
         /// <inheritdoc />

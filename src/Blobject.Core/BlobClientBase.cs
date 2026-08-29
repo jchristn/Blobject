@@ -179,6 +179,55 @@
         public abstract Task DeleteAsync(string key, CancellationToken token = default);
 
         /// <summary>
+        /// Deletes multiple objects from the BLOB storage asynchronously.
+        /// For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
+        /// For file storage platforms, when deleting a folder, use / at the end of the key.
+        /// Providers with a native bulk-delete API override this method to use it; otherwise deletions are fanned out over
+        /// <see cref="DeleteAsync(string, CancellationToken)"/> using <see cref="MaxConcurrency"/>.
+        /// Deleting a key that does not exist is treated as a successful deletion.
+        /// </summary>
+        /// <param name="keys">The keys of the objects to delete from the BLOB storage.  Null or empty keys are ignored.</param>
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>A <see cref="DeleteManyResult"/> describing the outcome for each key.</returns>
+        public virtual async Task<DeleteManyResult> DeleteManyAsync(IEnumerable<string> keys, CancellationToken token = default)
+        {
+            if (keys == null) throw new ArgumentNullException(nameof(keys));
+
+            DeleteManyResult result = new DeleteManyResult();
+            List<string> keyList = keys.Where(k => !String.IsNullOrEmpty(k)).Distinct().ToList();
+            if (keyList.Count < 1) return result;
+
+            object syncLock = new object();
+
+            await ForEachAsync(keyList, MaxConcurrency, async key =>
+            {
+                DeleteResult dr = new DeleteResult { Key = key };
+
+                try
+                {
+                    await DeleteAsync(key, token).ConfigureAwait(false);
+                    dr.Success = true;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    dr.Success = false;
+                    dr.Error = e.Message;
+                }
+
+                lock (syncLock)
+                {
+                    result.Results.Add(dr);
+                }
+            }, token).ConfigureAwait(false);
+
+            return result;
+        }
+
+        /// <summary>
         /// Checks if an object with the specified key exists in the BLOB storage asynchronously.
         /// For objects contained within subdirectories or folders, use the / character.  For example, path/to/folder/myfile.txt
         /// </summary>

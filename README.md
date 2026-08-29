@@ -44,6 +44,12 @@ Though this library is MIT licensed, it is dependent upon other libraries, some 
 | Nekodrive | https://github.com/nekoni/nekodrive | Unknown, public |
 | S3Lite | https://github.com/jchristn/S3Lite | MIT |
 
+## New in v5.1.x
+
+- Added `DeleteManyAsync`, a bulk delete API returning a per-key `DeleteManyResult`
+- Amazon S3 and Azure Blob use their native batch-delete APIs; all other providers fan out over `DeleteAsync` using `MaxConcurrency`
+- Expanded contract test coverage, including positive and negative `DeleteManyAsync` cases
+
 ## New in v5.0.x
 
 - Rename from `BlobHelper` to `Blobject`
@@ -71,7 +77,7 @@ dotnet test src/Test.Xunit/Test.Xunit.csproj --framework net10.0
 dotnet test src/Test.Nunit/Test.Nunit.csproj --framework net10.0
 ```
 
-The default suite contains 80 contract cases. Add `--include-stress true` to `Test.Automated` to include large enumeration and large `WriteManyAsync` coverage.
+The default suite contains 105 contract cases, including positive and negative `DeleteManyAsync` coverage. Add `--include-stress true` to `Test.Automated` to include large enumeration, large `WriteManyAsync`, and large `DeleteManyAsync` coverage.
 
 ```bash
 dotnet run --project src/Test.Automated/Test.Automated.csproj --framework net10.0 -- --include-stress true
@@ -318,11 +324,31 @@ CopyStatistics stats = await copy.StartAsync();
 
 ## Bulk Operations
 
-`WriteManyAsync` and `EmptyAsync` use bounded concurrency through `BlobClientBase.MaxConcurrency`, which defaults to `4`.
+`WriteManyAsync`, `DeleteManyAsync`, and `EmptyAsync` use bounded concurrency through `BlobClientBase.MaxConcurrency`, which defaults to `4`.
 
 ```csharp
 blobs.MaxConcurrency = 8;
 await blobs.WriteManyAsync(writes);
+```
+
+### Deleting Multiple Objects
+
+`DeleteManyAsync` deletes a collection of keys and returns a `DeleteManyResult` describing the outcome for each key. Providers with a native bulk-delete API use it automatically (Amazon S3 `DeleteObjects`, up to 1000 keys per request; Azure Blob batch delete, up to 256 per request). All other providers (S3 Lite, Google Cloud, disk, CIFS, NFS) fan out over `DeleteAsync` using `MaxConcurrency`. Deleting a key that does not exist is treated as a successful deletion, matching `DeleteAsync`. Null or empty keys are ignored.
+
+```csharp
+DeleteManyResult result = await blobs.DeleteManyAsync(new List<string>
+{
+    "logs/2023/01.txt",
+    "logs/2023/02.txt",
+    "logs/2023/03.txt"
+});
+
+Console.WriteLine("Deleted " + result.Deleted.Count + " of " + result.Count);
+if (!result.Success)
+{
+    foreach (string key in result.Failed)
+        Console.WriteLine("Failed: " + key);
+}
 ```
 
 ## Version History

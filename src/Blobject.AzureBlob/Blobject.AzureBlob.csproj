@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>5.0.20</Version>
+		<Version>5.1.0</Version>
 		<LangVersion>8.0</LangVersion>
 		<TargetFrameworks>netstandard2.1;net8.0;net10.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -13,7 +13,7 @@
 		<RepositoryUrl>https://github.com/jchristn/Blobject</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
 		<PackageLicenseUrl></PackageLicenseUrl>
-		<PackageReleaseNotes>Update Azure.Storage.Blobs and refresh dependencies.</PackageReleaseNotes>
+		<PackageReleaseNotes>Add DeleteManyAsync using the native Azure Blob Batch delete.</PackageReleaseNotes>
 		<PackageIconUrl></PackageIconUrl>
 		<PackageTags>blob azure storage s3 object rest minio less3 ceph view cifs nfs google cloud gcp</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
@@ -32,6 +32,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
+		<PackageReference Include="Azure.Storage.Blobs.Batch" Version="12.26.0" />
 		<ProjectReference Include="..\Blobject.Core\Blobject.Core.csproj" />
 	</ItemGroup>
 

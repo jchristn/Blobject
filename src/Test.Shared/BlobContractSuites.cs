@@ -86,6 +86,10 @@ namespace Test.Shared
                     LocalCase(suiteId, "WriteRequestRejectsNullStream", "WriteRequest rejects null stream", WriteRequestRejectsNullStream),
                     LocalCase(suiteId, "WriteRequestRejectsUnreadableStream", "WriteRequest rejects unreadable stream", WriteRequestRejectsUnreadableStream),
                     LocalCase(suiteId, "WriteRequestContentLengthRejectsNegative", "WriteRequest.ContentLength rejects negative value", WriteRequestContentLengthRejectsNegative),
+                    LocalCase(suiteId, "DeleteResultRejectsEmptyKey", "DeleteResult rejects empty key", DeleteResultRejectsEmptyKey),
+                    LocalCase(suiteId, "DeleteManyResultAggregates", "DeleteManyResult aggregates per-key outcomes", DeleteManyResultAggregates),
+                    LocalCase(suiteId, "DeleteManyResultEmptyIsSuccess", "empty DeleteManyResult reports success", DeleteManyResultEmptyIsSuccess),
+                    LocalCase(suiteId, "DeleteManyResultNullResultsBecomesEmpty", "DeleteManyResult treats null results as empty", DeleteManyResultNullResultsBecomesEmpty),
                     LocalCase(suiteId, "NormalizeAwsRegionPassThrough", "AWS region normalization passes through unknown and empty values", NormalizeAwsRegionPassThrough),
                     LocalCase(suiteId, "HexStringInvalidThrows", "hex conversion rejects invalid input", HexStringInvalidThrows),
                     LocalCase(suiteId, "IsIpV4AddressDetection", "IPv4 address detection distinguishes v4, v6, and invalid values", IsIpV4AddressDetection),
@@ -195,7 +199,19 @@ namespace Test.Shared
                     ProviderCase(options, suiteId, "EmptyAsyncEmpty", "EmptyAsync handles empty repository", EmptyAsyncEmpty),
                     ProviderCase(options, suiteId, "EmptyAsyncObjects", "EmptyAsync removes objects", EmptyAsyncObjects),
                     ProviderCase(options, suiteId, "EmptyAsyncNestedObjects", "EmptyAsync removes nested objects", EmptyAsyncNestedObjects),
-                    ProviderCase(options, suiteId, "EmptyAsyncAfterFolderMarker", "EmptyAsync removes folder markers", EmptyAsyncAfterFolderMarker)
+                    ProviderCase(options, suiteId, "EmptyAsyncAfterFolderMarker", "EmptyAsync removes folder markers", EmptyAsyncAfterFolderMarker),
+                    ProviderCase(options, suiteId, "DeleteManyNullThrows", "DeleteManyAsync rejects null keys", DeleteManyNullThrows),
+                    ProviderCase(options, suiteId, "DeleteManyEmptyList", "DeleteManyAsync accepts empty list", DeleteManyEmptyList),
+                    ProviderCase(options, suiteId, "DeleteManyRemovesObjects", "DeleteManyAsync removes all supplied objects", DeleteManyRemovesObjects),
+                    ProviderCase(options, suiteId, "DeleteManyResultReportsKeys", "DeleteManyAsync reports each deleted key", DeleteManyResultReportsKeys),
+                    ProviderCase(options, suiteId, "DeleteManyMissingKeys", "DeleteManyAsync is idempotent for missing keys", DeleteManyMissingKeys),
+                    ProviderCase(options, suiteId, "DeleteManyMixedExistingMissing", "DeleteManyAsync handles mixed existing and missing keys", DeleteManyMixedExistingMissing),
+                    ProviderCase(options, suiteId, "DeleteManyNestedKeys", "DeleteManyAsync removes nested keys", DeleteManyNestedKeys),
+                    ProviderCase(options, suiteId, "DeleteManyFolderMarker", "DeleteManyAsync removes folder markers", DeleteManyFolderMarker),
+                    ProviderCase(options, suiteId, "DeleteManyIgnoresEmptyKeys", "DeleteManyAsync ignores null and empty keys", DeleteManyIgnoresEmptyKeys),
+                    ProviderCase(options, suiteId, "DeleteManyDeduplicatesKeys", "DeleteManyAsync deduplicates repeated keys", DeleteManyDeduplicatesKeys),
+                    ProviderCase(options, suiteId, "DeleteManyLeavesOtherObjects", "DeleteManyAsync leaves unrelated objects intact", DeleteManyLeavesOtherObjects),
+                    ProviderCase(options, suiteId, "DeleteManyConcurrencyOne", "DeleteManyAsync works with MaxConcurrency one", DeleteManyConcurrencyOne)
                 });
         }
 
@@ -232,7 +248,8 @@ namespace Test.Shared
                 cases: new List<TestCaseDescriptor>
                 {
                     ProviderCase(options, suiteId, "LargeEnumerationSet", "large enumeration set returns all objects", LargeEnumerationSet),
-                    ProviderCase(options, suiteId, "LargeWriteManySet", "large WriteManyAsync set returns all objects", LargeWriteManySet)
+                    ProviderCase(options, suiteId, "LargeWriteManySet", "large WriteManyAsync set returns all objects", LargeWriteManySet),
+                    ProviderCase(options, suiteId, "LargeDeleteManySet", "large DeleteManyAsync set removes all objects", LargeDeleteManySet)
                 });
         }
 
@@ -438,6 +455,44 @@ namespace Test.Shared
         {
             WriteRequest request = new WriteRequest();
             AssertThrows<ArgumentOutOfRangeException>(() => request.ContentLength = -1, "negative content length");
+            return Task.CompletedTask;
+        }
+
+        private static Task DeleteResultRejectsEmptyKey(CancellationToken token)
+        {
+            AssertThrows<ArgumentNullException>(() => new DeleteResult("", true), "empty delete result key");
+            return Task.CompletedTask;
+        }
+
+        private static Task DeleteManyResultAggregates(CancellationToken token)
+        {
+            DeleteManyResult result = new DeleteManyResult();
+            result.Results.Add(new DeleteResult("a.txt", true));
+            result.Results.Add(new DeleteResult("b.txt", true));
+            result.Results.Add(new DeleteResult("c.txt", false, "AccessDenied"));
+
+            AssertEqual(3L, result.Count, "aggregate count");
+            AssertFalse(result.Success, "aggregate success");
+            AssertEqual(2, result.Deleted.Count, "aggregate deleted count");
+            AssertEqual(1, result.Failed.Count, "aggregate failed count");
+            AssertEqual("c.txt", result.Failed[0], "aggregate failed key");
+            return Task.CompletedTask;
+        }
+
+        private static Task DeleteManyResultEmptyIsSuccess(CancellationToken token)
+        {
+            DeleteManyResult result = new DeleteManyResult();
+            AssertEqual(0L, result.Count, "empty result count");
+            AssertTrue(result.Success, "empty result success");
+            return Task.CompletedTask;
+        }
+
+        private static Task DeleteManyResultNullResultsBecomesEmpty(CancellationToken token)
+        {
+            DeleteManyResult result = new DeleteManyResult();
+            result.Results = null;
+            AssertTrue(result.Results != null, "results not null");
+            AssertEqual(0L, result.Count, "null results count");
             return Task.CompletedTask;
         }
 
@@ -943,6 +998,131 @@ namespace Test.Shared
             AssertFalse(await blobs.ExistsAsync("folder/", token).ConfigureAwait(false), "folder marker removed");
         }
 
+        private static async Task DeleteManyNullThrows(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            await AssertThrowsAsync<ArgumentNullException>(() => blobs.DeleteManyAsync(null, token), "null keys").ConfigureAwait(false);
+        }
+
+        private static async Task DeleteManyEmptyList(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            DeleteManyResult result = await blobs.DeleteManyAsync(new List<string>(), token).ConfigureAwait(false);
+            AssertEqual(0L, result.Count, "empty delete many count");
+            AssertTrue(result.Success, "empty delete many success");
+        }
+
+        private static async Task DeleteManyRemovesObjects(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            List<string> keys = new List<string> { "many/a.txt", "many/b.txt", "many/c.txt" };
+            foreach (string key in keys) await blobs.WriteAsync(key, "text/plain", key, token).ConfigureAwait(false);
+
+            DeleteManyResult result = await blobs.DeleteManyAsync(keys, token).ConfigureAwait(false);
+
+            AssertEqual(3L, result.Count, "delete many count");
+            AssertTrue(result.Success, "delete many success");
+            foreach (string key in keys)
+                AssertFalse(await blobs.ExistsAsync(key, token).ConfigureAwait(false), "deleted " + key);
+        }
+
+        private static async Task DeleteManyResultReportsKeys(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            List<string> keys = new List<string> { "report/a.txt", "report/b.txt" };
+            foreach (string key in keys) await blobs.WriteAsync(key, "text/plain", "x", token).ConfigureAwait(false);
+
+            DeleteManyResult result = await blobs.DeleteManyAsync(keys, token).ConfigureAwait(false);
+
+            List<string> deleted = result.Deleted.OrderBy(k => k, StringComparer.Ordinal).ToList();
+            AssertSequence(keys.OrderBy(k => k, StringComparer.Ordinal).ToList(), deleted, "reported deleted keys");
+            AssertEqual(0, result.Failed.Count, "no failed keys");
+        }
+
+        private static async Task DeleteManyMissingKeys(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            List<string> keys = new List<string> { "missing/a.txt", "missing/b.txt" };
+            DeleteManyResult result = await blobs.DeleteManyAsync(keys, token).ConfigureAwait(false);
+            AssertEqual(2L, result.Count, "missing delete many count");
+            AssertTrue(result.Success, "missing delete many success");
+        }
+
+        private static async Task DeleteManyMixedExistingMissing(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            await blobs.WriteAsync("mixed-delete/present.txt", "text/plain", "present", token).ConfigureAwait(false);
+
+            List<string> keys = new List<string> { "mixed-delete/present.txt", "mixed-delete/absent.txt" };
+            DeleteManyResult result = await blobs.DeleteManyAsync(keys, token).ConfigureAwait(false);
+
+            AssertEqual(2L, result.Count, "mixed delete many count");
+            AssertTrue(result.Success, "mixed delete many success");
+            AssertFalse(await blobs.ExistsAsync("mixed-delete/present.txt", token).ConfigureAwait(false), "present deleted");
+        }
+
+        private static async Task DeleteManyNestedKeys(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            List<string> keys = new List<string> { "nested-delete/a/b/c.txt", "nested-delete/a/d/e.txt" };
+            foreach (string key in keys) await blobs.WriteAsync(key, "text/plain", "x", token).ConfigureAwait(false);
+
+            DeleteManyResult result = await blobs.DeleteManyAsync(keys, token).ConfigureAwait(false);
+
+            AssertTrue(result.Success, "nested delete many success");
+            foreach (string key in keys)
+                AssertFalse(await blobs.ExistsAsync(key, token).ConfigureAwait(false), "nested deleted " + key);
+        }
+
+        private static async Task DeleteManyFolderMarker(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            await blobs.WriteAsync("many-folder/", "application/octet-stream", Array.Empty<byte>(), token).ConfigureAwait(false);
+            await blobs.WriteAsync("many-folder-file.txt", "text/plain", "x", token).ConfigureAwait(false);
+
+            DeleteManyResult result = await blobs.DeleteManyAsync(new List<string> { "many-folder/", "many-folder-file.txt" }, token).ConfigureAwait(false);
+
+            AssertTrue(result.Success, "folder marker delete many success");
+            AssertFalse(await blobs.ExistsAsync("many-folder/", token).ConfigureAwait(false), "folder marker deleted");
+            AssertFalse(await blobs.ExistsAsync("many-folder-file.txt", token).ConfigureAwait(false), "file deleted");
+        }
+
+        private static async Task DeleteManyIgnoresEmptyKeys(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            await blobs.WriteAsync("ignore-empty/a.txt", "text/plain", "a", token).ConfigureAwait(false);
+
+            List<string> keys = new List<string> { "ignore-empty/a.txt", null, "" };
+            DeleteManyResult result = await blobs.DeleteManyAsync(keys, token).ConfigureAwait(false);
+
+            // null and empty keys are ignored, so only the single valid key is processed.
+            AssertEqual(1L, result.Count, "ignore empty count");
+            AssertTrue(result.Success, "ignore empty success");
+            AssertFalse(await blobs.ExistsAsync("ignore-empty/a.txt", token).ConfigureAwait(false), "valid key deleted");
+            AssertTrue(result.Deleted.Contains("ignore-empty/a.txt"), "valid key reported deleted");
+        }
+
+        private static async Task DeleteManyDeduplicatesKeys(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            await blobs.WriteAsync("dedupe/a.txt", "text/plain", "a", token).ConfigureAwait(false);
+
+            List<string> keys = new List<string> { "dedupe/a.txt", "dedupe/a.txt", "dedupe/a.txt" };
+            DeleteManyResult result = await blobs.DeleteManyAsync(keys, token).ConfigureAwait(false);
+
+            AssertEqual(1L, result.Count, "deduplicated count");
+            AssertTrue(result.Success, "deduplicated success");
+            AssertFalse(await blobs.ExistsAsync("dedupe/a.txt", token).ConfigureAwait(false), "deduplicated key deleted");
+        }
+
+        private static async Task DeleteManyLeavesOtherObjects(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            await blobs.WriteAsync("keep/remove-a.txt", "text/plain", "a", token).ConfigureAwait(false);
+            await blobs.WriteAsync("keep/remove-b.txt", "text/plain", "b", token).ConfigureAwait(false);
+            await blobs.WriteAsync("keep/stay.txt", "text/plain", "c", token).ConfigureAwait(false);
+
+            await blobs.DeleteManyAsync(new List<string> { "keep/remove-a.txt", "keep/remove-b.txt" }, token).ConfigureAwait(false);
+
+            AssertTrue(await blobs.ExistsAsync("keep/stay.txt", token).ConfigureAwait(false), "unrelated object retained");
+            AssertKeys(await EnumerateAsync(blobs, new EnumerationFilter { Prefix = "keep/" }, token).ConfigureAwait(false), "keep/stay.txt");
+        }
+
+        private static async Task DeleteManyConcurrencyOne(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            blobs.MaxConcurrency = 1;
+            await DeleteManyRemovesObjects(blobs, options, token).ConfigureAwait(false);
+        }
+
         #endregion
 
         #region Copy
@@ -1065,6 +1245,26 @@ namespace Test.Shared
 
             await blobs.WriteManyAsync(requests, token).ConfigureAwait(false);
             AssertEqual(500, (await EnumerateAsync(blobs, new EnumerationFilter { Prefix = "large-write/" }, token).ConfigureAwait(false)).Count, "large write count");
+        }
+
+        private static async Task LargeDeleteManySet(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            List<WriteRequest> requests = new List<WriteRequest>();
+            List<string> keys = new List<string>();
+            for (int i = 0; i < 1005; i++)
+            {
+                string key = "large-delete/" + i.ToString("D4") + ".txt";
+                keys.Add(key);
+                requests.Add(new WriteRequest(key, "text/plain", Encoding.UTF8.GetBytes("x")));
+            }
+
+            await blobs.WriteManyAsync(requests, token).ConfigureAwait(false);
+
+            DeleteManyResult result = await blobs.DeleteManyAsync(keys, token).ConfigureAwait(false);
+
+            AssertEqual(1005L, result.Count, "large delete many count");
+            AssertTrue(result.Success, "large delete many success");
+            AssertEqual(0, (await EnumerateAsync(blobs, new EnumerationFilter { Prefix = "large-delete/" }, token).ConfigureAwait(false)).Count, "post delete count");
         }
 
         #endregion
