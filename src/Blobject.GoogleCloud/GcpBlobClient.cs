@@ -207,7 +207,11 @@
             // For large uploads, use resumable upload
             var uploadOptions = new UploadObjectOptions();
 
-            await _StorageClient.UploadObjectAsync(_Settings.Bucket, key, contentType, stream, uploadOptions, token).ConfigureAwait(false);
+            // upload at most contentLength bytes; the stream may hold more
+            using (LengthLimitedReadStream source = new LengthLimitedReadStream(stream, contentLength))
+            {
+                await _StorageClient.UploadObjectAsync(_Settings.Bucket, key, contentType, source, uploadOptions, token).ConfigureAwait(false);
+            }
         }
 
         /// <inheritdoc />

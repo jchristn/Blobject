@@ -1,4 +1,4 @@
-namespace Test.Shared
+﻿namespace Test.Shared
 {
     using System;
     using System.Collections.Generic;
@@ -122,6 +122,8 @@ namespace Test.Shared
                     ProviderCase(options, suiteId, "EmptyStreamWrite", "empty stream write creates empty blob", EmptyStreamWrite),
                     ProviderCase(options, suiteId, "NullStreamZeroLengthWrite", "null stream with zero length creates empty blob", NullStreamZeroLengthWrite),
                     ProviderCase(options, suiteId, "NonSeekableStreamWrite", "non-seekable stream writes correctly", NonSeekableStreamWrite),
+                    ProviderCase(options, suiteId, "NonSeekableShortContentLength", "contentLength shorter than a non-seekable stream writes prefix only", NonSeekableShortContentLength),
+                    ProviderCase(options, suiteId, "NegativeContentLengthRejected", "negative contentLength is rejected without writing", NegativeContentLengthRejected),
                     ProviderCase(options, suiteId, "ShortContentLengthWritesPrefix", "contentLength shorter than stream writes prefix only", ShortContentLengthWritesPrefix),
                     ProviderCase(options, suiteId, "ZeroContentLengthIgnoresStream", "zero contentLength writes empty blob", ZeroContentLengthIgnoresStream),
                     ProviderCase(options, suiteId, "GetStreamEmptyBlob", "GetStreamAsync returns readable empty stream", GetStreamEmptyBlob),
@@ -177,7 +179,8 @@ namespace Test.Shared
                     ProviderCase(options, suiteId, "ProviderCaseSensitivity", "provider case sensitivity is respected", ProviderCaseSensitivity),
                     ProviderCase(options, suiteId, "EnumerationAfterDelete", "deleted blobs do not enumerate", EnumerationAfterDelete),
                     ProviderCase(options, suiteId, "EnumerationReturnsMetadataLengths", "enumeration metadata includes lengths", EnumerationReturnsMetadataLengths),
-                    ProviderCase(options, suiteId, "EnumerationOfEmptyBlob", "empty blob enumerates with zero length", EnumerationOfEmptyBlob)
+                    ProviderCase(options, suiteId, "EnumerationOfEmptyBlob", "empty blob enumerates with zero length", EnumerationOfEmptyBlob),
+                    ProviderCase(options, suiteId, "FolderEntries", "hierarchical providers enumerate folders after their contents; others enumerate objects only", FolderEntries)
                 });
         }
 
@@ -302,11 +305,11 @@ namespace Test.Shared
             Func<BlobClientBase, BlobProviderOptions, CancellationToken, Task> executeAsync,
             CancellationToken token)
         {
-            using (BlobProviderContext context = BlobProviderFactory.Create(options, caseId))
+            using (BlobProviderContext context = await BlobProviderFactory.CreateAsync(options, caseId, token).ConfigureAwait(false))
             {
                 try
                 {
-                    await executeAsync(context.Client, options, token).ConfigureAwait(false);
+                    await executeAsync(context.Client, context.Options, token).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -322,12 +325,12 @@ namespace Test.Shared
             Func<BlobClientBase, BlobClientBase, BlobProviderOptions, CancellationToken, Task> executeAsync,
             CancellationToken token)
         {
-            using (BlobProviderContext source = BlobProviderFactory.Create(options, caseId + ".source"))
-            using (BlobProviderContext target = BlobProviderFactory.Create(options, caseId + ".target"))
+            using (BlobProviderContext source = await BlobProviderFactory.CreateAsync(options, caseId + ".source", token).ConfigureAwait(false))
+            using (BlobProviderContext target = await BlobProviderFactory.CreateAsync(options, caseId + ".target", token).ConfigureAwait(false))
             {
                 try
                 {
-                    await executeAsync(source.Client, target.Client, options, token).ConfigureAwait(false);
+                    await executeAsync(source.Client, target.Client, source.Options, token).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -638,6 +641,27 @@ namespace Test.Shared
             AssertEqual(0, (await blobs.GetAsync("null-stream.bin", token).ConfigureAwait(false)).Length, "null stream");
         }
 
+        private static async Task NonSeekableShortContentLength(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            using (NonSeekableReadStream stream = new NonSeekableReadStream(Encoding.UTF8.GetBytes("abcdefghij")))
+            {
+                await blobs.WriteAsync("nonseekable-prefix.txt", "text/plain", 4, stream, token).ConfigureAwait(false);
+            }
+
+            AssertEqual("abcd", Encoding.UTF8.GetString(await blobs.GetAsync("nonseekable-prefix.txt", token).ConfigureAwait(false)), "non-seekable prefix");
+            AssertEqual(4L, (await blobs.GetMetadataAsync("nonseekable-prefix.txt", token).ConfigureAwait(false)).ContentLength, "non-seekable prefix length");
+        }
+
+        private static async Task NegativeContentLengthRejected(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("abc")))
+            {
+                await AssertThrowsAsync<ArgumentException>(() => blobs.WriteAsync("negative-length.txt", "text/plain", -1, stream, token), "negative content length").ConfigureAwait(false);
+            }
+
+            AssertFalse(await blobs.ExistsAsync("negative-length.txt", token).ConfigureAwait(false), "nothing written for negative length");
+        }
+
         private static async Task NonSeekableStreamWrite(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
         {
             byte[] expected = Encoding.UTF8.GetBytes("nonseekable");
@@ -779,7 +803,8 @@ namespace Test.Shared
         private static async Task EnumerateAllCount(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
         {
             await SeedEnumeration(blobs, token).ConfigureAwait(false);
-            AssertEqual(5, (await EnumerateAsync(blobs, null, token).ConfigureAwait(false)).Count, "all count");
+            // hierarchical providers also return the alpha/, beta/, and gamma/ folders
+            AssertEqual(options.IsHierarchicalProvider ? 8 : 5, (await EnumerateAsync(blobs, null, token).ConfigureAwait(false)).Count, "all count");
         }
 
         private static async Task SyncAsyncParity(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
@@ -805,7 +830,9 @@ namespace Test.Shared
         private static async Task PrefixPartial(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
         {
             await SeedEnumeration(blobs, token).ConfigureAwait(false);
-            AssertKeys(await EnumerateAsync(blobs, new EnumerationFilter { Prefix = "alp" }, token).ConfigureAwait(false), "alpha/file-a.txt", "alpha/file-b.log");
+            List<string> expected = new List<string> { "alpha/file-a.txt", "alpha/file-b.log" };
+            if (options.IsHierarchicalProvider) expected.Add("alpha/");
+            AssertKeys(await EnumerateAsync(blobs, new EnumerationFilter { Prefix = "alp" }, token).ConfigureAwait(false), expected.ToArray());
         }
 
         private static async Task SuffixFilter(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
@@ -831,7 +858,9 @@ namespace Test.Shared
         private static async Task MaximumSizeFilter(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
         {
             await SeedEnumeration(blobs, token).ConfigureAwait(false);
-            AssertKeys(await EnumerateAsync(blobs, new EnumerationFilter { MaximumSize = 1 }, token).ConfigureAwait(false), "beta/empty.bin", "gamma/case.TXT");
+            List<string> expected = new List<string> { "beta/empty.bin", "gamma/case.TXT" };
+            if (options.IsHierarchicalProvider) expected.AddRange(new[] { "alpha/", "beta/", "gamma/" });
+            AssertKeys(await EnumerateAsync(blobs, new EnumerationFilter { MaximumSize = 1 }, token).ConfigureAwait(false), expected.ToArray());
         }
 
         private static async Task SizeRangeFilter(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
@@ -874,6 +903,31 @@ namespace Test.Shared
             await blobs.WriteAsync("lengths/a.txt", "text/plain", "abc", token).ConfigureAwait(false);
             BlobMetadata metadata = (await EnumerateAsync(blobs, new EnumerationFilter { Prefix = "lengths/" }, token).ConfigureAwait(false)).First();
             AssertEqual(3L, metadata.ContentLength, "enumerated length");
+        }
+
+        private static async Task FolderEntries(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
+        {
+            await SeedEnumeration(blobs, token).ConfigureAwait(false);
+            List<BlobMetadata> all = await EnumerateAsync(blobs, null, token).ConfigureAwait(false);
+            List<BlobMetadata> folders = all.Where(m => m.IsFolder).ToList();
+
+            if (!options.IsHierarchicalProvider)
+            {
+                AssertEqual(0, folders.Count, "no folder entries");
+                return;
+            }
+
+            AssertKeys(folders, "alpha/", "beta/", "gamma/");
+
+            foreach (BlobMetadata folder in folders)
+            {
+                AssertEqual(0L, folder.ContentLength, "folder length " + folder.Key);
+                int folderIndex = all.IndexOf(folder);
+                int lastChild = all.FindLastIndex(m => !m.IsFolder && m.Key.StartsWith(folder.Key, StringComparison.Ordinal));
+                AssertTrue(lastChild >= 0 && lastChild < folderIndex, "folder " + folder.Key + " follows its contents");
+            }
+
+            AssertFalse(all.Where(m => !m.IsFolder).Any(m => m.Key.EndsWith("/", StringComparison.Ordinal)), "object keys do not end in '/'");
         }
 
         private static async Task EnumerationOfEmptyBlob(BlobClientBase blobs, BlobProviderOptions options, CancellationToken token)
@@ -979,7 +1033,8 @@ namespace Test.Shared
             await blobs.WriteAsync("empty/a.txt", "text/plain", "a", token).ConfigureAwait(false);
             await blobs.WriteAsync("empty/b.txt", "text/plain", "b", token).ConfigureAwait(false);
             EmptyResult result = await blobs.EmptyAsync(token).ConfigureAwait(false);
-            AssertEqual(2L, result.Count, "empty objects count");
+            // hierarchical providers also remove and report the empty/ folder
+            AssertEqual(options.IsHierarchicalProvider ? 3L : 2L, result.Count, "empty objects count");
             AssertEqual(0, (await EnumerateAsync(blobs, null, token).ConfigureAwait(false)).Count, "post empty count");
         }
 

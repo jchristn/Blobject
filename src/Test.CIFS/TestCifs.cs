@@ -92,6 +92,7 @@
                 Inputty.GetString("Username   :", null, false),
                 Inputty.GetString("Password   :", null, false),
                 Inputty.GetString("Share      :", null, false));
+            _Settings.Port = Inputty.GetInteger("Port       :", 445, true, false);
             _Client = new CifsBlobClient(_Settings);
             if (_Debug) _Client.Logger = Console.WriteLine;
         }

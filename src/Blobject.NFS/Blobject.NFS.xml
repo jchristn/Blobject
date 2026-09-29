@@ -5,11 +5,17 @@
     </assembly>
     <members>
         <member name="T:Blobject.NFS.NfsBlobClient">
-            <inheritdoc />
+            <summary>
+            BLOB client for NFSv3 exports, backed by OpenNFS.
+            Keys map to paths within the export, using '/' as the separator.  Folders are created on demand when writing,
+            a key ending in '/' refers to a folder, and enumeration returns files and folders, with each folder
+            (IsFolder true, key ending in '/') returned after its contents.
+            </summary>
         </member>
         <member name="M:Blobject.NFS.NfsBlobClient.#ctor(Blobject.NFS.NfsSettings)">
             <summary>
             Initializes a new instance of the <see cref="T:Blobject.NFS.NfsBlobClient"/> class.
+            The connection to the server is established on first use.
             </summary>
             <param name="nfsSettings">Settings for <see cref="T:Blobject.NFS.NfsBlobClient"/>.</param>
         </member>
@@ -24,15 +30,21 @@
             Dispose.
             </summary>
         </member>
+        <member name="M:Blobject.NFS.NfsBlobClient.DisposeAsync">
+            <summary>
+            Dispose asynchronously, unmounting and disconnecting from the server.
+            </summary>
+            <returns>Task.</returns>
+        </member>
         <member name="M:Blobject.NFS.NfsBlobClient.ValidateConnectivity(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:Blobject.NFS.NfsBlobClient.ListShares(System.Threading.CancellationToken)">
             <summary>
-            List shares available on the server.
+            List shares (exports) available on the server.
             </summary>
             <param name="token">Cancellation token.</param>
-            <returns>List of share names.</returns>
+            <returns>List of export paths.</returns>
         </member>
         <member name="M:Blobject.NFS.NfsBlobClient.GetAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
@@ -42,6 +54,7 @@
         </member>
         <member name="M:Blobject.NFS.NfsBlobClient.GetMetadataAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
+            <remarks>NFSv3 does not record a creation time, so <see cref="P:Blobject.Core.BlobMetadata.CreatedUtc"/> is not populated.</remarks>
         </member>
         <member name="M:Blobject.NFS.NfsBlobClient.WriteAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
             <inheritdoc />
@@ -57,6 +70,7 @@
         </member>
         <member name="M:Blobject.NFS.NfsBlobClient.DeleteAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
+            <remarks>Deleting a key that does not exist succeeds.  Deleting a folder requires the folder to be empty.</remarks>
         </member>
         <member name="M:Blobject.NFS.NfsBlobClient.DeleteManyAsync(System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
             <inheritdoc />
@@ -66,6 +80,7 @@
         </member>
         <member name="M:Blobject.NFS.NfsBlobClient.GenerateUrl(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
+            <remarks>Returns an NFS URL as described in RFC 2224, e.g. nfs://server/export/key.</remarks>
         </member>
         <member name="M:Blobject.NFS.NfsBlobClient.Enumerate(Blobject.Core.EnumerationFilter)">
             <inheritdoc />
@@ -74,7 +89,19 @@
             <inheritdoc />
         </member>
         <member name="M:Blobject.NFS.NfsBlobClient.EmptyAsync(System.Threading.CancellationToken)">
-            <inheritdoc />
+            <summary>
+            Delete all files and folders in the export.
+            </summary>
+            <param name="token">Cancellation token.</param>
+            <returns>Empty result.</returns>
+        </member>
+        <member name="M:Blobject.NFS.NfsBlobClient.KeyToPath(System.String,System.Boolean@)">
+            <summary>
+            Convert a BLOB key into an export-relative NFS path.
+            </summary>
+            <param name="key">Key.</param>
+            <param name="isFolderKey">True if the key ends with a separator.</param>
+            <returns>Path using '/' separators.</returns>
         </member>
         <member name="T:Blobject.NFS.NfsSettings">
             <summary>
@@ -83,7 +110,7 @@
         </member>
         <member name="P:Blobject.NFS.NfsSettings.Hostname">
             <summary>
-            Hostname.
+            Hostname or IPv4 address of the NFS server.
             </summary>
         </member>
         <member name="P:Blobject.NFS.NfsSettings.Ip">
@@ -93,22 +120,59 @@
         </member>
         <member name="P:Blobject.NFS.NfsSettings.UserId">
             <summary>
-            ID of the user.
+            ID of the user, sent using AUTH_SYS.
             </summary>
         </member>
         <member name="P:Blobject.NFS.NfsSettings.GroupId">
             <summary>
-            ID of the group.
+            ID of the group, sent using AUTH_SYS.
             </summary>
         </member>
         <member name="P:Blobject.NFS.NfsSettings.Share">
             <summary>
-            Name of the share.
+            Name of the share, i.e. the export path, for example /export.
             </summary>
         </member>
         <member name="P:Blobject.NFS.NfsSettings.Version">
             <summary>
-            NFS version.
+            NFS version.  Only <see cref="F:Blobject.NFS.NfsVersionEnum.V3"/> is supported.
+            </summary>
+        </member>
+        <member name="P:Blobject.NFS.NfsSettings.Port">
+            <summary>
+            TCP port of the NFS service.  Default is 2049.
+            </summary>
+        </member>
+        <member name="P:Blobject.NFS.NfsSettings.MountPort">
+            <summary>
+            TCP port of the MOUNT service.  Default is 0, meaning the port is discovered through the portmapper
+            (see <see cref="P:Blobject.NFS.NfsSettings.PortmapperPort"/>), falling back to <see cref="P:Blobject.NFS.NfsSettings.Port"/> when discovery is not possible.
+            </summary>
+        </member>
+        <member name="P:Blobject.NFS.NfsSettings.PortmapperPort">
+            <summary>
+            TCP port of the portmapper (rpcbind) service, used when <see cref="P:Blobject.NFS.NfsSettings.MountPort"/> is 0.  Default is 111.
+            </summary>
+        </member>
+        <member name="P:Blobject.NFS.NfsSettings.MachineName">
+            <summary>
+            Machine name sent in AUTH_SYS credentials.  Default is the local machine name.
+            </summary>
+        </member>
+        <member name="P:Blobject.NFS.NfsSettings.WriteStability">
+            <summary>
+            Stability requested for writes.  Default is <see cref="F:Blobject.NFS.NfsWriteStabilityEnum.Unstable"/>, in which case
+            written data is committed to stable storage once each object has been written.
+            </summary>
+        </member>
+        <member name="P:Blobject.NFS.NfsSettings.ConnectTimeoutMs">
+            <summary>
+            Connection timeout in milliseconds.  Default is 10000.
+            </summary>
+        </member>
+        <member name="P:Blobject.NFS.NfsSettings.ResponseTimeoutMs">
+            <summary>
+            Response timeout in milliseconds for each RPC.  Default is 30000.
             </summary>
         </member>
         <member name="M:Blobject.NFS.NfsSettings.#ctor">
@@ -123,7 +187,7 @@
             <param name="hostname">Hostname of the server.</param>
             <param name="userId">User ID.</param>
             <param name="groupId">Group ID.</param>
-            <param name="share">Share name.</param>
+            <param name="share">Share name, i.e. the export path.</param>
             <param name="version">NFS version.</param>
         </member>
         <member name="T:Blobject.NFS.NfsVersionEnum">
@@ -133,17 +197,37 @@
         </member>
         <member name="F:Blobject.NFS.NfsVersionEnum.V2">
             <summary>
-            V2.
+            V2.  Not supported.
             </summary>
         </member>
         <member name="F:Blobject.NFS.NfsVersionEnum.V3">
             <summary>
-            V3.
+            V3.  Supported.
             </summary>
         </member>
         <member name="F:Blobject.NFS.NfsVersionEnum.V4">
             <summary>
-            V4.
+            V4.  Not supported.
+            </summary>
+        </member>
+        <member name="T:Blobject.NFS.NfsWriteStabilityEnum">
+            <summary>
+            Stability requested for NFS writes.
+            </summary>
+        </member>
+        <member name="F:Blobject.NFS.NfsWriteStabilityEnum.Unstable">
+            <summary>
+            The server may cache written data; data is committed to stable storage once the object has been written.
+            </summary>
+        </member>
+        <member name="F:Blobject.NFS.NfsWriteStabilityEnum.DataSync">
+            <summary>
+            Data is written to stable storage before each write completes; file metadata may be cached.
+            </summary>
+        </member>
+        <member name="F:Blobject.NFS.NfsWriteStabilityEnum.FileSync">
+            <summary>
+            Data and file metadata are written to stable storage before each write completes.
             </summary>
         </member>
     </members>

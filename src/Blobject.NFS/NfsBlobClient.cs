@@ -1,40 +1,25 @@
 namespace Blobject.NFS
 {
-    /*
-     * Helpful links
-     *
-     * https://www.dummies.com/article/technology/computers/operating-systems/linux/how-to-share-files-with-nfs-on-linux-systems-255851/
-     * https://github.com/SonnyX/NFS-Client
-     * https://github.com/nekoni/nekodrive
-     * https://code.google.com/archive/p/nekodrive/wikis/UseNFSDotNetLibrary.wiki
-     * https://ubuntu.com/server/docs/network-file-system-nfs
-     * https://www.hanewin.net/nfs-e.htm
-     * https://serverfault.com/questions/240897/how-to-properly-set-permissions-for-nfs-folder-permission-denied-on-mounting-en
-     * https://temasre.medium.com/connecting-to-nfs-client-v4-using-net-core-and-c-bc1f4af814c9
-     * https://superuser.com/questions/1454750/how-to-get-nfs-server-on-windows-10
-     *
-     */
-
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.IO;
     using System.Linq;
-    using System.Net;
+    using System.Net.Sockets;
     using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Blobject.Core;
-    using NFSLibrary;
-    using NFSLibrary.Protocols.Commons;
+    using OpenNFS.Client;
 
-    /// <inheritdoc />
-    public class NfsBlobClient : BlobClientBase, IDisposable
+    /// <summary>
+    /// BLOB client for NFSv3 exports, backed by OpenNFS.
+    /// Keys map to paths within the export, using '/' as the separator.  Folders are created on demand when writing,
+    /// a key ending in '/' refers to a folder, and enumeration returns files and folders, with each folder
+    /// (IsFolder true, key ending in '/') returned after its contents.
+    /// </summary>
+    public class NfsBlobClient : BlobClientBase, IDisposable, IAsyncDisposable
     {
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-
         #region Public-Members
 
         #endregion
@@ -45,7 +30,9 @@ namespace Blobject.NFS
         private NfsSettings _NfsSettings = null;
         private bool _Disposed = false;
 
-        private NfsClient _Client = null;
+        private readonly SemaphoreSlim _ConnectionLock = new SemaphoreSlim(1, 1);
+        private OpenNfsClient _Client = null;
+        private OpenNfsMountSession _Session = null;
 
         #endregion
 
@@ -53,16 +40,17 @@ namespace Blobject.NFS
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NfsBlobClient"/> class.
+        /// The connection to the server is established on first use.
         /// </summary>
         /// <param name="nfsSettings">Settings for <see cref="NfsBlobClient"/>.</param>
         public NfsBlobClient(NfsSettings nfsSettings)
         {
             if (nfsSettings == null) throw new ArgumentNullException(nameof(nfsSettings));
+            if (String.IsNullOrEmpty(nfsSettings.Share)) throw new ArgumentException("A share is required.", nameof(nfsSettings));
+            if (nfsSettings.Version != NfsVersionEnum.V3)
+                throw new NotSupportedException("NFS version '" + nfsSettings.Version.ToString() + "' is not supported; only NFS version 3 is supported.");
 
             _NfsSettings = nfsSettings;
-            _Client = InitializeClient();
-            _Client.MountDevice(nfsSettings.Share);
-            MaxConcurrency = 1;
         }
 
         #endregion
@@ -75,22 +63,16 @@ namespace Blobject.NFS
         /// <param name="disposing">Disposing.</param>
         protected virtual void Dispose(bool disposing)
         {
-            Log("disposing");
+            if (_Disposed) return;
 
-            if (!_Disposed)
+            if (disposing)
             {
-                if (_Client != null)
-                {
-                    if (_Client.IsMounted) _Client.UnMountDevice();
-                    if (_Client.IsConnected) _Client.Disconnect();
-                    _Client = null;
-                }
-
-                _NfsSettings = null;
-                _Disposed = true;
+                Log("disposing");
+                Task.Run(() => CloseConnectionAsync()).GetAwaiter().GetResult();
+                _ConnectionLock.Dispose();
             }
 
-            Log("disposed");
+            _Disposed = true;
         }
 
         /// <summary>
@@ -102,54 +84,62 @@ namespace Blobject.NFS
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Dispose asynchronously, unmounting and disconnecting from the server.
+        /// </summary>
+        /// <returns>Task.</returns>
+        public async ValueTask DisposeAsync()
+        {
+            if (_Disposed) return;
+
+            Log("disposing");
+            await CloseConnectionAsync().ConfigureAwait(false);
+            _ConnectionLock.Dispose();
+            _Disposed = true;
+            GC.SuppressFinalize(this);
+        }
+
         /// <inheritdoc />
         public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
         {
             try
             {
-                List<string> shares = _Client.GetExportedDevices();
+                await ExecuteAsync(session => session.Metadata.GetAttributesAsync("/", token), token).ConfigureAwait(false);
                 return true;
             }
-            catch (Exception)
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
+                throw;
+            }
+            catch (ObjectDisposedException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                Log("connectivity validation failed: " + e.Message);
                 return false;
             }
         }
 
         /// <summary>
-        /// List shares available on the server.
+        /// List shares (exports) available on the server.
         /// </summary>
         /// <param name="token">Cancellation token.</param>
-        /// <returns>List of share names.</returns>
+        /// <returns>List of export paths.</returns>
         public async Task<List<string>> ListShares(CancellationToken token = default)
         {
-            return _Client.GetExportedDevices();
-        }
-
-        /// <inheritdoc />
-        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
-        {
-            string normalizedKey = PathNormalizer(key);
-            byte[] ret = null;
-
-            NFSAttributes attrib = null;
-
-            attrib = _Client.GetItemAttributes(normalizedKey);
-            if (attrib != null)
+            IReadOnlyList<OpenNfsExportV3Entry> exports = await ExecuteAsync(async session =>
             {
-                bool isFolder = _Client.IsDirectory(normalizedKey);
-                if (isFolder) return null;
+                return await _Client.Exports.ListExportsV3Async(token).ConfigureAwait(false);
+            }, token).ConfigureAwait(false);
 
-                Stream stream = new MemoryStream();
-                _Client.Read(normalizedKey, ref stream);
-
-                if (stream != null)
+            List<string> ret = new List<string>();
+            if (exports != null)
+            {
+                foreach (OpenNfsExportV3Entry export in exports)
                 {
-                    stream.Seek(0, SeekOrigin.Begin);
-                    ret = ((MemoryStream)stream).ToArray();
-                    stream.Close();
-                    stream.Dispose();
-                    stream = null;
+                    if (export != null && !String.IsNullOrEmpty(export.ExportPath)) ret.Add(export.ExportPath);
                 }
             }
 
@@ -157,95 +147,103 @@ namespace Blobject.NFS
         }
 
         /// <inheritdoc />
-        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
-            BlobMetadata md = await GetMetadataAsync(key, token).ConfigureAwait(false);
-            BlobData ret = null;
-            key = PathNormalizer(key);
+            string path = KeyToPath(key, out _);
 
-            Stream stream = new MemoryStream();
-            _Client.Read(key, ref stream);
-
-            if (stream != null)
+            return await ExecuteAsync(async session =>
             {
-                stream.Seek(0, SeekOrigin.Begin);
-
-                ret = new BlobData
+                try
                 {
-                    Data = stream,
-                    ContentLength = md.ContentLength
-                };
-            }
-
-            return ret;
+                    return await session.Files.ReadAllBytesAsync(path, token).ConfigureAwait(false);
+                }
+                catch (OpenNfsV3StatusException e) when (e.Status == OpenNfsV3Status.IsDirectory || e.Status == OpenNfsV3Status.InvalidArgument)
+                {
+                    // servers report reading a directory as either ISDIR or INVAL
+                    OpenNfsV3Attributes attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
+                    if (attributes.FileType == OpenNfsV3FileType.Directory) return Array.Empty<byte>();
+                    throw;
+                }
+            }, token, key).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
+        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        {
+            string path = KeyToPath(key, out _);
+
+            return await ExecuteAsync(async session =>
+            {
+                OpenNfsV3Attributes attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
+                if (attributes.FileType == OpenNfsV3FileType.Directory) return new BlobData(0, new MemoryStream(Array.Empty<byte>()));
+
+                Stream stream = await session.Files.OpenReadAsync(path, token).ConfigureAwait(false);
+                return new BlobData(stream.Length, stream);
+            }, token, key).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        /// <remarks>NFSv3 does not record a creation time, so <see cref="BlobMetadata.CreatedUtc"/> is not populated.</remarks>
         public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
-            string normalizedKey = PathNormalizer(key);
+            string path = KeyToPath(key, out bool isFolderKey);
 
-            NFSAttributes attrib = null;
-            BlobMetadata md = null;
+            OpenNfsV3Attributes attributes = await ExecuteAsync(
+                session => session.Metadata.GetAttributesAsync(path, token),
+                token,
+                key).ConfigureAwait(false);
 
-            attrib = _Client.GetItemAttributes(normalizedKey);
-            if (attrib != null)
-            {
-                bool isFolder = _Client.IsDirectory(normalizedKey);
-                long size = attrib.Size;
+            bool isFolder = attributes.FileType == OpenNfsV3FileType.Directory;
+            if (isFolderKey && !isFolder) throw new KeyNotFoundException("The requested object was not found.");
 
-                md = new BlobMetadata
-                {
-                    Key = key,
-                    ContentLength = size,
-                    ContentType = "application/octet-stream",
-                    IsFolder = isFolder,
-                    CreatedUtc = attrib.CreateDateTime,
-                    LastAccessUtc = attrib.LastAccessedDateTime,
-                    LastUpdateUtc = attrib.ModifiedDateTime
-                };
-            }
-
-            if (md == null) throw new KeyNotFoundException("The requested object was not found.");
-            return md;
+            return BuildMetadata(isFolder ? path + "/" : path, attributes, isFolder);
         }
 
         /// <inheritdoc />
         public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(data)) data = "";
-
+            if (data == null) data = "";
             return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
         }
 
         /// <inheritdoc />
         public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
-            if (data == null) data = new byte[0];
+            if (data == null) data = Array.Empty<byte>();
+            string path = KeyToPath(key, out bool isFolderKey);
 
-            using (MemoryStream stream = new MemoryStream())
+            if (isFolderKey)
             {
-                await stream.WriteAsync(data, 0, data.Length, token).ConfigureAwait(false);
-                stream.Seek(0, SeekOrigin.Begin);
-
-                await WriteAsync(key, contentType, data.Length, stream, token).ConfigureAwait(false);
+                await CreateFolderAsync(path, token).ConfigureAwait(false);
+                return;
             }
+
+            await WriteFileAsync(path, session => session.Files.WriteAllBytesAsync(path, data, Stability, token), token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
-            string normalizedKey = PathNormalizer(key);
-            if (stream == null) stream = new MemoryStream(Array.Empty<byte>());
+            if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
+            if (stream == null)
+            {
+                if (contentLength > 0) throw new ArgumentNullException(nameof(stream));
+                stream = new MemoryStream(Array.Empty<byte>());
+            }
 
-            if (!String.IsNullOrEmpty(key) && key.EndsWith("/") && contentLength == 0)
+            if (!stream.CanRead) throw new ArgumentException("The supplied stream is not readable.", nameof(stream));
+
+            string path = KeyToPath(key, out bool isFolderKey);
+
+            if (isFolderKey)
             {
-                _Client.CreateDirectory(key.Substring(0, key.Length - 1));
+                await CreateFolderAsync(path, token).ConfigureAwait(false);
+                return;
             }
-            else
-            {
-                _Client.Write(normalizedKey, stream);
-            }
+
+            // The stream can only be consumed once, so this write is not retried after a connection failure.
+            Stream source = new LengthLimitedReadStream(stream, contentLength);
+            await WriteFileAsync(path, session => session.Files.WriteAsync(path, source, null, Stability, token), token, retryOnConnectionFailure: false).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -255,26 +253,46 @@ namespace Blobject.NFS
         }
 
         /// <inheritdoc />
+        /// <remarks>Deleting a key that does not exist succeeds.  Deleting a folder requires the folder to be empty.</remarks>
         public override async Task DeleteAsync(string key, CancellationToken token = default)
         {
-            string normalizedKey = PathNormalizer(key);
+            string path = KeyToPath(key, out bool isFolderKey);
 
-            if (await ExistsAsync(key, token).ConfigureAwait(false))
+            // the not-empty failure is returned rather than thrown inside ExecuteAsync, where an IOException means a failed connection
+            OpenNfsV3StatusException notEmpty = await ExecuteAsync<OpenNfsV3StatusException>(async session =>
             {
-                BlobMetadata md = await GetMetadataAsync(key, token).ConfigureAwait(false);
+                OpenNfsV3Attributes attributes;
 
-                if (md != null)
+                try
                 {
-                    if (md.IsFolder)
-                    {
-                        _Client.DeleteDirectory(normalizedKey);
-                    }
-                    else
-                    {
-                        _Client.DeleteFile(normalizedKey);
-                    }
+                    attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
                 }
-            }
+                catch (OpenNfsV3StatusException e) when (IsNotFound(e.Status))
+                {
+                    return null;
+                }
+
+                bool isFolder = attributes.FileType == OpenNfsV3FileType.Directory;
+                if (isFolderKey && !isFolder) return null;
+
+                try
+                {
+                    if (isFolder) await session.Directories.DeleteDirectoryAsync(path, token).ConfigureAwait(false);
+                    else await session.Directories.DeleteFileAsync(path, token).ConfigureAwait(false);
+                }
+                catch (OpenNfsV3StatusException e) when (IsNotFound(e.Status))
+                {
+                    // deleted concurrently
+                }
+                catch (OpenNfsV3StatusException e) when (e.Status == OpenNfsV3Status.NotEmpty || e.Status == OpenNfsV3Status.AlreadyExists)
+                {
+                    return e;
+                }
+
+                return null;
+            }, token).ConfigureAwait(false);
+
+            if (notEmpty != null) throw new IOException("The folder '" + key + "' is not empty.", notEmpty);
         }
 
         /// <inheritdoc />
@@ -286,120 +304,56 @@ namespace Blobject.NFS
         /// <inheritdoc />
         public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
-            key = PathNormalizer(key);
-            bool exists = false;
+            string path = KeyToPath(key, out bool isFolderKey);
 
-            try
+            return await ExecuteAsync(async session =>
             {
-                BlobMetadata blob = await GetMetadataAsync(key, token).ConfigureAwait(false);
-                if (blob != null) exists = true;
-            }
-            catch (KeyNotFoundException)
-            {
+                try
+                {
+                    if (!isFolderKey) return await session.Metadata.ExistsAsync(path, token).ConfigureAwait(false);
 
-            }
-
-            return exists;
+                    OpenNfsV3Attributes attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
+                    return attributes.FileType == OpenNfsV3FileType.Directory;
+                }
+                catch (OpenNfsV3StatusException e) when (IsNotFound(e.Status))
+                {
+                    // some servers (e.g. unfs3) report a lookup through a file as STALE rather than NOTDIR
+                    return false;
+                }
+            }, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
+        /// <remarks>Returns an NFS URL as described in RFC 2224, e.g. nfs://server/export/key.</remarks>
         public override string GenerateUrl(string key, CancellationToken token = default)
         {
-            string url = "/" + _NfsSettings.Ip.ToString() + "/" + _NfsSettings.Share + "/" + key;
-            url = url.Replace("\\", "/").Replace("//", "/");
-            return url;
+            string host = _NfsSettings.Hostname;
+            if (_NfsSettings.Port != 2049) host += ":" + _NfsSettings.Port;
+
+            string share = _NfsSettings.Share.Trim('/');
+            string path = (key ?? "").Replace("\\", "/").TrimStart('/');
+
+            string url = "nfs://" + host + "/";
+            if (!String.IsNullOrEmpty(share)) url += share + "/";
+            return url + path;
         }
 
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            #region Set-Filter
+            IAsyncEnumerator<BlobMetadata> enumerator = EnumerateAsync(filter).GetAsyncEnumerator();
 
-            filter = CloneFilter(filter);
-            if (String.IsNullOrEmpty(filter.Prefix))
+            try
             {
-                filter.Prefix = ".";
-                Log("beginning enumeration");
-            }
-            else
-            {
-                Log("beginning enumeration using prefix " + filter.Prefix);
-            }
-
-            while (filter.Prefix.StartsWith("/")) filter.Prefix = filter.Prefix.Substring(1);
-
-            filter.Prefix = filter.Prefix.Replace("\\", "/");
-
-            string baseDirectory = "";
-            string filePrefix = "";
-
-            if (!filter.Prefix.Equals("."))
-            {
-                string[] parts = filter.Prefix.Split('/');
-
-                if (filter.Prefix.EndsWith("/"))
+                while (Task.Run(() => enumerator.MoveNextAsync().AsTask()).GetAwaiter().GetResult())
                 {
-                    baseDirectory = filter.Prefix;
-                }
-                else
-                {
-                    for (int i = 0; i < parts.Length - 1; i++)
-                    {
-                        baseDirectory += parts[i] + "/";
-                    }
-
-                    filePrefix = parts[parts.Length - 1];
+                    yield return enumerator.Current;
                 }
             }
-            else
+            finally
             {
-                baseDirectory = ".";
+                Task.Run(() => enumerator.DisposeAsync().AsTask()).GetAwaiter().GetResult();
             }
-
-            #endregion
-
-            #region Iterate
-
-            IEnumerable<BlobMetadata> blobs = EnumerateSubdirectory(filter, baseDirectory, filePrefix);
-
-            if (blobs != null)
-            {
-                foreach (BlobMetadata blob in blobs)
-                {
-                    if (blob.IsFolder)
-                    {
-                        EnumerationFilter childFilter = new EnumerationFilter
-                        {
-                            MinimumSize = filter.MinimumSize,
-                            MaximumSize = filter.MaximumSize,
-                            Prefix = blob.Key,
-                            Suffix = filter.Suffix
-                        };
-
-                        IEnumerable<BlobMetadata> childBlobs = Enumerate(childFilter);
-                        if (childBlobs != null)
-                        {
-                            foreach (BlobMetadata childBlob in childBlobs)
-                            {
-                                yield return childBlob;
-                            }
-                        }
-
-                        // return the directories last to support empty operations which need to first
-                        // delete any documents contained in the subdirectory
-                        yield return blob;
-
-                    }
-                    else
-                    {
-                        yield return blob;
-                    }
-                }
-            }
-
-            #endregion
-
-            yield break;
         }
 
         /// <inheritdoc />
@@ -407,128 +361,92 @@ namespace Blobject.NFS
             EnumerationFilter filter = null,
             [EnumeratorCancellation] CancellationToken token = default)
         {
-            #region Set-Filter
-
             filter = CloneFilter(filter);
-            if (String.IsNullOrEmpty(filter.Prefix))
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
+
+            string prefix = (filter.Prefix ?? "").Replace("\\", "/");
+            while (prefix.StartsWith("/")) prefix = prefix.Substring(1);
+            filter.Prefix = prefix;
+
+            // walk from the root, pruning folders that cannot contain matches, so keys carry the names as stored
+            IReadOnlyList<OpenNfsV3DirectoryPlusEntry> rootEntries = await ListDirectoryAsync("/", token).ConfigureAwait(false);
+            if (rootEntries == null) yield break;
+
+            await foreach (BlobMetadata md in WalkAsync("", rootEntries, filter, token).ConfigureAwait(false))
             {
-                filter.Prefix = ".";
-                Log("beginning enumeration");
+                yield return md;
             }
-            else
-            {
-                Log("beginning enumeration using prefix " + filter.Prefix);
-            }
-
-            while (filter.Prefix.StartsWith("/")) filter.Prefix = filter.Prefix.Substring(1);
-
-            filter.Prefix = filter.Prefix.Replace("\\", "/");
-
-            string baseDirectory = "";
-            string filePrefix = "";
-
-            if (!filter.Prefix.Equals("."))
-            {
-                string[] parts = filter.Prefix.Split('/');
-
-                if (filter.Prefix.EndsWith("/"))
-                {
-                    baseDirectory = filter.Prefix;
-                }
-                else
-                {
-                    for (int i = 0; i < parts.Length - 1; i++)
-                    {
-                        baseDirectory += parts[i] + "/";
-                    }
-
-                    filePrefix = parts[parts.Length - 1];
-                }
-            }
-            else
-            {
-                baseDirectory = ".";
-            }
-
-            #endregion
-
-            #region Iterate
-
-            IEnumerable<BlobMetadata> blobs = EnumerateSubdirectory(filter, baseDirectory, filePrefix);
-
-            if (blobs != null)
-            {
-                foreach (BlobMetadata blob in blobs)
-                {
-                    if (token.IsCancellationRequested) break;
-
-                    if (blob.IsFolder)
-                    {
-                        EnumerationFilter childFilter = new EnumerationFilter
-                        {
-                            MinimumSize = filter.MinimumSize,
-                            MaximumSize = filter.MaximumSize,
-                            Prefix = blob.Key,
-                            Suffix = filter.Suffix
-                        };
-
-                        IEnumerable<BlobMetadata> childBlobs = Enumerate(childFilter);
-                        if (childBlobs != null)
-                        {
-                            foreach (BlobMetadata childBlob in childBlobs)
-                            {
-                                yield return childBlob;
-                            }
-                        }
-
-                        // return the directories last to support empty operations which need to first
-                        // delete any documents contained in the subdirectory
-                        yield return blob;
-
-                    }
-                    else
-                    {
-                        yield return blob;
-                    }
-                }
-            }
-
-            #endregion
-
-            yield break;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Delete all files and folders in the export.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Empty result.</returns>
         public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
-            return await base.EmptyAsync(token).ConfigureAwait(false);
+            EmptyResult er = new EmptyResult();
+            List<BlobMetadata> files = new List<BlobMetadata>();
+            List<BlobMetadata> folders = new List<BlobMetadata>();
+
+            await CollectTreeAsync("", files, folders, token).ConfigureAwait(false);
+
+            object syncLock = new object();
+
+            using (SemaphoreSlim semaphore = new SemaphoreSlim(MaxConcurrency))
+            {
+                List<Task> tasks = new List<Task>();
+
+                foreach (BlobMetadata md in files)
+                {
+                    await semaphore.WaitAsync(token).ConfigureAwait(false);
+
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await DeleteAsync(md.Key, token).ConfigureAwait(false);
+                            lock (syncLock) er.Blobs.Add(md);
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                        }
+                    }, token));
+                }
+
+                await Task.WhenAll(tasks).ConfigureAwait(false);
+            }
+
+            foreach (BlobMetadata folder in folders.OrderByDescending(f => f.Key.Length))
+            {
+                token.ThrowIfCancellationRequested();
+                await DeleteAsync(folder.Key, token).ConfigureAwait(false);
+                er.Blobs.Add(folder);
+            }
+
+            return er;
         }
 
         #endregion
 
         #region Private-Methods
 
-        private NfsClient InitializeClient()
+        private OpenNfsWriteStability Stability
         {
-            NfsClient client = null;
-
-            switch (_NfsSettings.Version)
+            get
             {
-                case NfsVersionEnum.V2:
-                    client = new NfsClient(NfsClient.NfsVersion.V2);
-                    break;
-                case NfsVersionEnum.V3:
-                    client = new NfsClient(NfsClient.NfsVersion.V3);
-                    break;
-                case NfsVersionEnum.V4:
-                    client = new NfsClient(NfsClient.NfsVersion.V4);
-                    break;
-                default:
-                    throw new ArgumentException("Unknown NFS version '" + _NfsSettings.Version.ToString() + "'.");
+                switch (_NfsSettings.WriteStability)
+                {
+                    case NfsWriteStabilityEnum.DataSync:
+                        return OpenNfsWriteStability.DataSync;
+                    case NfsWriteStabilityEnum.FileSync:
+                        return OpenNfsWriteStability.FileSync;
+                    default:
+                        return OpenNfsWriteStability.Unstable;
+                }
             }
-
-            client.Connect(_NfsSettings.Ip, _NfsSettings.UserId, _NfsSettings.GroupId, 5000);
-            return client;
         }
 
         private void Log(string msg)
@@ -537,67 +455,340 @@ namespace Blobject.NFS
                 Logger?.Invoke(_Header + msg);
         }
 
-        private string PathNormalizer(string path)
+        private void ThrowIfDisposed()
         {
-            /*
-            if (String.IsNullOrEmpty(path)) return null;
-            if (path.Contains("/")) path = path.Replace("/", "\\");
-            if (!path.StartsWith(".\\")) path = ".\\" + path;
-            while (path.EndsWith("\\")) path = path.Substring(0, path.Length - 1);
-            return path;
-            */
-
-            if (String.IsNullOrEmpty(path)) return ".";
-            path = path.Replace("/", "\\");
-            while (path.EndsWith("\\")) path = path.Substring(0, path.Length - 1);
-            while (path.StartsWith(".")) path = path.Substring(1);
-            while (path.StartsWith("\\")) path = path.Substring(1);
-            string[] parts = path.Split("\\");
-            return ".\\" + string.Join("\\", parts);
+            if (_Disposed) throw new ObjectDisposedException(nameof(NfsBlobClient));
         }
 
-        private IEnumerable<BlobMetadata> EnumerateSubdirectory(EnumerationFilter filter, string baseDirectory, string filePrefix)
+        private async Task<OpenNfsMountSession> GetSessionAsync(CancellationToken token)
         {
-            string path = PathNormalizer(baseDirectory);
+            ThrowIfDisposed();
 
-            string keyPrefix = "";
-            if (baseDirectory != ".") keyPrefix = baseDirectory;
+            OpenNfsMountSession session = _Session;
+            OpenNfsClient client = _Client;
+            if (session != null && client != null && client.State == OpenNfsClientState.Open) return session;
 
-            foreach (string item in _Client.GetItemList(path))
+            await _ConnectionLock.WaitAsync(token).ConfigureAwait(false);
+
+            try
             {
-                if (!String.IsNullOrEmpty(filePrefix) && !item.StartsWith(filePrefix, StringComparison.Ordinal)) continue;
-                if (!String.IsNullOrEmpty(filter.Suffix) && !item.EndsWith(filter.Suffix, StringComparison.Ordinal)) continue;
+                ThrowIfDisposed();
+                if (_Session != null && _Client != null && _Client.State == OpenNfsClientState.Open) return _Session;
 
-                NFSAttributes attrib = _Client.GetItemAttributes(PathNormalizer(baseDirectory + "/" + item));
-                if (attrib == null) continue;
+                await CloseConnectionCoreAsync().ConfigureAwait(false);
 
-                BlobMetadata md = new BlobMetadata
+                Log("connecting to " + _NfsSettings.Hostname + ":" + _NfsSettings.Port + " export " + _NfsSettings.Share);
+
+                OpenNfsClientBuilder builder = new OpenNfsClientBuilder()
+                    .WithServer(_NfsSettings.Hostname, _NfsSettings.Port)
+                    .WithAuthSysCredentials(new OpenNfsAuthSysCredentials(
+                        _NfsSettings.MachineName,
+                        (uint)_NfsSettings.UserId,
+                        (uint)_NfsSettings.GroupId))
+                    .WithConnectionTimeout(TimeSpan.FromMilliseconds(_NfsSettings.ConnectTimeoutMs))
+                    .WithResponseTimeout(TimeSpan.FromMilliseconds(_NfsSettings.ResponseTimeoutMs));
+
+                if (_NfsSettings.MountPort > 0)
                 {
-                    Key = keyPrefix + item,
-                    IsFolder = _Client.IsDirectory(PathNormalizer(baseDirectory + "/" + item)),
-                    ContentType = "application/octet-stream",
-                    ContentLength = attrib.Size,
-                    CreatedUtc = attrib.CreateDateTime,
-                    LastAccessUtc = attrib.LastAccessedDateTime,
-                    LastUpdateUtc = attrib.ModifiedDateTime
-                };
-
-                if (md.IsFolder)
+                    builder = builder.WithMountPort(_NfsSettings.MountPort);
+                }
+                else
                 {
-                    md.Key += "/";
-                    md.ContentLength = 0;
+                    builder = builder
+                        .WithPortmapperDiscovery(true)
+                        .WithPortmapperPort(_NfsSettings.PortmapperPort);
                 }
 
-                md.Key = md.Key.Replace("//", "/");
+                OpenNfsClient newClient = builder.Build();
 
-                if (md.ContentLength < filter.MinimumSize || md.ContentLength > filter.MaximumSize) continue;
-
-                yield return md;
+                try
+                {
+                    await newClient.ConnectAsync(token).ConfigureAwait(false);
+                    OpenNfsMountSession newSession = await newClient.MountAsync(_NfsSettings.Share, token).ConfigureAwait(false);
+                    _Client = newClient;
+                    _Session = newSession;
+                    return newSession;
+                }
+                catch (OperationCanceledException e) when (!token.IsCancellationRequested)
+                {
+                    try { await newClient.DisposeAsync().ConfigureAwait(false); } catch { }
+                    throw new TimeoutException("Timed out connecting to " + _NfsSettings.Hostname + ":" + _NfsSettings.Port + ".", e);
+                }
+                catch
+                {
+                    try { await newClient.DisposeAsync().ConfigureAwait(false); } catch { }
+                    throw;
+                }
+            }
+            finally
+            {
+                _ConnectionLock.Release();
             }
         }
 
-        #endregion
+        private async Task CloseConnectionAsync()
+        {
+            await _ConnectionLock.WaitAsync().ConfigureAwait(false);
 
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+            try
+            {
+                await CloseConnectionCoreAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _ConnectionLock.Release();
+            }
+        }
+
+        private async Task CloseConnectionCoreAsync()
+        {
+            OpenNfsMountSession session = _Session;
+            OpenNfsClient client = _Client;
+            _Session = null;
+            _Client = null;
+
+            if (session != null)
+            {
+                try { await session.DisposeAsync().ConfigureAwait(false); } catch { }
+            }
+
+            if (client != null)
+            {
+                try { if (client.State == OpenNfsClientState.Open) await client.DisconnectAsync(CancellationToken.None).ConfigureAwait(false); } catch { }
+                try { await client.DisposeAsync().ConfigureAwait(false); } catch { }
+            }
+        }
+
+        private async Task InvalidateConnectionAsync(OpenNfsMountSession failed)
+        {
+            await _ConnectionLock.WaitAsync().ConfigureAwait(false);
+
+            try
+            {
+                if (ReferenceEquals(_Session, failed)) await CloseConnectionCoreAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _ConnectionLock.Release();
+            }
+        }
+
+        private Task<T> ExecuteAsync<T>(Func<OpenNfsMountSession, Task<T>> operation, CancellationToken token, string notFoundKey = null)
+        {
+            return ExecuteAsync(operation, token, notFoundKey, true);
+        }
+
+        private async Task<T> ExecuteAsync<T>(Func<OpenNfsMountSession, Task<T>> operation, CancellationToken token, string notFoundKey, bool retryOnConnectionFailure)
+        {
+            int attempt = 0;
+
+            while (true)
+            {
+                attempt++;
+                token.ThrowIfCancellationRequested();
+                ThrowIfDisposed();
+                OpenNfsMountSession session = await GetSessionAsync(token).ConfigureAwait(false);
+
+                try
+                {
+                    return await operation(session).ConfigureAwait(false);
+                }
+                catch (OpenNfsV3StatusException e) when (notFoundKey != null && IsNotFound(e.Status))
+                {
+                    throw new KeyNotFoundException("The requested object '" + notFoundKey + "' was not found.", e);
+                }
+                catch (Exception e) when (IsConnectionFailure(e) && !token.IsCancellationRequested)
+                {
+                    Log("connection failure, resetting connection: " + e.Message);
+                    await InvalidateConnectionAsync(session).ConfigureAwait(false);
+                    if (!retryOnConnectionFailure || attempt > 1) throw;
+                }
+            }
+        }
+
+        private async Task WriteFileAsync(string path, Func<OpenNfsMountSession, Task> write, CancellationToken token, bool retryOnConnectionFailure = true)
+        {
+            await ExecuteAsync<object>(async session =>
+            {
+                try
+                {
+                    await write(session).ConfigureAwait(false);
+                }
+                catch (OpenNfsV3StatusException e) when (e.Status == OpenNfsV3Status.NoEntry && path.Contains("/"))
+                {
+                    // parent folder does not exist; create it and try again
+                    string parent = path.Substring(0, path.LastIndexOf('/'));
+                    await session.Directories.CreateDirectoryAsync(parent, true, token).ConfigureAwait(false);
+                    await write(session).ConfigureAwait(false);
+                }
+
+                return null;
+            }, token, null, retryOnConnectionFailure).ConfigureAwait(false);
+        }
+
+        private async Task CreateFolderAsync(string path, CancellationToken token)
+        {
+            await ExecuteAsync<object>(async session =>
+            {
+                await session.Directories.CreateDirectoryAsync(path, true, token).ConfigureAwait(false);
+                return null;
+            }, token).ConfigureAwait(false);
+        }
+
+        private async Task<IReadOnlyList<OpenNfsV3DirectoryPlusEntry>> ListDirectoryAsync(string path, CancellationToken token)
+        {
+            return await ExecuteAsync(async session =>
+            {
+                try
+                {
+                    return await session.Directories.ListWithAttributesAsync(path, token).ConfigureAwait(false);
+                }
+                catch (OpenNfsV3StatusException e) when (IsNotFound(e.Status))
+                {
+                    return null;
+                }
+            }, token).ConfigureAwait(false);
+        }
+
+        private async IAsyncEnumerable<BlobMetadata> WalkAsync(
+            string directoryKey,
+            IReadOnlyList<OpenNfsV3DirectoryPlusEntry> entries,
+            EnumerationFilter filter,
+            [EnumeratorCancellation] CancellationToken token)
+        {
+            foreach (OpenNfsV3DirectoryPlusEntry entry in entries.OrderBy(e => e.Name, StringComparer.Ordinal))
+            {
+                token.ThrowIfCancellationRequested();
+                if (entry == null || entry.Name == "." || entry.Name == ".." || entry.Attributes == null) continue;
+
+                string key = directoryKey + entry.Name;
+
+                if (entry.Attributes.FileType == OpenNfsV3FileType.Directory)
+                {
+                    string folderKey = key + "/";
+                    if (!CanContainMatches(folderKey, filter.Prefix)) continue;
+
+                    IReadOnlyList<OpenNfsV3DirectoryPlusEntry> children = await ListDirectoryAsync(KeyToDirectoryPath(folderKey), token).ConfigureAwait(false);
+                    if (children == null) continue;
+
+                    await foreach (BlobMetadata child in WalkAsync(folderKey, children, filter, token).ConfigureAwait(false))
+                    {
+                        yield return child;
+                    }
+
+                    // the folder follows its contents so that deleting in enumeration order empties it first;
+                    // the folder named by the prefix itself is not returned
+                    if (String.Equals(folderKey, filter.Prefix, StringComparison.Ordinal)) continue;
+
+                    BlobMetadata folder = BuildMetadata(folderKey, entry.Attributes, true);
+                    if (MatchesFilter(folder, filter, StringComparison.Ordinal)) yield return folder;
+                }
+                else
+                {
+                    BlobMetadata md = BuildMetadata(key, entry.Attributes, false);
+                    if (MatchesFilter(md, filter, StringComparison.Ordinal)) yield return md;
+                }
+            }
+        }
+
+        private async Task CollectTreeAsync(string directoryKey, List<BlobMetadata> files, List<BlobMetadata> folders, CancellationToken token)
+        {
+            IReadOnlyList<OpenNfsV3DirectoryPlusEntry> entries = await ListDirectoryAsync(KeyToDirectoryPath(directoryKey), token).ConfigureAwait(false);
+            if (entries == null) return;
+
+            foreach (OpenNfsV3DirectoryPlusEntry entry in entries)
+            {
+                token.ThrowIfCancellationRequested();
+                if (entry == null || entry.Name == "." || entry.Name == ".." || entry.Attributes == null) continue;
+
+                string key = directoryKey + entry.Name;
+
+                if (entry.Attributes.FileType == OpenNfsV3FileType.Directory)
+                {
+                    await CollectTreeAsync(key + "/", files, folders, token).ConfigureAwait(false);
+                    folders.Add(BuildMetadata(key + "/", entry.Attributes, true));
+                }
+                else
+                {
+                    files.Add(BuildMetadata(key, entry.Attributes, false));
+                }
+            }
+        }
+
+        private static BlobMetadata BuildMetadata(string key, OpenNfsV3Attributes attributes, bool isFolder)
+        {
+            return new BlobMetadata
+            {
+                Key = key,
+                IsFolder = isFolder,
+                ContentType = "application/octet-stream",
+                ContentLength = isFolder ? 0 : (attributes.SizeBytes > (ulong)Int64.MaxValue ? Int64.MaxValue : (long)attributes.SizeBytes),
+                CreatedUtc = null,
+                LastAccessUtc = attributes.AccessTime.ToDateTimeUtc(),
+                LastUpdateUtc = attributes.ModifyTime.ToDateTimeUtc()
+            };
+        }
+
+        private static bool CanContainMatches(string folderKey, string prefix)
+        {
+            if (String.IsNullOrEmpty(prefix)) return true;
+            return folderKey.StartsWith(prefix, StringComparison.Ordinal)
+                || prefix.StartsWith(folderKey, StringComparison.Ordinal);
+        }
+
+        private static bool IsNotFound(OpenNfsV3Status status)
+        {
+            return status == OpenNfsV3Status.NoEntry
+                || status == OpenNfsV3Status.NotDirectory
+                || status == OpenNfsV3Status.Stale;
+        }
+
+        private static bool IsConnectionFailure(Exception e)
+        {
+            // a session disposed by a concurrent reconnect reports the library's client as disposed
+            if (e is ObjectDisposedException disposed) return disposed.ObjectName != nameof(NfsBlobClient);
+            if (e.InnerException is ObjectDisposedException innerDisposed) return innerDisposed.ObjectName != nameof(NfsBlobClient);
+
+            return e is IOException
+                || e is SocketException
+                || e is TimeoutException
+                || e is OpenNfsClientIoException
+                || e is OpenNfsClientStateException
+                || (e.InnerException != null && (e.InnerException is IOException || e.InnerException is SocketException));
+        }
+
+        /// <summary>
+        /// Convert a BLOB key into an export-relative NFS path.
+        /// </summary>
+        /// <param name="key">Key.</param>
+        /// <param name="isFolderKey">True if the key ends with a separator.</param>
+        /// <returns>Path using '/' separators.</returns>
+        internal static string KeyToPath(string key, out bool isFolderKey)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
+            string normalized = key.Replace("\\", "/");
+            isFolderKey = normalized.EndsWith("/");
+
+            string[] segments = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length < 1) throw new ArgumentException("The key must identify an object beneath the export root.", nameof(key));
+
+            foreach (string segment in segments)
+            {
+                if (segment == "." || segment == "..")
+                    throw new ArgumentException("Relative path segments '.' and '..' are not permitted in keys.", nameof(key));
+            }
+
+            return String.Join("/", segments);
+        }
+
+        private static string KeyToDirectoryPath(string directoryKey)
+        {
+            if (String.IsNullOrEmpty(directoryKey)) return "/";
+            string path = directoryKey.Trim('/');
+            return String.IsNullOrEmpty(path) ? "/" : path;
+        }
+
+        #endregion
     }
 }

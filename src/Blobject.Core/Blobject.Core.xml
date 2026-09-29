@@ -625,6 +625,57 @@
             </summary>
             <returns>Enumeration filter.</returns>
         </member>
+        <member name="T:Blobject.Core.LengthLimitedReadStream">
+            <summary>
+            Read-only, forward-only stream exposing at most a fixed number of bytes from an underlying stream.
+            Used to honor the contentLength argument of stream writes.  The underlying stream is not disposed.
+            </summary>
+        </member>
+        <member name="P:Blobject.Core.LengthLimitedReadStream.CanRead">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.Core.LengthLimitedReadStream.CanSeek">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.Core.LengthLimitedReadStream.CanWrite">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.Core.LengthLimitedReadStream.Length">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.Core.LengthLimitedReadStream.Position">
+            <summary>
+            Number of bytes read so far.  Setting the position is not supported.
+            </summary>
+        </member>
+        <member name="M:Blobject.Core.LengthLimitedReadStream.#ctor(System.IO.Stream,System.Int64)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="inner">Stream to read from.</param>
+            <param name="limit">Maximum number of bytes to expose.</param>
+        </member>
+        <member name="M:Blobject.Core.LengthLimitedReadStream.Read(System.Byte[],System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Core.LengthLimitedReadStream.ReadAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Core.LengthLimitedReadStream.ReadAsync(System.Memory{System.Byte},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Core.LengthLimitedReadStream.Flush">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Core.LengthLimitedReadStream.Seek(System.Int64,System.IO.SeekOrigin)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Core.LengthLimitedReadStream.SetLength(System.Int64)">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.Core.LengthLimitedReadStream.Write(System.Byte[],System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
         <member name="T:Blobject.Core.SerializationHelper">
             <summary>
             Serialization helper.

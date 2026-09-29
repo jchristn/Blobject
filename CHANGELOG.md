@@ -2,6 +2,81 @@
 
 ## Current Version
 
+v6.0.x
+
+### Blobject.CIFS v6.0.0
+
+- Migrated from EzSmb to [OpenCIFS](https://github.com/jchristn/OpenCIFS) 0.1.1 (MIT), supporting SMB 2.0.2 through SMB 3.x with signing and SMB 3.x encryption
+- Persistent SMB connections, pooled (`CifsSettings.MaxConnections`, default 4) because OpenCIFS runs one request at a time per connection, with automatic reconnect after a dropped connection or server restart
+- `GetStreamAsync` returns a seekable stream that reads from the server on demand instead of buffering the whole object; stream writes are sent in chunks
+- Enumeration reads directories with paged queries, so large directories are listed completely, and returns keys with the names as stored on the server
+- `CancellationToken` is honored by every operation; enumeration no longer blocks on `.Result`
+- Fixed `CifsSettings.Hostname` setter not updating `Hostname`, and metadata reporting the last-access time as `LastUpdateUtc`; `LastUpdateUtc` is now the last-write time
+- New settings: `Port`, `Domain` (a `domain\username` value in `Username` still works), `RequireSigning`, `PreferEncryption`, `ConnectTimeoutMs`, `MaxConnections`, and a constructor accepting the port
+- `CifsBlobClient` implements `IAsyncDisposable`
+- Breaking: targets `net8.0` and `net10.0` only (`netstandard2.1` dropped, as OpenCIFS requires .NET 8 or later)
+- Breaking: `GetAsync` and `GetStreamAsync` throw `KeyNotFoundException` for a missing key instead of returning empty content, matching `GetMetadataAsync`
+- Breaking: keys containing characters SMB reserves (`< > : " | ? *` and control characters) are rejected with `ArgumentException`; on Windows servers `:` would otherwise silently address an NTFS alternate data stream
+- Breaking: keys that are empty, consist only of separators, or contain `.` or `..` segments are rejected with `ArgumentException`
+- Deleting a folder that is not empty throws `IOException`; deleting a missing key succeeds
+
+### Blobject.NFS v6.0.0
+
+- Migrated from NFS-Client to [OpenNFS](https://github.com/jchristn/OpenNFS) 0.1.1 (MIT)
+- Fully asynchronous with concurrency support (the previous implementation was synchronous and forced `MaxConcurrency = 1`), using persistent pooled connections with automatic reconnect
+- `CancellationToken` is honored by every operation
+- Overwriting an object now truncates it, writes to new keys create the file and any missing parent folders, and `Unstable` writes are committed to stable storage once each object is written
+- `GetStreamAsync` returns a seekable stream that reads from the server on demand
+- The MOUNT port is discovered through the portmapper by default (`NfsSettings.MountPort = 0`), or can be set explicitly
+- Fixed `NfsSettings.Hostname` setter not updating `Hostname`
+- New settings: `Port`, `MountPort`, `PortmapperPort`, `MachineName`, `WriteStability` (new `NfsWriteStabilityEnum`), `ConnectTimeoutMs`, `ResponseTimeoutMs`
+- `NfsBlobClient` implements `IAsyncDisposable`; the connection is established on first use rather than in the constructor
+- Breaking: targets `net8.0` and `net10.0` only (`netstandard2.1` dropped, as OpenNFS requires .NET 8 or later)
+- Breaking: only NFSv3 is supported; constructing a client with `NfsVersionEnum.V2` or `V4` throws `NotSupportedException`
+- Breaking: `GetAsync` and `GetStreamAsync` throw `KeyNotFoundException` for a missing key instead of returning `null`
+- Breaking: `GenerateUrl` returns an RFC 2224 URL such as `nfs://server/export/key` instead of `/ip/share/key`
+- Breaking: keys that are empty, consist only of separators, or contain `.` or `..` segments are rejected with `ArgumentException`
+- `CreatedUtc` is not populated, as NFSv3 does not record a creation time
+
+### Both CIFS and NFS
+
+- Enumeration returns files and folders; each folder is returned with `IsFolder` set and a key ending in `/`, after its contents, and the folder named exactly by an enumeration prefix is not returned
+- `EmptyAsync` removes every file and folder
+- A key ending in `/` creates a folder; reading a folder returns empty content
+- Objects are written in place, as with any file share client: concurrent writes to the same key are not atomic (on NFS the result can interleave writers' data; SMB may reject a concurrent writer with a sharing violation), and a reader can observe an object while it is being written
+
+### Blobject.AmazonS3 v6.0.0
+
+- Fixed `WriteAsync(key, contentType, contentLength, stream)` ignoring `contentLength`: the whole stream was uploaded, and a non-seekable stream failed with "Could not determine content length"; exactly `contentLength` bytes are now uploaded
+- Fixed `BlobCopy` with an S3 target, which failed because source streams are non-seekable
+- A negative `contentLength` now throws `ArgumentOutOfRangeException` instead of being treated as empty
+- `DeleteManyAsync` treats a `NoSuchKey` batch-delete error as a successful deletion, matching `DeleteAsync`; AWS reports missing keys as deleted, but some S3-compatible servers (e.g. Less3) return `NoSuchKey`
+- Updated `AWSSDK.S3` to 4.0.103.4
+
+### Blobject.GoogleCloud v6.0.0
+
+- Fixed `WriteAsync(key, contentType, contentLength, stream)` ignoring `contentLength` and uploading the whole stream
+- Updated `Google.Cloud.Storage.V1` to 5.0.0
+
+### Blobject.AzureBlob, Blobject.AmazonS3Lite, Blobject.Core, Blobject.Disk v6.0.0
+
+- `Blobject.Core` adds `LengthLimitedReadStream`, used by providers to honor `contentLength` on stream writes, and updates `System.Text.Json` to 10.0.12
+- `Blobject.AzureBlob` updates `Azure.Storage.Blobs` to 12.29.2 and `Azure.Storage.Blobs.Batch` to 12.26.1
+- `Blobject.AmazonS3Lite` updates `S3Lite` to 1.2.3
+- `Blobject.Disk` has no functional changes
+
+### Tests
+
+- New CIFS and NFS test harness that starts ephemeral servers automatically: in-process OpenCIFS and OpenNFS servers, and Dockerized Samba, nfs-ganesha, Linux knfsd, and unfs3; containers are labeled, backed by anonymous volumes, and always removed
+- For each server, runs the provider contract suites plus protocol semantics, enumeration, concurrency, connection lifecycle, server-side interoperability, and SMB- or NFS-specific suites, and a server-independent API surface suite, from `Test.Automated` (`--provider fileshare`), xUnit, and NUnit
+- Contract suites recognize hierarchical providers (CIFS and NFS), which enumerate folder entries; new `FolderEntries` contract case
+- `Test.Automated` accepts `--filter` to run matching cases only, and `--s3-path-style` for S3 Lite against S3-compatible servers addressed by IP
+- New contract cases `NonSeekableShortContentLength` and `NegativeContentLengthRejected`; the default suite now has 108 cases
+- Verified against Google Cloud Storage, Azurite, MinIO, and Less3 in addition to the CIFS and NFS servers
+- Updated test dependencies: `Microsoft.NET.Test.Sdk` 18.10.1, `NUnit` 5.0.0, `NUnit3TestAdapter` 6.3.0, `SerializationHelper` 2.1.0
+
+## Previous Versions
+
 v5.1.x
 
 - `Blobject.Core` v5.1.0 adds `DeleteManyAsync`, a bulk delete API returning a per-key `DeleteManyResult` (with `Success`, `Deleted`, and `Failed` helpers), fanned out over `DeleteAsync` using `BlobClientBase.MaxConcurrency`
@@ -10,8 +85,6 @@ v5.1.x
 - `Blobject.AmazonS3Lite`, `Blobject.GoogleCloud`, `Blobject.Disk`, `Blobject.CIFS`, and `Blobject.NFS` v5.1.0 expose `DeleteManyAsync` using the shared fan-out behavior
 - Deleting a key that does not exist is treated as a successful deletion, matching `DeleteAsync`
 - Expanded contract test coverage with positive and negative `DeleteManyAsync` cases
-
-## Previous Versions
 
 v5.0.x
 

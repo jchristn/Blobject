@@ -1,4 +1,4 @@
-namespace Test.NFS
+﻿namespace Test.NFS
 {
     using System.Net;
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -97,6 +97,8 @@ namespace Test.NFS
                 Inputty.GetInteger("Group ID   :", 0, false, true),
                 Inputty.GetString("Share      :", _Share, false),
                 (NfsVersionEnum)(Enum.Parse(typeof(NfsVersionEnum), Inputty.GetString("Version    :", "V3", false))));
+            _Settings.Port = Inputty.GetInteger("NFS port   :", 2049, true, false);
+            _Settings.MountPort = Inputty.GetInteger("Mount port :", 0, true, true);
             _Client = new NfsBlobClient(_Settings);
             if (_Debug) _Client.Logger = Console.WriteLine;
         }

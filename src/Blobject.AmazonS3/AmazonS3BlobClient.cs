@@ -250,11 +250,13 @@ namespace Blobject.AmazonS3
         public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
+            if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
             if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
 
             PutObjectRequest request = new PutObjectRequest();
 
-            if (stream == null || contentLength < 1)
+            if (stream == null || contentLength == 0)
             {
                 request.BucketName = _AwsSettings.Bucket;
                 request.Key = key;
@@ -268,7 +270,17 @@ namespace Blobject.AmazonS3
                 request.Key = key;
                 request.ContentType = contentType;
                 request.UseChunkEncoding = false;
-                request.InputStream = stream;
+
+                if (stream.CanSeek && stream.Length - stream.Position == contentLength)
+                {
+                    request.InputStream = stream;
+                }
+                else
+                {
+                    // upload exactly contentLength bytes; the stream may hold more
+                    request.InputStream = new LengthLimitedReadStream(stream, contentLength);
+                    request.Headers.ContentLength = contentLength;
+                }
             }
 
             await _S3Client.PutObjectAsync(request, token).ConfigureAwait(false);
@@ -341,6 +353,14 @@ namespace Blobject.AmazonS3
                 {
                     foreach (DeleteError deleteError in response.DeleteErrors)
                     {
+                        // S3 reports deleting a missing key as success, but some S3-compatible servers return NoSuchKey;
+                        // a missing key counts as deleted, matching DeleteAsync
+                        if (String.Equals(deleteError.Code, "NoSuchKey", StringComparison.OrdinalIgnoreCase))
+                        {
+                            result.Results.Add(new DeleteResult(deleteError.Key, true));
+                            continue;
+                        }
+
                         result.Results.Add(new DeleteResult(
                             deleteError.Key,
                             false,

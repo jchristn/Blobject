@@ -1,4 +1,4 @@
-namespace Test.Shared
+﻿namespace Test.Shared
 {
     using System;
     using System.Collections.Generic;
@@ -47,6 +47,11 @@ namespace Test.Shared
         public bool S3Ssl { get; set; } = true;
         public string S3BaseUrl { get; set; } = null;
 
+        /// <summary>
+        /// Use path-style requests (http://host/bucket/key) with S3 Lite; required by most S3-compatible servers on an IP address.
+        /// </summary>
+        public bool S3PathStyle { get; set; } = false;
+
         public string AzureAccountName { get; set; } = null;
         public string AzureAccessKey { get; set; } = null;
         public string AzureEndpoint { get; set; } = null;
@@ -69,15 +74,95 @@ namespace Test.Shared
         public NfsVersionEnum NfsVersion { get; set; } = NfsVersionEnum.V3;
 
         /// <summary>
+        /// CIFS port.
+        /// </summary>
+        public int CifsPort { get; set; } = 445;
+
+        /// <summary>
+        /// CIFS domain or workgroup.
+        /// </summary>
+        public string CifsDomain { get; set; } = null;
+
+        /// <summary>
+        /// Require SMB signing.
+        /// </summary>
+        public bool CifsRequireSigning { get; set; } = false;
+
+        /// <summary>
+        /// Prefer SMB 3.x encryption.
+        /// </summary>
+        public bool CifsPreferEncryption { get; set; } = true;
+
+        /// <summary>
+        /// NFS port.
+        /// </summary>
+        public int NfsPort { get; set; } = 2049;
+
+        /// <summary>
+        /// NFS MOUNT port, or 0 to discover it through the portmapper.
+        /// </summary>
+        public int NfsMountPort { get; set; } = 0;
+
+        /// <summary>
+        /// Portmapper port used for MOUNT port discovery.
+        /// </summary>
+        public int NfsPortmapperPort { get; set; } = 111;
+
+        /// <summary>
+        /// NFS write stability.
+        /// </summary>
+        public NfsWriteStabilityEnum NfsWriteStability { get; set; } = NfsWriteStabilityEnum.Unstable;
+
+        /// <summary>
+        /// Managed file share targets to test, e.g. all, cifs, nfs, docker, inprocess, or a comma-separated list of target names.
+        /// </summary>
+        public string FileShareTargets { get; set; } = null;
+
+        /// <summary>
+        /// Name of the managed file share target these options were generated for, if any.
+        /// </summary>
+        public string TargetName { get; set; } = null;
+
+        /// <summary>
+        /// Overrides provider-based case sensitivity detection when set.
+        /// </summary>
+        public bool? CaseInsensitiveOverride { get; set; } = null;
+
+        /// <summary>
         /// True when provider matching should be case-insensitive.
         /// </summary>
         public bool IsCaseInsensitiveProvider
         {
             get
             {
+                if (CaseInsensitiveOverride.HasValue) return CaseInsensitiveOverride.Value;
                 return String.Equals(Provider, "disk", StringComparison.OrdinalIgnoreCase)
-                    || String.Equals(Provider, "cifs", StringComparison.OrdinalIgnoreCase);
+                    || String.Equals(Provider, "cifs", StringComparison.OrdinalIgnoreCase)
+                    || String.Equals(Provider, "smb", StringComparison.OrdinalIgnoreCase);
             }
+        }
+
+        /// <summary>
+        /// True when the provider stores real folders and enumerates them as folder entries
+        /// (IsFolder true, key ending in '/'), returned after their contents.
+        /// </summary>
+        public bool IsHierarchicalProvider
+        {
+            get
+            {
+                string provider = (Provider ?? "").ToLowerInvariant();
+                return provider == "cifs" || provider == "smb" || provider == "nfs"
+                    || FileShare.FileShareServers.IsManagedTarget(provider);
+            }
+        }
+
+        /// <summary>
+        /// Create a shallow copy.
+        /// </summary>
+        /// <returns>Copy.</returns>
+        public BlobProviderOptions Clone()
+        {
+            return (BlobProviderOptions)MemberwiseClone();
         }
 
         /// <summary>
@@ -148,6 +233,7 @@ namespace Test.Shared
             SetIfPresent(value => options.S3Endpoint = value, "BLOBJECT_TEST_S3_ENDPOINT");
             SetIfPresent(value => options.S3Ssl = ParseBool(value, options.S3Ssl), "BLOBJECT_TEST_S3_SSL");
             SetIfPresent(value => options.S3BaseUrl = value, "BLOBJECT_TEST_S3_BASE_URL");
+            SetIfPresent(value => options.S3PathStyle = ParseBool(value, options.S3PathStyle), "BLOBJECT_TEST_S3_PATH_STYLE");
 
             SetIfPresent(value => options.AzureAccountName = value, "BLOBJECT_TEST_AZURE_ACCOUNT_NAME");
             SetIfPresent(value => options.AzureAccessKey = value, "BLOBJECT_TEST_AZURE_ACCESS_KEY");
@@ -169,6 +255,16 @@ namespace Test.Shared
             SetIfPresent(value => options.NfsGroupId = ParseInt(value, options.NfsGroupId), "BLOBJECT_TEST_NFS_GROUP_ID");
             SetIfPresent(value => options.NfsShare = value, "BLOBJECT_TEST_NFS_SHARE");
             SetIfPresent(value => options.NfsVersion = ParseNfsVersion(value, options.NfsVersion), "BLOBJECT_TEST_NFS_VERSION");
+
+            SetIfPresent(value => options.CifsPort = ParseInt(value, options.CifsPort), "BLOBJECT_TEST_CIFS_PORT");
+            SetIfPresent(value => options.CifsDomain = value, "BLOBJECT_TEST_CIFS_DOMAIN");
+            SetIfPresent(value => options.CifsRequireSigning = ParseBool(value, options.CifsRequireSigning), "BLOBJECT_TEST_CIFS_REQUIRE_SIGNING");
+            SetIfPresent(value => options.CifsPreferEncryption = ParseBool(value, options.CifsPreferEncryption), "BLOBJECT_TEST_CIFS_PREFER_ENCRYPTION");
+            SetIfPresent(value => options.NfsPort = ParseInt(value, options.NfsPort), "BLOBJECT_TEST_NFS_PORT");
+            SetIfPresent(value => options.NfsMountPort = ParseInt(value, options.NfsMountPort), "BLOBJECT_TEST_NFS_MOUNT_PORT");
+            SetIfPresent(value => options.NfsPortmapperPort = ParseInt(value, options.NfsPortmapperPort), "BLOBJECT_TEST_NFS_PORTMAPPER_PORT");
+            SetIfPresent(value => options.NfsWriteStability = ParseStability(value, options.NfsWriteStability), "BLOBJECT_TEST_NFS_WRITE_STABILITY");
+            SetIfPresent(value => options.FileShareTargets = value, "BLOBJECT_TEST_FILESHARE_TARGETS");
         }
 
         private static void ApplyDictionary(BlobProviderOptions options, Dictionary<string, string> values)
@@ -187,6 +283,7 @@ namespace Test.Shared
             Apply(values, "s3-endpoint", value => options.S3Endpoint = value);
             Apply(values, "s3-ssl", value => options.S3Ssl = ParseBool(value, options.S3Ssl));
             Apply(values, "s3-base-url", value => options.S3BaseUrl = value);
+            Apply(values, "s3-path-style", value => options.S3PathStyle = ParseBool(value, options.S3PathStyle));
 
             Apply(values, "azure-account-name", value => options.AzureAccountName = value);
             Apply(values, "azure-access-key", value => options.AzureAccessKey = value);
@@ -208,6 +305,16 @@ namespace Test.Shared
             Apply(values, "nfs-group-id", value => options.NfsGroupId = ParseInt(value, options.NfsGroupId));
             Apply(values, "nfs-share", value => options.NfsShare = value);
             Apply(values, "nfs-version", value => options.NfsVersion = ParseNfsVersion(value, options.NfsVersion));
+
+            Apply(values, "cifs-port", value => options.CifsPort = ParseInt(value, options.CifsPort));
+            Apply(values, "cifs-domain", value => options.CifsDomain = value);
+            Apply(values, "cifs-require-signing", value => options.CifsRequireSigning = ParseBool(value, options.CifsRequireSigning));
+            Apply(values, "cifs-prefer-encryption", value => options.CifsPreferEncryption = ParseBool(value, options.CifsPreferEncryption));
+            Apply(values, "nfs-port", value => options.NfsPort = ParseInt(value, options.NfsPort));
+            Apply(values, "nfs-mount-port", value => options.NfsMountPort = ParseInt(value, options.NfsMountPort));
+            Apply(values, "nfs-portmapper-port", value => options.NfsPortmapperPort = ParseInt(value, options.NfsPortmapperPort));
+            Apply(values, "nfs-write-stability", value => options.NfsWriteStability = ParseStability(value, options.NfsWriteStability));
+            Apply(values, "fileshare-targets", value => options.FileShareTargets = value);
         }
 
         private static void Apply(Dictionary<string, string> values, string key, Action<string> setter)
@@ -235,6 +342,13 @@ namespace Test.Shared
         private static int ParseInt(string value, int defaultValue)
         {
             if (Int32.TryParse(value, out int ret)) return ret;
+            return defaultValue;
+        }
+
+        private static NfsWriteStabilityEnum ParseStability(string value, NfsWriteStabilityEnum defaultValue)
+        {
+            if (String.IsNullOrEmpty(value)) return defaultValue;
+            if (Enum.TryParse(value, true, out NfsWriteStabilityEnum ret)) return ret;
             return defaultValue;
         }
 

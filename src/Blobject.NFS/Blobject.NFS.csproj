@@ -1,19 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>5.1.0</Version>
+		<Version>6.0.0</Version>
 		<LangVersion>8.0</LangVersion>
-		<TargetFrameworks>netstandard2.1;net8.0;net10.0</TargetFrameworks>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<Authors>Joel Christner</Authors>
-		<Description>BLOB storage client for NFS file servers, e.g. Linux and UNIX.  Refer to other Blobject packages for other storage repository types.</Description>
+		<Description>BLOB storage client for NFSv3 file servers, e.g. Linux and UNIX, backed by OpenNFS.  Refer to other Blobject packages for other storage repository types.</Description>
 		<Copyright>(c)2025 Joel Christner</Copyright>
 		<PackageProjectUrl>https://github.com/jchristn/Blobject</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/jchristn/Blobject</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
 		<PackageLicenseUrl></PackageLicenseUrl>
-		<PackageReleaseNotes>Add DeleteManyAsync bulk delete (fan-out over DeleteAsync).</PackageReleaseNotes>
+		<PackageReleaseNotes>6.0.0: migrate from NFS-Client to OpenNFS: fully asynchronous NFSv3 with cancellation and concurrency, true streaming reads and writes, truncation on overwrite, COMMIT for unstable writes, portmapper discovery, and automatic reconnect.  NFSv2 and NFSv4 are no longer accepted.  Targets net8.0 and net10.0 (netstandard2.1 dropped).</PackageReleaseNotes>
 		<PackageIconUrl></PackageIconUrl>
 		<PackageTags>blob azure storage s3 object rest minio less3 ceph view cifs nfs google cloud gcp</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
@@ -61,7 +61,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="NFS-Client" Version="1.0.1" />
+	  <PackageReference Include="OpenNFS.Client" Version="0.1.1" />
 	</ItemGroup>
 
 	<ItemGroup>
