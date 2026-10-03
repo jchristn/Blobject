@@ -69,6 +69,12 @@
         <member name="M:Blobject.Disk.DiskBlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="P:Blobject.Disk.DiskBlobClient.TelemetryProvider">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.Disk.DiskBlobClient.TelemetryContainer">
+            <inheritdoc />
+        </member>
         <member name="T:Blobject.Disk.DiskSettings">
             <summary>
             Settings when using local filesystem for storage.

@@ -76,6 +76,18 @@
         <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="P:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.TelemetryProvider">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.TelemetryContainer">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.TelemetryServerAddress">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AmazonS3Lite.AmazonS3LiteBlobClient.IsTelemetryNotFound(System.Exception)">
+            <inheritdoc />
+        </member>
         <member name="T:Blobject.AmazonS3Lite.AwsSettings">
             <summary>
             Settings when using AWS S3 for storage.

@@ -76,6 +76,18 @@
         <member name="M:Blobject.GoogleCloud.GcpBlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="P:Blobject.GoogleCloud.GcpBlobClient.TelemetryProvider">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.GoogleCloud.GcpBlobClient.TelemetryContainer">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.GoogleCloud.GcpBlobClient.TelemetryServerAddress">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.GoogleCloud.GcpBlobClient.IsTelemetryNotFound(System.Exception)">
+            <inheritdoc />
+        </member>
         <member name="T:Blobject.GoogleCloud.GcpBlobSettings">
             <summary>
             Settings when using Google Cloud Storage for storage.

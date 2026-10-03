@@ -94,6 +94,18 @@
         <member name="M:Blobject.AzureBlob.AzureBlobClient.EmptyAsync(System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="P:Blobject.AzureBlob.AzureBlobClient.TelemetryProvider">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.AzureBlob.AzureBlobClient.TelemetryContainer">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.AzureBlob.AzureBlobClient.TelemetryServerAddress">
+            <inheritdoc />
+        </member>
+        <member name="M:Blobject.AzureBlob.AzureBlobClient.IsTelemetryNotFound(System.Exception)">
+            <inheritdoc />
+        </member>
         <member name="T:Blobject.AzureBlob.AzureBlobSettings">
             <summary>
             Settings when using Microsoft Azure BLOB Storage for storage.

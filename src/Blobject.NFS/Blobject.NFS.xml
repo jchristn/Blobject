@@ -95,6 +95,15 @@
             <param name="token">Cancellation token.</param>
             <returns>Empty result.</returns>
         </member>
+        <member name="P:Blobject.NFS.NfsBlobClient.TelemetryProvider">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.NFS.NfsBlobClient.TelemetryContainer">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.NFS.NfsBlobClient.TelemetryServerAddress">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.NFS.NfsBlobClient.KeyToPath(System.String,System.Boolean@)">
             <summary>
             Convert a BLOB key into an export-relative NFS path.

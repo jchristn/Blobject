@@ -109,17 +109,20 @@ namespace Blobject.AzureBlob
         }
 
         /// <inheritdoc />
-        public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
+        public override Task<bool> ValidateConnectivity(CancellationToken token = default)
         {
-            try
+            return InstrumentAsync(BlobjectTelemetryNames.OperationValidateConnectivity, null, async () =>
             {
-                List<string> containers = await ListContainers(token).ConfigureAwait(false);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+                try
+                {
+                    List<string> containers = await ListContainers(token).ConfigureAwait(false);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            });
         }
 
         /// <summary>
@@ -127,71 +130,329 @@ namespace Blobject.AzureBlob
         /// </summary>
         /// <param name="token">Cancellation token.</param>
         /// <returns>List of container names.</returns>
-        public async Task<List<string>> ListContainers(CancellationToken token = default)
+        public Task<List<string>> ListContainers(CancellationToken token = default)
         {
-            List<string> ret = new List<string>();
-            string prefix = null;
-
-            var resultSegment =
-                _ServiceClient.GetBlobContainersAsync(BlobContainerTraits.Metadata, BlobContainerStates.None, prefix, token)
-                .AsPages(null, null)
-                .ConfigureAwait(false);
-
-            await foreach (Azure.Page<BlobContainerItem> containerPage in resultSegment)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationListContainers, null, async () =>
             {
-                foreach (BlobContainerItem containerItem in containerPage.Values)
-                {
-                    ret.Add(containerItem.Name);
-                }
-            }
+                List<string> ret = new List<string>();
+                string prefix = null;
 
-            return ret;
+                ConfiguredCancelableAsyncEnumerable<Azure.Page<BlobContainerItem>> resultSegment =
+                    _ServiceClient.GetBlobContainersAsync(BlobContainerTraits.Metadata, BlobContainerStates.None, prefix, token)
+                    .AsPages(null, null)
+                    .ConfigureAwait(false);
+
+                await foreach (Azure.Page<BlobContainerItem> containerPage in resultSegment)
+                {
+                    foreach (BlobContainerItem containerItem in containerPage.Values)
+                    {
+                        ret.Add(containerItem.Name);
+                    }
+                }
+
+                return ret;
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-            Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
-            byte[] buff = new byte[StreamBufferSize];
-            byte[] ret = null;
-
-            int totalRead = 0;
-
-            using (Stream str = await bc.OpenReadAsync(new BlobOpenReadOptions(false), token).ConfigureAwait(false))
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGet, key, async () =>
             {
-                using (MemoryStream ms = new MemoryStream())
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+                Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
+                byte[] buff = new byte[StreamBufferSize];
+                byte[] ret = null;
+
+                int totalRead = 0;
+
+                using (Stream str = await bc.OpenReadAsync(new BlobOpenReadOptions(false), token).ConfigureAwait(false))
                 {
-                    while (true)
+                    using (MemoryStream ms = new MemoryStream())
                     {
-                        int read = await str.ReadAsync(buff, 0, buff.Length, token).ConfigureAwait(false);
+                        while (true)
+                        {
+                            int read = await str.ReadAsync(buff, 0, buff.Length, token).ConfigureAwait(false);
+                            if (read > 0)
+                            {
+                                await ms.WriteAsync(buff, 0, read, token).ConfigureAwait(false);
+                                totalRead += read;
+                            }
+                            else break;
+                        }
+
+                        ret = ms.ToArray();
+                    }
+                }
+
+                SetTelemetryBytes(ret.Length);
+                return ret;
+            });
+        }
+
+        /// <inheritdoc />
+        public override Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetStream, key, async () =>
+            {
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+                Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
+                BlobMetadata md = await GetMetadataInternalAsync(key, token).ConfigureAwait(false);
+                BlobData bd = new BlobData(md.ContentLength, await bc.OpenReadAsync(new BlobOpenReadOptions(false), token).ConfigureAwait(false));
+                SetTelemetryBytes(md.ContentLength);
+                return bd;
+            });
+        }
+
+        /// <inheritdoc />
+        public override Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetMetadata, key, () => GetMetadataInternalAsync(key, token));
+        }
+
+        /// <inheritdoc />
+        public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
+        {
+            if (data == null) data = "";
+            return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
+        }
+
+        /// <inheritdoc />
+        public override Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationWrite, key, async () =>
+            {
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+                if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
+                if (data == null) data = Array.Empty<byte>();
+
+                Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
+
+                using (Stream str = await bc.OpenWriteAsync(true, null, token).ConfigureAwait(false))
+                {
+                    await str.WriteAsync(data, 0, data.Length, token).ConfigureAwait(false);
+                }
+
+                await bc.SetHttpHeadersAsync(new BlobHttpHeaders() { ContentType = contentType }, null, token).ConfigureAwait(false);
+                SetTelemetryBytes(data.Length);
+            });
+        }
+
+        /// <inheritdoc />
+        public override Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationWrite, key, async () =>
+            {
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+                if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
+                if (contentLength < 0) throw new ArgumentException("Content length must be zero or greater.");
+                if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
+                if (stream == null) stream = new MemoryStream(Array.Empty<byte>());
+                if (!stream.CanRead) throw new IOException("Cannot read from supplied stream.");
+                if (stream.CanSeek && stream.Length == stream.Position) stream.Seek(0, SeekOrigin.Begin);
+
+                Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
+                byte[] buff = new byte[StreamBufferSize];
+                int read = 0;
+                long bytesRemaining = contentLength;
+
+                using (Stream str = await bc.OpenWriteAsync(true, null, token).ConfigureAwait(false))
+                {
+                    while (bytesRemaining > 0)
+                    {
+                        if (bytesRemaining >= StreamBufferSize)
+                        {
+                            read = await stream.ReadAsync(buff, 0, StreamBufferSize, token).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            read = await stream.ReadAsync(buff, 0, (int)bytesRemaining, token).ConfigureAwait(false);
+                        }
+
                         if (read > 0)
                         {
-                            await ms.WriteAsync(buff, 0, read, token).ConfigureAwait(false);
-                            totalRead += read;
+                            await str.WriteAsync(buff, 0, read, token).ConfigureAwait(false);
+                            bytesRemaining -= read;
                         }
-                        else break;
+                    }
+                }
+
+                await bc.SetHttpHeadersAsync(new BlobHttpHeaders() { ContentType = contentType }, null, token).ConfigureAwait(false);
+                SetTelemetryBytes(contentLength);
+            });
+        }
+
+        /// <inheritdoc />
+        public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
+        {
+            await base.WriteManyAsync(objects, token).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public override Task DeleteAsync(string key, CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationDelete, key, async () =>
+            {
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+                Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
+                await bc.DeleteIfExistsAsync(DeleteSnapshotsOption.None, null, token).ConfigureAwait(false);
+            });
+        }
+
+        /// <inheritdoc />
+        public override Task<DeleteManyResult> DeleteManyAsync(IEnumerable<string> keys, CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationDeleteMany, null, async () =>
+            {
+                if (keys == null) throw new ArgumentNullException(nameof(keys));
+
+                DeleteManyResult result = new DeleteManyResult();
+                List<string> keyList = keys.Where(k => !String.IsNullOrEmpty(k)).Distinct().ToList();
+                if (keyList.Count < 1) return result;
+
+                BlobBatchClient batchClient = _ServiceClient.GetBlobBatchClient();
+
+                // Azure supports up to 256 sub-requests per batch.
+                const int batchSize = 256;
+
+                for (int offset = 0; offset < keyList.Count; offset += batchSize)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    List<string> chunk = keyList.GetRange(offset, Math.Min(batchSize, keyList.Count - offset));
+
+                    BlobBatch batch = batchClient.CreateBatch();
+                    List<KeyValuePair<string, Response>> handles = new List<KeyValuePair<string, Response>>();
+
+                    foreach (string key in chunk)
+                    {
+                        Response handle = batch.DeleteBlob(_ContainerClient.Name, key);
+                        handles.Add(new KeyValuePair<string, Response>(key, handle));
                     }
 
-                    ret = ms.ToArray();
+                    await InstrumentAsync(BlobjectTelemetryNames.OperationDeleteBatch, null, async () =>
+                    {
+                        try
+                        {
+                            await batchClient.SubmitBatchAsync(batch, false, token).ConfigureAwait(false);
+                        }
+                        catch (AggregateException)
+                        {
+                            // Individual sub-request status is inspected below; submitting with throwOnAnyFailure false
+                            // means this is only reached for batch-level transport errors already reflected in the handles.
+                        }
+                    }).ConfigureAwait(false);
+
+                    foreach (KeyValuePair<string, Response> handle in handles)
+                    {
+                        int status = handle.Value.Status;
+
+                        // Treat a missing blob (404) as a successful deletion to match DeleteAsync semantics.
+                        bool success = (status >= 200 && status < 300) || status == 404;
+
+                        result.Results.Add(new DeleteResult(
+                            handle.Key,
+                            success,
+                            success ? null : (status + " " + handle.Value.ReasonPhrase).Trim()));
+                    }
                 }
-            }
 
-            return ret;
+                SetTelemetryItems(result.Results.Count(r => r.Success), result.Results.Count(r => !r.Success));
+                return result;
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-            Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
-            BlobMetadata md = await GetMetadataAsync(key, token).ConfigureAwait(false);
-            BlobData bd = new BlobData(md.ContentLength, await bc.OpenReadAsync(new BlobOpenReadOptions(false), token).ConfigureAwait(false));
-            return bd;
+            return InstrumentAsync(BlobjectTelemetryNames.OperationExists, key, async () =>
+            {
+                try
+                {
+                    BlobMetadata md = await GetMetadataInternalAsync(key, token).ConfigureAwait(false);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override string GenerateUrl(string key, CancellationToken token = default)
+        {
+            string containerUri = _ContainerClient.Uri.ToString().TrimEnd('/');
+            return containerUri + "/" + key;
+        }
+
+        /// <inheritdoc />
+        public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
+        {
+            return InstrumentEnumerate(() => EnumerateInternal(filter));
+        }
+
+        /// <inheritdoc />
+        public override IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null,
+            CancellationToken token = default)
+        {
+            return InstrumentEnumerateAsync(t => EnumerateInternalAsync(filter, t), token);
+        }
+
+        /// <inheritdoc />
+        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        {
+            return await base.EmptyAsync(token).ConfigureAwait(false);
+        }
+
+        #endregion
+
+        #region Protected-Methods
+
+        /// <inheritdoc />
+        protected override string TelemetryProvider
+        {
+            get
+            {
+                return BlobjectTelemetryNames.ProviderAzureBlob;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryContainer
+        {
+            get
+            {
+                BlobContainerClient container = _ContainerClient;
+                return container != null ? container.Name : null;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryServerAddress
+        {
+            get
+            {
+                BlobContainerClient container = _ContainerClient;
+                if (container == null || container.Uri == null) return null;
+                return container.Uri.Host;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override bool IsTelemetryNotFound(Exception e)
+        {
+            if (base.IsTelemetryNotFound(e)) return true;
+            RequestFailedException rfe = e as RequestFailedException;
+            return rfe != null && rfe.Status == 404;
+        }
+
+        #endregion
+
+        #region Private-Methods
+
+        private async Task<BlobMetadata> GetMetadataInternalAsync(string key, CancellationToken token)
         {
             if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
@@ -207,165 +468,7 @@ namespace Blobject.AzureBlob
             return md;
         }
 
-        /// <inheritdoc />
-        public override Task WriteAsync(string key, string contentType, string data, CancellationToken token = default)
-        {
-            if (data == null) data = "";
-            return WriteAsync(key, contentType, Encoding.UTF8.GetBytes(data), token);
-        }
-
-        /// <inheritdoc />
-        public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
-        {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-            if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
-            if (data == null) data = Array.Empty<byte>();
-
-            Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
-
-            using (Stream str = await bc.OpenWriteAsync(true, null, token).ConfigureAwait(false))
-            {
-                await str.WriteAsync(data, 0, data.Length, token).ConfigureAwait(false);
-            }
-
-            await bc.SetHttpHeadersAsync(new BlobHttpHeaders() { ContentType = contentType }, null, token).ConfigureAwait(false);
-            return;
-        }
-
-        /// <inheritdoc />
-        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
-        {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-            if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
-            if (contentLength < 0) throw new ArgumentException("Content length must be zero or greater.");
-            if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
-            if (stream == null) stream = new MemoryStream(Array.Empty<byte>());
-            if (!stream.CanRead) throw new IOException("Cannot read from supplied stream.");
-            if (stream.CanSeek && stream.Length == stream.Position) stream.Seek(0, SeekOrigin.Begin);
-
-            Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
-            byte[] buff = new byte[StreamBufferSize];
-            int read = 0;
-            long bytesRemaining = contentLength;
-
-            using (Stream str = await bc.OpenWriteAsync(true, null, token).ConfigureAwait(false))
-            {
-                while (bytesRemaining > 0)
-                {
-                    if (bytesRemaining >= StreamBufferSize)
-                    {
-                        read = await stream.ReadAsync(buff, 0, StreamBufferSize, token).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        read = await stream.ReadAsync(buff, 0, (int)bytesRemaining, token).ConfigureAwait(false);
-                    }
-
-                    if (read > 0)
-                    {
-                        await str.WriteAsync(buff, 0, read, token).ConfigureAwait(false);
-                        bytesRemaining -= read;
-                    }
-                }
-            }
-
-            await bc.SetHttpHeadersAsync(new BlobHttpHeaders() { ContentType = contentType }, null, token).ConfigureAwait(false);
-            return;
-        }
-
-        /// <inheritdoc />
-        public override async Task WriteManyAsync(List<WriteRequest> objects, CancellationToken token = default)
-        {
-            await base.WriteManyAsync(objects, token).ConfigureAwait(false);
-        }
-
-        /// <inheritdoc />
-        public override async Task DeleteAsync(string key, CancellationToken token = default)
-        {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-            Azure.Storage.Blobs.BlobClient bc = _ContainerClient.GetBlobClient(key);
-            await bc.DeleteIfExistsAsync(DeleteSnapshotsOption.None, null, token).ConfigureAwait(false);
-        }
-
-        /// <inheritdoc />
-        public override async Task<DeleteManyResult> DeleteManyAsync(IEnumerable<string> keys, CancellationToken token = default)
-        {
-            if (keys == null) throw new ArgumentNullException(nameof(keys));
-
-            DeleteManyResult result = new DeleteManyResult();
-            List<string> keyList = keys.Where(k => !String.IsNullOrEmpty(k)).Distinct().ToList();
-            if (keyList.Count < 1) return result;
-
-            BlobBatchClient batchClient = _ServiceClient.GetBlobBatchClient();
-
-            // Azure supports up to 256 sub-requests per batch.
-            const int batchSize = 256;
-
-            for (int offset = 0; offset < keyList.Count; offset += batchSize)
-            {
-                token.ThrowIfCancellationRequested();
-
-                List<string> chunk = keyList.GetRange(offset, Math.Min(batchSize, keyList.Count - offset));
-
-                BlobBatch batch = batchClient.CreateBatch();
-                List<KeyValuePair<string, Response>> handles = new List<KeyValuePair<string, Response>>();
-
-                foreach (string key in chunk)
-                {
-                    Response handle = batch.DeleteBlob(_ContainerClient.Name, key);
-                    handles.Add(new KeyValuePair<string, Response>(key, handle));
-                }
-
-                try
-                {
-                    await batchClient.SubmitBatchAsync(batch, false, token).ConfigureAwait(false);
-                }
-                catch (AggregateException)
-                {
-                    // Individual sub-request status is inspected below; submitting with throwOnAnyFailure false
-                    // means this is only reached for batch-level transport errors already reflected in the handles.
-                }
-
-                foreach (KeyValuePair<string, Response> handle in handles)
-                {
-                    int status = handle.Value.Status;
-
-                    // Treat a missing blob (404) as a successful deletion to match DeleteAsync semantics.
-                    bool success = (status >= 200 && status < 300) || status == 404;
-
-                    result.Results.Add(new DeleteResult(
-                        handle.Key,
-                        success,
-                        success ? null : (status + " " + handle.Value.ReasonPhrase).Trim()));
-                }
-            }
-
-            return result;
-        }
-
-        /// <inheritdoc />
-        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
-        {
-            try
-            {
-                BlobMetadata md = await GetMetadataAsync(key, token).ConfigureAwait(false);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        /// <inheritdoc />
-        public override string GenerateUrl(string key, CancellationToken token = default)
-        {
-            string containerUri = _ContainerClient.Uri.ToString().TrimEnd('/');
-            return containerUri + "/" + key;
-        }
-
-        /// <inheritdoc />
-        public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
+        private IEnumerable<BlobMetadata> EnumerateInternal(EnumerationFilter filter)
         {
             filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -389,19 +492,8 @@ namespace Blobject.AzureBlob
 
                     foreach (BlobItem item in page.Values)
                     {
-                        long contentLength = (item.Properties.ContentLength != null ? Convert.ToInt64(item.Properties.ContentLength) : 0);
-
-                        BlobMetadata md = new BlobMetadata();
-                        md.Key = item.Name;
-                        md.ContentType = item.Properties.ContentType;
-                        md.ContentLength = contentLength;
-                        md.ETag = item.Properties.ETag.ToString();
-                        md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
-                        md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
-                        md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
-
+                        BlobMetadata md = BuildMetadata(item);
                         if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
-
                         yield return md;
                     }
 
@@ -410,14 +502,11 @@ namespace Blobject.AzureBlob
 
                 if (String.IsNullOrEmpty(continuationToken)) break;
             }
-
-            yield break;
         }
 
-        /// <inheritdoc />
-        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
-            EnumerationFilter filter = null,
-            [EnumeratorCancellation] CancellationToken token = default)
+        private async IAsyncEnumerable<BlobMetadata> EnumerateInternalAsync(
+            EnumerationFilter filter,
+            [EnumeratorCancellation] CancellationToken token)
         {
             filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -429,7 +518,7 @@ namespace Blobject.AzureBlob
             {
                 if (token.IsCancellationRequested) break;
 
-                var pages = _ContainerClient.GetBlobsAsync(
+                IAsyncEnumerable<Page<BlobItem>> pages = _ContainerClient.GetBlobsAsync(
                     BlobTraits.None,
                     BlobStates.None,
                     filter.Prefix,
@@ -444,19 +533,8 @@ namespace Blobject.AzureBlob
 
                     foreach (BlobItem item in page.Values)
                     {
-                        long contentLength = (item.Properties.ContentLength != null ? Convert.ToInt64(item.Properties.ContentLength) : 0);
-
-                        BlobMetadata md = new BlobMetadata();
-                        md.Key = item.Name;
-                        md.ContentType = item.Properties.ContentType;
-                        md.ContentLength = contentLength;
-                        md.ETag = item.Properties.ETag.ToString();
-                        md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
-                        md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
-                        md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
-
+                        BlobMetadata md = BuildMetadata(item);
                         if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
-
                         yield return md;
                     }
 
@@ -465,19 +543,22 @@ namespace Blobject.AzureBlob
 
                 if (String.IsNullOrEmpty(continuationToken)) break;
             }
-
-            yield break;
         }
 
-        /// <inheritdoc />
-        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        private static BlobMetadata BuildMetadata(BlobItem item)
         {
-            return await base.EmptyAsync(token).ConfigureAwait(false);
+            long contentLength = (item.Properties.ContentLength != null ? Convert.ToInt64(item.Properties.ContentLength) : 0);
+
+            BlobMetadata md = new BlobMetadata();
+            md.Key = item.Name;
+            md.ContentType = item.Properties.ContentType;
+            md.ContentLength = contentLength;
+            md.ETag = item.Properties.ETag.ToString();
+            md.CreatedUtc = item.Properties.CreatedOn != null ? item.Properties.CreatedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+            md.LastUpdateUtc = item.Properties.LastModified != null ? item.Properties.LastModified.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+            md.LastAccessUtc = item.Properties.LastAccessedOn != null ? item.Properties.LastAccessedOn.Value.DateTime.ToUniversalTime() : DateTime.UtcNow;
+            return md;
         }
-
-        #endregion
-
-        #region Private-Methods
 
         private string GetAzureConnectionString()
         {

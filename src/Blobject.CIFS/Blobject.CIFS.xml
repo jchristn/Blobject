@@ -94,6 +94,15 @@
             <param name="token">Cancellation token.</param>
             <returns>Empty result.</returns>
         </member>
+        <member name="P:Blobject.CIFS.CifsBlobClient.TelemetryProvider">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.CIFS.CifsBlobClient.TelemetryContainer">
+            <inheritdoc />
+        </member>
+        <member name="P:Blobject.CIFS.CifsBlobClient.TelemetryServerAddress">
+            <inheritdoc />
+        </member>
         <member name="M:Blobject.CIFS.CifsBlobClient.KeyToPath(System.String,System.Boolean@)">
             <summary>
             Convert a BLOB key into a share-relative SMB path.

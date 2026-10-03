@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>6.0.0</Version>
+		<Version>6.1.0</Version>
 		<LangVersion>8.0</LangVersion>
 		<TargetFrameworks>netstandard2.1;net8.0;net10.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -14,7 +14,7 @@
 		<RepositoryUrl>https://github.com/jchristn/Blobject</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
 		<PackageLicenseUrl></PackageLicenseUrl>
-		<PackageReleaseNotes>6.0.0: add LengthLimitedReadStream for honoring contentLength on stream writes; update System.Text.Json to 10.0.12.</PackageReleaseNotes>
+		<PackageReleaseNotes>6.1.0: built-in OpenTelemetry-compatible metrics and traces (Meter and ActivitySource "Blobject") for every operation, bulk operation, connection, and BlobCopy job; BlobjectTelemetry settings; see TELEMETRY.md.</PackageReleaseNotes>
 		<PackageIconUrl></PackageIconUrl>
 		<PackageTags>blob azure storage s3 object rest minio less3 ceph view cifs nfs google cloud gcp</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
@@ -33,6 +33,10 @@
 	<ItemGroup>
 		<PackageReference Include="System.Text.Json" Version="10.0.12" />
 		<PackageReference Include="Timestamps" Version="1.0.12" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="10.0.12" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -97,17 +97,20 @@
         }
 
         /// <inheritdoc />
-        public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
+        public override Task<bool> ValidateConnectivity(CancellationToken token = default)
         {
-            try
+            return InstrumentAsync(BlobjectTelemetryNames.OperationValidateConnectivity, null, async () =>
             {
-                List<string> buckets = await ListBuckets(token).ConfigureAwait(false);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+                try
+                {
+                    List<string> buckets = await ListBuckets(token).ConfigureAwait(false);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            });
         }
 
         /// <summary>
@@ -115,64 +118,63 @@
         /// </summary>
         /// <param name="token">Cancellation token.</param>
         /// <returns>List of bucket names.</returns>
-        public async Task<List<string>> ListBuckets(CancellationToken token = default)
+        public Task<List<string>> ListBuckets(CancellationToken token = default)
         {
-            List<string> ret = new List<string>();
-
-            var buckets = _StorageClient.ListBucketsAsync(_Settings.ProjectId);
-            await foreach (var bucket in buckets)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationListContainers, null, async () =>
             {
-                if (token.IsCancellationRequested) break;
-                ret.Add(bucket.Name);
-            }
+                List<string> ret = new List<string>();
 
-            return ret;
+                PagedAsyncEnumerable<Google.Apis.Storage.v1.Data.Buckets, Google.Apis.Storage.v1.Data.Bucket> buckets = _StorageClient.ListBucketsAsync(_Settings.ProjectId);
+                await foreach (Google.Apis.Storage.v1.Data.Bucket bucket in buckets)
+                {
+                    if (token.IsCancellationRequested) break;
+                    ret.Add(bucket.Name);
+                }
+
+                return ret;
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-
-            using (MemoryStream ms = new MemoryStream())
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGet, key, async () =>
             {
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    await _StorageClient.DownloadObjectAsync(_Settings.Bucket, key, ms, null, token).ConfigureAwait(false);
+                    byte[] data = ms.ToArray();
+                    SetTelemetryBytes(data.Length);
+                    return data;
+                }
+            });
+        }
+
+        /// <inheritdoc />
+        public override Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetStream, key, async () =>
+            {
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+
+                BlobMetadata md = await GetMetadataInternalAsync(key, token).ConfigureAwait(false);
+
+                MemoryStream ms = new MemoryStream();
                 await _StorageClient.DownloadObjectAsync(_Settings.Bucket, key, ms, null, token).ConfigureAwait(false);
-                return ms.ToArray();
-            }
+                ms.Seek(0, SeekOrigin.Begin);
+
+                BlobData bd = new BlobData(md.ContentLength, ms);
+                SetTelemetryBytes(md.ContentLength);
+                return bd;
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-
-            BlobMetadata md = await GetMetadataAsync(key, token).ConfigureAwait(false);
-
-            MemoryStream ms = new MemoryStream();
-            await _StorageClient.DownloadObjectAsync(_Settings.Bucket, key, ms, null, token).ConfigureAwait(false);
-            ms.Seek(0, SeekOrigin.Begin);
-
-            BlobData bd = new BlobData(md.ContentLength, ms);
-            return bd;
-        }
-
-        /// <inheritdoc />
-        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
-        {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-
-            var obj = await _StorageClient.GetObjectAsync(_Settings.Bucket, key, null, token).ConfigureAwait(false);
-
-            BlobMetadata md = new BlobMetadata();
-            md.Key = obj.Name;
-            md.ETag = obj.ETag;
-            md.ContentLength = (long)(obj.Size ?? 0);
-            md.ContentType = obj.ContentType;
-            md.CreatedUtc = obj.TimeCreatedDateTimeOffset?.UtcDateTime;
-            md.LastUpdateUtc = obj.UpdatedDateTimeOffset?.UtcDateTime;
-            md.LastAccessUtc = obj.UpdatedDateTimeOffset?.UtcDateTime; // GCS doesn't track last access separately
-
-            return md;
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetMetadata, key, () => GetMetadataInternalAsync(key, token));
         }
 
         /// <inheritdoc />
@@ -183,35 +185,45 @@
         }
 
         /// <inheritdoc />
-        public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-            if (data == null) data = Array.Empty<byte>();
-
-            using (MemoryStream ms = new MemoryStream(data))
+            return InstrumentAsync(BlobjectTelemetryNames.OperationWrite, key, async () =>
             {
-                await _StorageClient.UploadObjectAsync(_Settings.Bucket, key, contentType, ms, null, token).ConfigureAwait(false);
-            }
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+                if (data == null) data = Array.Empty<byte>();
+
+                using (MemoryStream ms = new MemoryStream(data))
+                {
+                    await _StorageClient.UploadObjectAsync(_Settings.Bucket, key, contentType, ms, null, token).ConfigureAwait(false);
+                }
+
+                SetTelemetryBytes(data.Length);
+            });
         }
 
         /// <inheritdoc />
-        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-            if (contentLength < 0) throw new ArgumentException("Content length must be zero or greater.");
-            if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
-            if (stream == null) stream = new MemoryStream(Array.Empty<byte>());
-            if (!stream.CanRead) throw new IOException("Cannot read from supplied stream.");
-            if (stream.CanSeek && stream.Length == stream.Position) stream.Seek(0, SeekOrigin.Begin);
-
-            // For large uploads, use resumable upload
-            var uploadOptions = new UploadObjectOptions();
-
-            // upload at most contentLength bytes; the stream may hold more
-            using (LengthLimitedReadStream source = new LengthLimitedReadStream(stream, contentLength))
+            return InstrumentAsync(BlobjectTelemetryNames.OperationWrite, key, async () =>
             {
-                await _StorageClient.UploadObjectAsync(_Settings.Bucket, key, contentType, source, uploadOptions, token).ConfigureAwait(false);
-            }
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+                if (contentLength < 0) throw new ArgumentException("Content length must be zero or greater.");
+                if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
+                if (stream == null) stream = new MemoryStream(Array.Empty<byte>());
+                if (!stream.CanRead) throw new IOException("Cannot read from supplied stream.");
+                if (stream.CanSeek && stream.Length == stream.Position) stream.Seek(0, SeekOrigin.Begin);
+
+                // For large uploads, use resumable upload
+                UploadObjectOptions uploadOptions = new UploadObjectOptions();
+
+                // upload at most contentLength bytes; the stream may hold more
+                using (LengthLimitedReadStream source = new LengthLimitedReadStream(stream, contentLength))
+                {
+                    await _StorageClient.UploadObjectAsync(_Settings.Bucket, key, contentType, source, uploadOptions, token).ConfigureAwait(false);
+                }
+
+                SetTelemetryBytes(contentLength);
+            });
         }
 
         /// <inheritdoc />
@@ -221,18 +233,21 @@
         }
 
         /// <inheritdoc />
-        public override async Task DeleteAsync(string key, CancellationToken token = default)
+        public override Task DeleteAsync(string key, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            return InstrumentAsync(BlobjectTelemetryNames.OperationDelete, key, async () =>
+            {
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            try
-            {
-                await _StorageClient.DeleteObjectAsync(_Settings.Bucket, key, null, token).ConfigureAwait(false);
-            }
-            catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                // Object doesn't exist, consider this a successful deletion
-            }
+                try
+                {
+                    await _StorageClient.DeleteObjectAsync(_Settings.Bucket, key, null, token).ConfigureAwait(false);
+                }
+                catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // Object doesn't exist, consider this a successful deletion
+                }
+            });
         }
 
         /// <inheritdoc />
@@ -242,17 +257,20 @@
         }
 
         /// <inheritdoc />
-        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        public override Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
-            try
+            return InstrumentAsync(BlobjectTelemetryNames.OperationExists, key, async () =>
             {
-                await _StorageClient.GetObjectAsync(_Settings.Bucket, key, null, token).ConfigureAwait(false);
-                return true;
-            }
-            catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                return false;
-            }
+                try
+                {
+                    await _StorageClient.GetObjectAsync(_Settings.Bucket, key, null, token).ConfigureAwait(false);
+                    return true;
+                }
+                catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return false;
+                }
+            });
         }
 
         /// <inheritdoc />
@@ -264,69 +282,15 @@
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            filter = CloneFilter(filter);
-            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
-            else Log("beginning enumeration using prefix " + filter.Prefix);
-
-            var listOptions = new ListObjectsOptions
-            {
-                PageSize = 1000
-            };
-
-            foreach (var obj in _StorageClient.ListObjects(_Settings.Bucket, filter.Prefix, listOptions))
-            {
-                long contentLength = (long)(obj.Size ?? 0);
-
-                BlobMetadata md = new BlobMetadata();
-                md.Key = obj.Name;
-                md.ContentType = obj.ContentType;
-                md.ContentLength = contentLength;
-                md.ETag = obj.ETag;
-                md.CreatedUtc = obj.TimeCreatedDateTimeOffset?.UtcDateTime;
-                md.LastUpdateUtc = obj.UpdatedDateTimeOffset?.UtcDateTime;
-                md.LastAccessUtc = obj.UpdatedDateTimeOffset?.UtcDateTime;
-
-                if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
-
-                yield return md;
-            }
+            return InstrumentEnumerate(() => EnumerateInternal(filter));
         }
 
         /// <inheritdoc />
-        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+        public override IAsyncEnumerable<BlobMetadata> EnumerateAsync(
             EnumerationFilter filter = null,
-            [EnumeratorCancellation] CancellationToken token = default)
+            CancellationToken token = default)
         {
-            filter = CloneFilter(filter);
-            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
-            else Log("beginning enumeration using prefix " + filter.Prefix);
-
-            var listOptions = new ListObjectsOptions
-            {
-                PageSize = 1000
-            };
-
-            var objects = _StorageClient.ListObjectsAsync(_Settings.Bucket, filter.Prefix, listOptions);
-
-            await foreach (var obj in objects)
-            {
-                if (token.IsCancellationRequested) break;
-
-                long contentLength = (long)(obj.Size ?? 0);
-
-                BlobMetadata md = new BlobMetadata();
-                md.Key = obj.Name;
-                md.ContentType = obj.ContentType;
-                md.ContentLength = contentLength;
-                md.ETag = obj.ETag;
-                md.CreatedUtc = obj.TimeCreatedDateTimeOffset?.UtcDateTime;
-                md.LastUpdateUtc = obj.UpdatedDateTimeOffset?.UtcDateTime;
-                md.LastAccessUtc = obj.UpdatedDateTimeOffset?.UtcDateTime;
-
-                if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
-
-                yield return md;
-            }
+            return InstrumentEnumerateAsync(t => EnumerateInternalAsync(filter, t), token);
         }
 
         /// <inheritdoc />
@@ -337,7 +301,115 @@
 
         #endregion
 
+        #region Protected-Methods
+
+        /// <inheritdoc />
+        protected override string TelemetryProvider
+        {
+            get
+            {
+                return BlobjectTelemetryNames.ProviderGoogleCloud;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryContainer
+        {
+            get
+            {
+                GcpBlobSettings settings = _Settings;
+                return settings != null ? settings.Bucket : null;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryServerAddress
+        {
+            get
+            {
+                GcpBlobSettings settings = _Settings;
+                if (settings == null || String.IsNullOrEmpty(settings.CustomEndpoint)) return "storage.googleapis.com";
+
+                Uri uri;
+                if (Uri.TryCreate(settings.CustomEndpoint, UriKind.Absolute, out uri)) return uri.Host;
+                return null;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override bool IsTelemetryNotFound(Exception e)
+        {
+            if (base.IsTelemetryNotFound(e)) return true;
+            Google.GoogleApiException gae = e as Google.GoogleApiException;
+            return gae != null && gae.HttpStatusCode == System.Net.HttpStatusCode.NotFound;
+        }
+
+        #endregion
+
         #region Private-Methods
+
+        private async Task<BlobMetadata> GetMetadataInternalAsync(string key, CancellationToken token)
+        {
+            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+
+            Object obj = await _StorageClient.GetObjectAsync(_Settings.Bucket, key, null, token).ConfigureAwait(false);
+            return BuildMetadata(obj);
+        }
+
+        private IEnumerable<BlobMetadata> EnumerateInternal(EnumerationFilter filter)
+        {
+            filter = CloneFilter(filter);
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
+
+            ListObjectsOptions listOptions = new ListObjectsOptions
+            {
+                PageSize = 1000
+            };
+
+            foreach (Object obj in _StorageClient.ListObjects(_Settings.Bucket, filter.Prefix, listOptions))
+            {
+                BlobMetadata md = BuildMetadata(obj);
+                if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
+                yield return md;
+            }
+        }
+
+        private async IAsyncEnumerable<BlobMetadata> EnumerateInternalAsync(
+            EnumerationFilter filter,
+            [EnumeratorCancellation] CancellationToken token)
+        {
+            filter = CloneFilter(filter);
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
+
+            ListObjectsOptions listOptions = new ListObjectsOptions
+            {
+                PageSize = 1000
+            };
+
+            await foreach (Object obj in _StorageClient.ListObjectsAsync(_Settings.Bucket, filter.Prefix, listOptions))
+            {
+                if (token.IsCancellationRequested) break;
+
+                BlobMetadata md = BuildMetadata(obj);
+                if (!MatchesFilter(md, filter, StringComparison.Ordinal)) continue;
+                yield return md;
+            }
+        }
+
+        private static BlobMetadata BuildMetadata(Object obj)
+        {
+            BlobMetadata md = new BlobMetadata();
+            md.Key = obj.Name;
+            md.ETag = obj.ETag;
+            md.ContentLength = (long)(obj.Size ?? 0);
+            md.ContentType = obj.ContentType;
+            md.CreatedUtc = obj.TimeCreatedDateTimeOffset?.UtcDateTime;
+            md.LastUpdateUtc = obj.UpdatedDateTimeOffset?.UtcDateTime;
+            md.LastAccessUtc = obj.UpdatedDateTimeOffset?.UtcDateTime; // GCS doesn't track last access separately
+            return md;
+        }
 
         private void Log(string msg)
         {

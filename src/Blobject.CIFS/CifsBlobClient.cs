@@ -55,6 +55,7 @@ namespace Blobject.CIFS
             _CifsSettings = cifsSettings;
             _Connections = new Connection[cifsSettings.MaxConnections];
             for (int i = 0; i < _Connections.Length; i++) _Connections[i] = new Connection(this);
+            RecordTelemetryPoolCapacity(_Connections.Length);
         }
 
         #endregion
@@ -74,6 +75,7 @@ namespace Blobject.CIFS
                 Log("disposing");
                 _Disposed = true;
                 Task.Run(() => CloseAllConnectionsAsync()).GetAwaiter().GetResult();
+                RecordTelemetryPoolCapacity(-_Connections.Length);
             }
 
             _Disposed = true;
@@ -99,30 +101,34 @@ namespace Blobject.CIFS
             Log("disposing");
             _Disposed = true;
             await CloseAllConnectionsAsync().ConfigureAwait(false);
+            RecordTelemetryPoolCapacity(-_Connections.Length);
             GC.SuppressFinalize(this);
         }
 
         /// <inheritdoc />
-        public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
+        public override Task<bool> ValidateConnectivity(CancellationToken token = default)
         {
-            try
+            return InstrumentAsync(BlobjectTelemetryNames.OperationValidateConnectivity, null, async () =>
             {
-                await ExecuteAsync(share => share.Metadata.GetAttributesAsync("", token), token).ConfigureAwait(false);
-                return true;
-            }
-            catch (OperationCanceledException) when (token.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (ObjectDisposedException)
-            {
-                throw;
-            }
-            catch (Exception e)
-            {
-                Log("connectivity validation failed: " + e.Message);
-                return false;
-            }
+                try
+                {
+                    await ExecuteAsync(share => share.Metadata.GetAttributesAsync("", token), token).ConfigureAwait(false);
+                    return true;
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (ObjectDisposedException)
+                {
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    Log("connectivity validation failed: " + e.Message);
+                    return false;
+                }
+            });
         }
 
         /// <summary>
@@ -130,87 +136,105 @@ namespace Blobject.CIFS
         /// </summary>
         /// <param name="token">Cancellation token.</param>
         /// <returns>List of share names.</returns>
-        public async Task<List<string>> ListShares(CancellationToken token = default)
+        public Task<List<string>> ListShares(CancellationToken token = default)
         {
-            Log("retrieving shares for " + _CifsSettings.Hostname + " using username " + _CifsSettings.Username);
-
-            OpenCifsRemoteShareInfo[] shares = await ExecuteAsync(
-                (connection, share) => connection.Client.EnumerateSharesAsync(token),
-                token,
-                null,
-                true).ConfigureAwait(false);
-
-            List<string> ret = new List<string>();
-            if (shares != null)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationListContainers, null, async () =>
             {
-                foreach (OpenCifsRemoteShareInfo info in shares)
-                {
-                    if (info != null && !String.IsNullOrEmpty(info.Name)) ret.Add(info.Name);
-                }
-            }
+                Log("retrieving shares for " + _CifsSettings.Hostname + " using username " + _CifsSettings.Username);
 
-            return ret;
+                OpenCifsRemoteShareInfo[] shares = await ExecuteAsync(
+                    (connection, share) => connection.Client.EnumerateSharesAsync(token),
+                    token,
+                    null,
+                    true).ConfigureAwait(false);
+
+                List<string> ret = new List<string>();
+                if (shares != null)
+                {
+                    foreach (OpenCifsRemoteShareInfo info in shares)
+                    {
+                        if (info != null && !String.IsNullOrEmpty(info.Name)) ret.Add(info.Name);
+                    }
+                }
+
+                return ret;
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
-            string path = KeyToPath(key, out _);
-
-            return await ExecuteAsync(async share =>
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGet, key, async () =>
             {
-                try
+                string path = KeyToPath(key, out _);
+
+                byte[] data = await ExecuteAsync(async share =>
                 {
-                    return await share.Files.ReadAllBytesAsync(path, token).ConfigureAwait(false);
-                }
-                catch (OpenCifsStatusException e) when (e.Status == NtStatus.FileIsADirectory)
-                {
-                    return Array.Empty<byte>();
-                }
-            }, token, key).ConfigureAwait(false);
+                    try
+                    {
+                        return await share.Files.ReadAllBytesAsync(path, token).ConfigureAwait(false);
+                    }
+                    catch (OpenCifsStatusException e) when (e.Status == NtStatus.FileIsADirectory)
+                    {
+                        return Array.Empty<byte>();
+                    }
+                }, token, key).ConfigureAwait(false);
+
+                if (data != null) SetTelemetryBytes(data.Length);
+                return data;
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
-            string path = KeyToPath(key, out _);
-
-            return await ExecuteAsync(async share =>
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetStream, key, async () =>
             {
-                try
+                string path = KeyToPath(key, out _);
+
+                BlobData blob = await ExecuteAsync(async share =>
                 {
-                    Stream stream = await share.Files.OpenReadAsync(path, token).ConfigureAwait(false);
-                    return new BlobData(stream.Length, stream);
-                }
-                catch (OpenCifsStatusException e) when (e.Status == NtStatus.FileIsADirectory)
-                {
-                    return new BlobData(0, new MemoryStream(Array.Empty<byte>()));
-                }
-            }, token, key).ConfigureAwait(false);
+                    try
+                    {
+                        Stream stream = await share.Files.OpenReadAsync(path, token).ConfigureAwait(false);
+                        return new BlobData(stream.Length, stream);
+                    }
+                    catch (OpenCifsStatusException e) when (e.Status == NtStatus.FileIsADirectory)
+                    {
+                        return new BlobData(0, new MemoryStream(Array.Empty<byte>()));
+                    }
+                }, token, key).ConfigureAwait(false);
+
+                if (blob != null) SetTelemetryBytes(blob.ContentLength);
+                return blob;
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
-            string path = KeyToPath(key, out bool isFolderKey);
-
-            OpenCifsClientFileMetadata md = await ExecuteAsync(
-                share => share.Metadata.GetAttributesAsync(path, token),
-                token,
-                key).ConfigureAwait(false);
-
-            if (isFolderKey && !md.IsDirectory) throw new KeyNotFoundException("The requested object was not found.");
-
-            return new BlobMetadata
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetMetadata, key, async () =>
             {
-                Key = PathToKey(path, md.IsDirectory),
-                IsFolder = md.IsDirectory,
-                ContentType = "application/octet-stream",
-                ContentLength = md.IsDirectory ? 0 : ToLength(md.EndOfFile),
-                CreatedUtc = md.CreationTimeUtc,
-                LastAccessUtc = md.LastAccessTimeUtc,
-                LastUpdateUtc = md.LastWriteTimeUtc
-            };
+                string path = KeyToPath(key, out bool isFolderKey);
+
+                OpenCifsClientFileMetadata md = await ExecuteAsync(
+                    share => share.Metadata.GetAttributesAsync(path, token),
+                    token,
+                    key).ConfigureAwait(false);
+
+                if (isFolderKey && !md.IsDirectory) throw new KeyNotFoundException("The requested object was not found.");
+
+                return new BlobMetadata
+                {
+                    Key = PathToKey(path, md.IsDirectory),
+                    IsFolder = md.IsDirectory,
+                    ContentType = "application/octet-stream",
+                    ContentLength = md.IsDirectory ? 0 : ToLength(md.EndOfFile),
+                    CreatedUtc = md.CreationTimeUtc,
+                    LastAccessUtc = md.LastAccessTimeUtc,
+                    LastUpdateUtc = md.LastWriteTimeUtc
+                };
+            });
         }
 
         /// <inheritdoc />
@@ -221,43 +245,51 @@ namespace Blobject.CIFS
         }
 
         /// <inheritdoc />
-        public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
-            if (data == null) data = Array.Empty<byte>();
-            string path = KeyToPath(key, out bool isFolderKey);
-
-            if (isFolderKey)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationWrite, key, async () =>
             {
-                await CreateFolderAsync(path, token).ConfigureAwait(false);
-                return;
-            }
+                if (data == null) data = Array.Empty<byte>();
+                string path = KeyToPath(key, out bool isFolderKey);
 
-            await WriteFileAsync(path, share => share.Files.WriteAllBytesAsync(path, data, token), token).ConfigureAwait(false);
+                if (isFolderKey)
+                {
+                    await CreateFolderAsync(path, token).ConfigureAwait(false);
+                    return;
+                }
+
+                await WriteFileAsync(path, share => share.Files.WriteAllBytesAsync(path, data, token), token).ConfigureAwait(false);
+                SetTelemetryBytes(data.Length);
+            });
         }
 
         /// <inheritdoc />
-        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
-            if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
-            if (stream == null)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationWrite, key, async () =>
             {
-                if (contentLength > 0) throw new ArgumentNullException(nameof(stream));
-                stream = new MemoryStream(Array.Empty<byte>());
-            }
+                if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
+                if (stream == null)
+                {
+                    if (contentLength > 0) throw new ArgumentNullException(nameof(stream));
+                    stream = new MemoryStream(Array.Empty<byte>());
+                }
 
-            if (!stream.CanRead) throw new ArgumentException("The supplied stream is not readable.", nameof(stream));
+                if (!stream.CanRead) throw new ArgumentException("The supplied stream is not readable.", nameof(stream));
 
-            string path = KeyToPath(key, out bool isFolderKey);
+                string path = KeyToPath(key, out bool isFolderKey);
 
-            if (isFolderKey)
-            {
-                await CreateFolderAsync(path, token).ConfigureAwait(false);
-                return;
-            }
+                if (isFolderKey)
+                {
+                    await CreateFolderAsync(path, token).ConfigureAwait(false);
+                    return;
+                }
 
-            // The stream can only be consumed once, so this write is not retried after a connection failure.
-            Stream source = new LengthLimitedReadStream(stream, contentLength);
-            await WriteFileAsync(path, share => share.Files.WriteAsync(path, source, null, token), token, retryOnConnectionFailure: false).ConfigureAwait(false);
+                // The stream can only be consumed once, so this write is not retried after a connection failure.
+                Stream source = new LengthLimitedReadStream(stream, contentLength);
+                await WriteFileAsync(path, share => share.Files.WriteAsync(path, source, null, token), token, retryOnConnectionFailure: false).ConfigureAwait(false);
+                SetTelemetryBytes(contentLength);
+            });
         }
 
         /// <inheritdoc />
@@ -268,44 +300,47 @@ namespace Blobject.CIFS
 
         /// <inheritdoc />
         /// <remarks>Deleting a key that does not exist succeeds.  Deleting a folder requires the folder to be empty.</remarks>
-        public override async Task DeleteAsync(string key, CancellationToken token = default)
+        public override Task DeleteAsync(string key, CancellationToken token = default)
         {
-            string path = KeyToPath(key, out bool isFolderKey);
-
-            // the not-empty failure is returned rather than thrown inside ExecuteAsync, where an IOException means a failed connection
-            OpenCifsStatusException notEmpty = await ExecuteAsync<OpenCifsStatusException>(async share =>
+            return InstrumentAsync(BlobjectTelemetryNames.OperationDelete, key, async () =>
             {
-                OpenCifsClientFileMetadata md;
+                string path = KeyToPath(key, out bool isFolderKey);
 
-                try
+                // the not-empty failure is returned rather than thrown inside ExecuteAsync, where an IOException means a failed connection
+                OpenCifsStatusException notEmpty = await ExecuteAsync<OpenCifsStatusException>(async share =>
                 {
-                    md = await share.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
-                }
-                catch (OpenCifsStatusException e) when (IsNotFound(e.Status))
-                {
+                    OpenCifsClientFileMetadata md;
+
+                    try
+                    {
+                        md = await share.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
+                    }
+                    catch (OpenCifsStatusException e) when (IsNotFound(e.Status))
+                    {
+                        return null;
+                    }
+
+                    if (isFolderKey && !md.IsDirectory) return null;
+
+                    try
+                    {
+                        if (md.IsDirectory) await share.Directories.DeleteAsync(path, token).ConfigureAwait(false);
+                        else await share.Files.DeleteAsync(path, token).ConfigureAwait(false);
+                    }
+                    catch (OpenCifsStatusException e) when (IsNotFound(e.Status))
+                    {
+                        // deleted concurrently
+                    }
+                    catch (OpenCifsStatusException e) when (e.Status == NtStatus.DirectoryNotEmpty)
+                    {
+                        return e;
+                    }
+
                     return null;
-                }
+                }, token).ConfigureAwait(false);
 
-                if (isFolderKey && !md.IsDirectory) return null;
-
-                try
-                {
-                    if (md.IsDirectory) await share.Directories.DeleteAsync(path, token).ConfigureAwait(false);
-                    else await share.Files.DeleteAsync(path, token).ConfigureAwait(false);
-                }
-                catch (OpenCifsStatusException e) when (IsNotFound(e.Status))
-                {
-                    // deleted concurrently
-                }
-                catch (OpenCifsStatusException e) when (e.Status == NtStatus.DirectoryNotEmpty)
-                {
-                    return e;
-                }
-
-                return null;
-            }, token).ConfigureAwait(false);
-
-            if (notEmpty != null) throw new IOException("The folder '" + key + "' is not empty.", notEmpty);
+                if (notEmpty != null) throw new IOException("The folder '" + key + "' is not empty.", notEmpty);
+            });
         }
 
         /// <inheritdoc />
@@ -315,24 +350,27 @@ namespace Blobject.CIFS
         }
 
         /// <inheritdoc />
-        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        public override Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
-            string path = KeyToPath(key, out bool isFolderKey);
-
-            return await ExecuteAsync(async share =>
+            return InstrumentAsync(BlobjectTelemetryNames.OperationExists, key, async () =>
             {
-                if (!isFolderKey) return await share.Metadata.ExistsAsync(path, token).ConfigureAwait(false);
+                string path = KeyToPath(key, out bool isFolderKey);
 
-                try
+                return await ExecuteAsync(async share =>
                 {
-                    OpenCifsClientFileMetadata md = await share.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
-                    return md.IsDirectory;
-                }
-                catch (OpenCifsStatusException e) when (IsNotFound(e.Status))
-                {
-                    return false;
-                }
-            }, token).ConfigureAwait(false);
+                    if (!isFolderKey) return await share.Metadata.ExistsAsync(path, token).ConfigureAwait(false);
+
+                    try
+                    {
+                        OpenCifsClientFileMetadata md = await share.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
+                        return md.IsDirectory;
+                    }
+                    catch (OpenCifsStatusException e) when (IsNotFound(e.Status))
+                    {
+                        return false;
+                    }
+                }, token).ConfigureAwait(false);
+            });
         }
 
         /// <inheritdoc />
@@ -345,7 +383,92 @@ namespace Blobject.CIFS
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            IAsyncEnumerator<BlobMetadata> enumerator = EnumerateAsync(filter).GetAsyncEnumerator();
+            return InstrumentEnumerate(() => EnumerateInternal(filter));
+        }
+
+        /// <inheritdoc />
+        public override IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null,
+            CancellationToken token = default)
+        {
+            return InstrumentEnumerateAsync(t => EnumerateInternalAsync(filter, t), token);
+        }
+
+        /// <summary>
+        /// Delete all files and folders in the share.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Empty result.</returns>
+        public override Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationEmpty, null, async () =>
+            {
+                EmptyResult er = new EmptyResult();
+                List<BlobMetadata> files = new List<BlobMetadata>();
+                List<BlobMetadata> folders = new List<BlobMetadata>();
+
+                await CollectTreeAsync("", files, folders, token).ConfigureAwait(false);
+
+                object syncLock = new object();
+
+                await ForEachConcurrentAsync(files, async md =>
+                {
+                    await DeleteAsync(md.Key, token).ConfigureAwait(false);
+                    lock (syncLock) er.Blobs.Add(md);
+                }, BlobjectTelemetryNames.OperationEmpty, token).ConfigureAwait(false);
+
+                foreach (BlobMetadata folder in folders.OrderByDescending(f => f.Key.Length))
+                {
+                    token.ThrowIfCancellationRequested();
+                    await DeleteAsync(folder.Key, token).ConfigureAwait(false);
+                    er.Blobs.Add(folder);
+                    RecordTelemetryItem(true);
+                }
+
+                return er;
+            });
+        }
+
+        #endregion
+
+        #region Protected-Methods
+
+        /// <inheritdoc />
+        protected override string TelemetryProvider
+        {
+            get
+            {
+                return BlobjectTelemetryNames.ProviderCifs;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryContainer
+        {
+            get
+            {
+                CifsSettings settings = _CifsSettings;
+                return settings != null ? settings.Share : null;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryServerAddress
+        {
+            get
+            {
+                CifsSettings settings = _CifsSettings;
+                return settings != null ? settings.Hostname : null;
+            }
+        }
+
+        #endregion
+
+        #region Private-Methods
+
+        private IEnumerable<BlobMetadata> EnumerateInternal(EnumerationFilter filter)
+        {
+            IAsyncEnumerator<BlobMetadata> enumerator = EnumerateInternalAsync(filter, CancellationToken.None).GetAsyncEnumerator();
 
             try
             {
@@ -360,10 +483,9 @@ namespace Blobject.CIFS
             }
         }
 
-        /// <inheritdoc />
-        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
-            EnumerationFilter filter = null,
-            [EnumeratorCancellation] CancellationToken token = default)
+        private async IAsyncEnumerable<BlobMetadata> EnumerateInternalAsync(
+            EnumerationFilter filter,
+            [EnumeratorCancellation] CancellationToken token)
         {
             filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -382,60 +504,6 @@ namespace Blobject.CIFS
                 yield return md;
             }
         }
-
-        /// <summary>
-        /// Delete all files and folders in the share.
-        /// </summary>
-        /// <param name="token">Cancellation token.</param>
-        /// <returns>Empty result.</returns>
-        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
-        {
-            EmptyResult er = new EmptyResult();
-            List<BlobMetadata> files = new List<BlobMetadata>();
-            List<BlobMetadata> folders = new List<BlobMetadata>();
-
-            await CollectTreeAsync("", files, folders, token).ConfigureAwait(false);
-
-            object syncLock = new object();
-
-            using (SemaphoreSlim semaphore = new SemaphoreSlim(MaxConcurrency))
-            {
-                List<Task> tasks = new List<Task>();
-
-                foreach (BlobMetadata md in files)
-                {
-                    await semaphore.WaitAsync(token).ConfigureAwait(false);
-
-                    tasks.Add(Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                            lock (syncLock) er.Blobs.Add(md);
-                        }
-                        finally
-                        {
-                            semaphore.Release();
-                        }
-                    }, token));
-                }
-
-                await Task.WhenAll(tasks).ConfigureAwait(false);
-            }
-
-            foreach (BlobMetadata folder in folders.OrderByDescending(f => f.Key.Length))
-            {
-                token.ThrowIfCancellationRequested();
-                await DeleteAsync(folder.Key, token).ConfigureAwait(false);
-                er.Blobs.Add(folder);
-            }
-
-            return er;
-        }
-
-        #endregion
-
-        #region Private-Methods
 
         private void Log(string msg)
         {
@@ -516,10 +584,12 @@ namespace Blobject.CIFS
                 catch (Exception e) when (IsConnectionFailure(e) && !token.IsCancellationRequested)
                 {
                     Log("connection failure, resetting connection: " + e.Message);
+                    RecordTelemetryConnectionReset(e);
                     await connection.InvalidateAsync(share).ConfigureAwait(false);
 
                     // after a server restart every pooled connection may be dead, so allow one attempt per connection
                     if (!retryOnConnectionFailure || attempt > _Connections.Length) throw;
+                    RecordTelemetryRetry();
                 }
             }
         }
@@ -766,6 +836,8 @@ namespace Blobject.CIFS
                     _Parent.ThrowIfDisposed();
                     if (_Share != null && Client != null && Client.IsConnected && Client.IsAuthenticated) return _Share;
 
+                    // a pooled connection that dropped (e.g. server restart) is replaced here rather than failing an operation
+                    if (_Share != null || Client != null) _Parent.RecordTelemetryConnectionReset(null);
                     await CloseCoreAsync().ConfigureAwait(false);
 
                     CifsSettings settings = _Parent._CifsSettings;
@@ -780,8 +852,12 @@ namespace Blobject.CIFS
 
                     try
                     {
-                        await newClient.ConnectAsync(_Parent.BuildCredential(), token).ConfigureAwait(false);
-                        OpenCifsShareSession newShare = await newClient.OpenShareAsync(settings.Share, token).ConfigureAwait(false);
+                        OpenCifsShareSession newShare = await _Parent.InstrumentConnectAsync(async () =>
+                        {
+                            await newClient.ConnectAsync(_Parent.BuildCredential(), token).ConfigureAwait(false);
+                            return await newClient.OpenShareAsync(settings.Share, token).ConfigureAwait(false);
+                        }).ConfigureAwait(false);
+
                         Client = newClient;
                         _Share = newShare;
                         return newShare;
@@ -847,6 +923,7 @@ namespace Blobject.CIFS
                 {
                     try { if (client.IsConnected) await client.DisconnectAsync(CancellationToken.None).ConfigureAwait(false); } catch { }
                     try { await client.DisposeAsync().ConfigureAwait(false); } catch { }
+                    _Parent.RecordTelemetryConnectionClosed();
                 }
             }
         }

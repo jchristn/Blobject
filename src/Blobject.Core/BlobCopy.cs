@@ -1,6 +1,8 @@
 namespace Blobject.Core
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -106,66 +108,112 @@ namespace Blobject.Core
 
             CopyStatistics ret = new CopyStatistics();
 
+            string sourceProvider = _From.SafeTelemetryProvider();
+            string targetProvider = _To.SafeTelemetryProvider();
+            long jobStart = Stopwatch.GetTimestamp();
+            Activity previous = Activity.Current;
+            Activity job = StartSpan(BlobjectTelemetryNames.SpanCopy, sourceProvider, targetProvider, null);
+            Exception failure = null;
+
             ret.Time.Start = DateTime.Now;
 
             try
             {
-                await foreach (BlobMetadata sourceBlob in _From.EnumerateAsync(filter, token).ConfigureAwait(false))
+                IAsyncEnumerator<BlobMetadata> enumerator = _From.EnumerateAsync(filter, token).GetAsyncEnumerator(token);
+
+                try
                 {
-                    if (token.IsCancellationRequested) break;
-                    if (sourceBlob == null) continue;
-
-                    ret.BlobsEnumerated += 1;
-                    ret.BytesEnumerated += sourceBlob.ContentLength;
-
-                    string targetKey = sourceBlob.Key;
-                    string contentType = String.IsNullOrEmpty(sourceBlob.ContentType)
-                        ? "application/octet-stream"
-                        : sourceBlob.ContentType;
-
-                    if (sourceBlob.IsFolder)
+                    while (true)
                     {
-                        if (!targetKey.EndsWith("/") && !targetKey.EndsWith("\\")) targetKey += "/";
-                        await _To.WriteAsync(targetKey, contentType, Array.Empty<byte>(), token).ConfigureAwait(false);
-                        ret.BlobsRead += 1;
-                        ret.BlobsWritten += 1;
-                        ret.Keys.Add(targetKey);
-                    }
-                    else
-                    {
-                        using (BlobData blobData = await _From.GetStreamAsync(sourceBlob.Key, token).ConfigureAwait(false))
+                        if (token.IsCancellationRequested) break;
+
+                        long enumerateStart = Stopwatch.GetTimestamp();
+                        bool hasNext;
+
+                        try
                         {
-                            long contentLength = blobData != null ? blobData.ContentLength : 0;
-                            if (blobData != null && blobData.Data != null)
-                            {
-                                if (blobData.Data.CanSeek && blobData.Data.Length == blobData.Data.Position)
-                                    blobData.Data.Seek(0, SeekOrigin.Begin);
+                            hasNext = await enumerator.MoveNextAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception e)
+                        {
+                            BlobjectInstrumentation.RecordCopyStage(sourceProvider, targetProvider, BlobjectTelemetryNames.StageEnumerate, BlobjectInstrumentation.ElapsedSeconds(enumerateStart), e);
+                            throw;
+                        }
 
-                                await _To.WriteAsync(targetKey, contentType, contentLength, blobData.Data, token).ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                using (MemoryStream empty = new MemoryStream(Array.Empty<byte>()))
-                                {
-                                    await _To.WriteAsync(targetKey, contentType, 0, empty, token).ConfigureAwait(false);
-                                }
-                            }
+                        if (!hasNext) break;
+                        BlobjectInstrumentation.RecordCopyStage(sourceProvider, targetProvider, BlobjectTelemetryNames.StageEnumerate, BlobjectInstrumentation.ElapsedSeconds(enumerateStart), null);
 
+                        BlobMetadata sourceBlob = enumerator.Current;
+                        if (sourceBlob == null) continue;
+
+                        ret.BlobsEnumerated += 1;
+                        ret.BytesEnumerated += sourceBlob.ContentLength;
+
+                        string targetKey = sourceBlob.Key;
+                        string contentType = String.IsNullOrEmpty(sourceBlob.ContentType)
+                            ? "application/octet-stream"
+                            : sourceBlob.ContentType;
+
+                        if (sourceBlob.IsFolder)
+                        {
+                            if (!targetKey.EndsWith("/") && !targetKey.EndsWith("\\")) targetKey += "/";
+                            await RunStageAsync(BlobjectTelemetryNames.StageWrite, sourceProvider, targetProvider, () =>
+                                _To.WriteAsync(targetKey, contentType, Array.Empty<byte>(), token)).ConfigureAwait(false);
                             ret.BlobsRead += 1;
-                            ret.BytesRead += contentLength;
                             ret.BlobsWritten += 1;
-                            ret.BytesWritten += contentLength;
                             ret.Keys.Add(targetKey);
                         }
-                    }
+                        else
+                        {
+                            BlobData blobData = null;
+                            await RunStageAsync(BlobjectTelemetryNames.StageRead, sourceProvider, targetProvider, async () =>
+                            {
+                                blobData = await _From.GetStreamAsync(sourceBlob.Key, token).ConfigureAwait(false);
+                            }).ConfigureAwait(false);
 
-                    if (stopAfter != -1 && ret.BlobsWritten >= stopAfter) break;
+                            using (blobData)
+                            {
+                                long contentLength = blobData != null ? blobData.ContentLength : 0;
+
+                                await RunStageAsync(BlobjectTelemetryNames.StageWrite, sourceProvider, targetProvider, async () =>
+                                {
+                                    if (blobData != null && blobData.Data != null)
+                                    {
+                                        if (blobData.Data.CanSeek && blobData.Data.Length == blobData.Data.Position)
+                                            blobData.Data.Seek(0, SeekOrigin.Begin);
+
+                                        await _To.WriteAsync(targetKey, contentType, contentLength, blobData.Data, token).ConfigureAwait(false);
+                                    }
+                                    else
+                                    {
+                                        using (MemoryStream empty = new MemoryStream(Array.Empty<byte>()))
+                                        {
+                                            await _To.WriteAsync(targetKey, contentType, 0, empty, token).ConfigureAwait(false);
+                                        }
+                                    }
+                                }).ConfigureAwait(false);
+
+                                ret.BlobsRead += 1;
+                                ret.BytesRead += contentLength;
+                                ret.BlobsWritten += 1;
+                                ret.BytesWritten += contentLength;
+                                ret.Keys.Add(targetKey);
+                            }
+                        }
+
+                        if (stopAfter != -1 && ret.BlobsWritten >= stopAfter) break;
+                    }
+                }
+                finally
+                {
+                    await enumerator.DisposeAsync().ConfigureAwait(false);
                 }
 
                 ret.Success = true;
             }
             catch (Exception e)
             {
+                failure = e;
                 ret.Success = false;
                 ret.Exception = e;
             }
@@ -173,6 +221,11 @@ namespace Blobject.Core
             {
                 ret.Time.End = DateTime.Now;
             }
+
+            CompleteSpan(job, failure, ret.BlobsWritten, ret.BytesWritten);
+            BlobjectInstrumentation.RecordCopyJob(sourceProvider, targetProvider, BlobjectInstrumentation.ElapsedSeconds(jobStart), failure, ret.BlobsWritten, ret.BytesWritten);
+            RestoreCurrent(previous);
+            if (failure != null) Log("copy failed: " + failure.Message);
 
             return ret;
         }
@@ -185,6 +238,97 @@ namespace Blobject.Core
         {
             if (String.IsNullOrEmpty(msg)) return;
             Logger?.Invoke(_Header + msg);
+        }
+
+        private static Activity StartSpan(string name, string sourceProvider, string targetProvider, string stage)
+        {
+            if (!BlobjectTelemetry.Enabled) return null;
+
+            try
+            {
+                Activity activity = BlobjectInstrumentation.Source.StartActivity(name, ActivityKind.Internal);
+                if (activity != null && activity.IsAllDataRequested)
+                {
+                    activity.SetTag(BlobjectTelemetryNames.AttributeCopySource, sourceProvider);
+                    activity.SetTag(BlobjectTelemetryNames.AttributeCopyTarget, targetProvider);
+                    if (stage != null) activity.SetTag(BlobjectTelemetryNames.AttributeStage, stage);
+                }
+
+                return activity;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static void CompleteSpan(Activity activity, Exception e, long objects, long bytes)
+        {
+            if (activity == null) return;
+
+            try
+            {
+                if (activity.IsAllDataRequested)
+                {
+                    string outcome = BlobjectInstrumentation.ClassifyOutcome(e, false);
+                    activity.SetTag(BlobjectTelemetryNames.AttributeOutcome, outcome);
+                    if (objects >= 0) activity.SetTag(BlobjectTelemetryNames.AttributeObjects, objects);
+                    if (bytes >= 0) activity.SetTag(BlobjectTelemetryNames.AttributeBytes, bytes);
+
+                    if (e != null && !(e is OperationCanceledException))
+                    {
+                        activity.SetTag(BlobjectTelemetryNames.AttributeErrorType, BlobjectInstrumentation.ErrorType(e));
+                        activity.SetStatus(ActivityStatusCode.Error, e.Message);
+                        BlobjectInstrumentation.RecordException(activity, e);
+                    }
+                    else if (e == null)
+                    {
+                        activity.SetStatus(ActivityStatusCode.Ok);
+                    }
+                }
+
+                activity.Dispose();
+            }
+            catch
+            {
+                // best-effort
+            }
+        }
+
+        private static void RestoreCurrent(Activity previous)
+        {
+            try
+            {
+                Activity.Current = previous;
+            }
+            catch
+            {
+                // best-effort
+            }
+        }
+
+        private static async Task RunStageAsync(string stage, string sourceProvider, string targetProvider, Func<Task> body)
+        {
+            long start = Stopwatch.GetTimestamp();
+            Activity previous = Activity.Current;
+            Activity activity = StartSpan("stage:" + stage, sourceProvider, targetProvider, stage);
+            Exception failure = null;
+
+            try
+            {
+                await body().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                failure = e;
+                throw;
+            }
+            finally
+            {
+                CompleteSpan(activity, failure, -1, -1);
+                BlobjectInstrumentation.RecordCopyStage(sourceProvider, targetProvider, stage, BlobjectInstrumentation.ElapsedSeconds(start), failure);
+                RestoreCurrent(previous);
+            }
         }
 
         #endregion

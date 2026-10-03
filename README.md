@@ -42,6 +42,14 @@ Though this library is MIT licensed, it is dependent upon other libraries, some 
 | OpenNFS.Client | https://github.com/jchristn/OpenNFS | MIT |
 | S3Lite | https://github.com/jchristn/S3Lite | MIT |
 
+## New in v6.1.x
+
+- Built-in metrics and traces for every package, emitted through the .NET `Meter` and `ActivitySource` named `Blobject`, with no exporter or SDK dependency and near-zero cost when nothing subscribes
+- Every storage operation gets a span (`aws_s3 get`, `cifs write`, ...) and duration, outcome, error, and byte metrics; bulk operations report per-item outcomes, concurrency-slot waits, and slot usage; CIFS/NFS report connection time, open connections, pool capacity, resets, and retries; `BlobCopy` reports job and per-stage (enumerate, read, write) metrics, stage spans, and a last-success timestamp
+- `BlobjectTelemetry.Enabled` and `BlobjectTelemetry.RecordKeys` (object keys are left off spans unless enabled, and never appear on metrics)
+- Refer to [TELEMETRY.md](https://github.com/jchristn/Blobject/blob/main/TELEMETRY.md) for the metric and span catalog, subscription examples, PromQL alerts, and dashboard queries
+- All packages move to v6.1.0
+
 ## New in v6.0.x
 
 - `Blobject.CIFS` now uses [OpenCIFS](https://github.com/jchristn/OpenCIFS) instead of EzSmb, and `Blobject.NFS` now uses [OpenNFS](https://github.com/jchristn/OpenNFS) instead of NFS-Client; both are MIT licensed
@@ -74,6 +82,23 @@ Though this library is MIT licensed, it is dependent upon other libraries, some 
 - Provider patch releases v5.0.19/v5.0.20 align stream APIs, empty writes, filter matching, and shared bulk behavior
 - Provider packages now share common `WriteManyAsync` and `EmptyAsync` behavior with configurable `MaxConcurrency`
 - Refactor
+
+## Telemetry
+
+Blobject emits OpenTelemetry-compatible metrics and traces through the BCL `Meter` and `ActivitySource` named `Blobject`. Subscribe to both from your host to send them to Prometheus, Tempo, Grafana, or any OTLP backend:
+
+```csharp
+// OpenTelemetry .NET
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(m => m.AddMeter("Blobject"))
+    .WithTracing(t => t.AddSource("Blobject"));
+
+// Radiant
+settings.Sources.AddMeter("Blobject");
+settings.Sources.AddActivitySource("Blobject");
+```
+
+Storage calls nest under your request spans automatically. Refer to [TELEMETRY.md](https://github.com/jchristn/Blobject/blob/main/TELEMETRY.md) for every metric and span, the configuration options, recommended alerts, and dashboard queries.
 
 ## Example Project
 

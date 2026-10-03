@@ -73,93 +73,107 @@ namespace Blobject.Disk
         }
 
         /// <inheritdoc />
-        public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
+        public override Task<bool> ValidateConnectivity(CancellationToken token = default)
         {
-            try
+            return InstrumentAsync(BlobjectTelemetryNames.OperationValidateConnectivity, null, async () =>
             {
-                return Directory.Exists(_DiskSettings.Directory);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        /// <inheritdoc />
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
-        {
-            string filename = GenerateUrl(key);
-            if (Directory.Exists(filename))
-            {
-                return Array.Empty<byte>();
-            }
-            else if (File.Exists(filename))
-            {
-                using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, StreamBufferSize, true))
+                try
                 {
-                    return await ReadStreamFullyAsync(fs, token).ConfigureAwait(false);
+                    return Directory.Exists(_DiskSettings.Directory);
                 }
-            }
-            else
-            {
-                throw new FileNotFoundException("Could not find file '" + key + "'.");
-            }
+                catch (Exception)
+                {
+                    return false;
+                }
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
-            string filename = GenerateUrl(key);
-            if (File.Exists(filename))
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGet, key, async () =>
             {
-                long contentLength = new FileInfo(filename).Length;
-                FileStream stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, StreamBufferSize, true);
-                return new BlobData(contentLength, stream);
-            }
-            else if (Directory.Exists(filename))
-            {
-                return new BlobData(0, new MemoryStream());
-            }
-            else
-            {
-                throw new FileNotFoundException("Could not find file '" + key + "'.");
-            }
+                string filename = GenerateUrl(key);
+                if (Directory.Exists(filename))
+                {
+                    return Array.Empty<byte>();
+                }
+                else if (File.Exists(filename))
+                {
+                    using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, StreamBufferSize, true))
+                    {
+                        byte[] data = await ReadStreamFullyAsync(fs, token).ConfigureAwait(false);
+                        SetTelemetryBytes(data.Length);
+                        return data;
+                    }
+                }
+                else
+                {
+                    throw new FileNotFoundException("Could not find file '" + key + "'.");
+                }
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
-            string filename = GenerateUrl(key);
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetStream, key, async () =>
+            {
+                string filename = GenerateUrl(key);
+                if (File.Exists(filename))
+                {
+                    long contentLength = new FileInfo(filename).Length;
+                    FileStream stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, StreamBufferSize, true);
+                    SetTelemetryBytes(contentLength);
+                    return new BlobData(contentLength, stream);
+                }
+                else if (Directory.Exists(filename))
+                {
+                    return new BlobData(0, new MemoryStream());
+                }
+                else
+                {
+                    throw new FileNotFoundException("Could not find file '" + key + "'.");
+                }
+            });
+        }
 
-            if (File.Exists(filename))
+        /// <inheritdoc />
+        public override Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetMetadata, key, async () =>
             {
-                FileInfo fi = new FileInfo(filename);
-                BlobMetadata md = new BlobMetadata();
-                md.Key = key;
-                md.ContentLength = fi.Length;
-                md.CreatedUtc = fi.CreationTimeUtc;
-                md.LastAccessUtc = fi.LastAccessTimeUtc;
-                md.LastUpdateUtc = fi.LastWriteTimeUtc;
-                return md;
-            }
-            else if (Directory.Exists(filename))
-            {
-                DirectoryInfo di = new DirectoryInfo(filename);
-                BlobMetadata md = new BlobMetadata();
-                md.Key = key;
-                md.IsFolder = true;
-                md.ContentLength = 0;
-                md.CreatedUtc = di.CreationTimeUtc;
-                md.LastAccessUtc = di.LastAccessTimeUtc;
-                md.LastUpdateUtc = di.LastWriteTimeUtc;
+                string filename = GenerateUrl(key);
 
-                return md;
-            }
-            else
-            {
-                throw new FileNotFoundException("Could not find file '" + key + "'.");
-            }
+                if (File.Exists(filename))
+                {
+                    FileInfo fi = new FileInfo(filename);
+                    BlobMetadata md = new BlobMetadata();
+                    md.Key = key;
+                    md.ContentLength = fi.Length;
+                    md.CreatedUtc = fi.CreationTimeUtc;
+                    md.LastAccessUtc = fi.LastAccessTimeUtc;
+                    md.LastUpdateUtc = fi.LastWriteTimeUtc;
+                    return md;
+                }
+                else if (Directory.Exists(filename))
+                {
+                    DirectoryInfo di = new DirectoryInfo(filename);
+                    BlobMetadata md = new BlobMetadata();
+                    md.Key = key;
+                    md.IsFolder = true;
+                    md.ContentLength = 0;
+                    md.CreatedUtc = di.CreationTimeUtc;
+                    md.LastAccessUtc = di.LastAccessTimeUtc;
+                    md.LastUpdateUtc = di.LastWriteTimeUtc;
+
+                    return md;
+                }
+                else
+                {
+                    throw new FileNotFoundException("Could not find file '" + key + "'.");
+                }
+            });
         }
 
         /// <inheritdoc />
@@ -184,35 +198,40 @@ namespace Blobject.Disk
         }
 
         /// <inheritdoc />
-        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-            if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
-            if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
-
-            string filename = GenerateUrl(key);
-
-            if (
-                (key.EndsWith("\\") || key.EndsWith("/"))
-                &&
-                contentLength == 0
-            )
+            return InstrumentAsync(BlobjectTelemetryNames.OperationWrite, key, async () =>
             {
-                Directory.CreateDirectory(filename);
-            }
-            else
-            {
-                string dirName = Path.GetDirectoryName(filename);
-                if (!Directory.Exists(dirName))
-                {
-                    Directory.CreateDirectory(dirName);
-                }
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+                if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
+                if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
 
-                using (FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, StreamBufferSize, true))
+                string filename = GenerateUrl(key);
+
+                if (
+                    (key.EndsWith("\\") || key.EndsWith("/"))
+                    &&
+                    contentLength == 0
+                )
                 {
-                    if (contentLength > 0) await CopyStreamAsync(stream, fs, contentLength, token).ConfigureAwait(false);
+                    Directory.CreateDirectory(filename);
                 }
-            }
+                else
+                {
+                    string dirName = Path.GetDirectoryName(filename);
+                    if (!Directory.Exists(dirName))
+                    {
+                        Directory.CreateDirectory(dirName);
+                    }
+
+                    using (FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, StreamBufferSize, true))
+                    {
+                        if (contentLength > 0) await CopyStreamAsync(stream, fs, contentLength, token).ConfigureAwait(false);
+                    }
+
+                    SetTelemetryBytes(contentLength);
+                }
+            });
         }
 
         /// <inheritdoc />
@@ -222,17 +241,20 @@ namespace Blobject.Disk
         }
 
         /// <inheritdoc />
-        public override async Task DeleteAsync(string key, CancellationToken token = default)
+        public override Task DeleteAsync(string key, CancellationToken token = default)
         {
-            string filename = GenerateUrl(key);
-            if (File.Exists(filename))
+            return InstrumentAsync(BlobjectTelemetryNames.OperationDelete, key, async () =>
             {
-                File.Delete(filename);
-            }
-            else if (Directory.Exists(filename))
-            {
-                Directory.Delete(filename);
-            }
+                string filename = GenerateUrl(key);
+                if (File.Exists(filename))
+                {
+                    File.Delete(filename);
+                }
+                else if (Directory.Exists(filename))
+                {
+                    Directory.Delete(filename);
+                }
+            });
         }
 
         /// <inheritdoc />
@@ -242,21 +264,13 @@ namespace Blobject.Disk
         }
 
         /// <inheritdoc />
-        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        public override Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
-            string filename = GenerateUrl(key);
-            if (File.Exists(filename))
+            return InstrumentAsync(BlobjectTelemetryNames.OperationExists, key, async () =>
             {
-                return true;
-            }
-            else if (Directory.Exists(filename))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+                string filename = GenerateUrl(key);
+                return File.Exists(filename) || Directory.Exists(filename);
+            });
         }
 
         /// <inheritdoc />
@@ -272,92 +286,113 @@ namespace Blobject.Disk
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            filter = CloneFilter(filter);
-            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
-            else Log("beginning enumeration using prefix " + filter.Prefix);
-
-            IEnumerable<string> files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
-
-            foreach (string file in files)
-            {
-                FileInfo fi = new FileInfo(file);
-
-                string filename = file;
-                if (filename.StartsWith(_DiskSettings.Directory)) filename = file.Substring(_DiskSettings.Directory.Length);
-                if (!String.IsNullOrEmpty(filename)) filename = filename.Replace("\\", "/");
-                while (!String.IsNullOrEmpty(filename) && filename.StartsWith("/")) filename = filename.Substring(1);
-
-                BlobMetadata md = new BlobMetadata();
-                md.Key = filename;
-
-                md.ContentLength = fi.Length;
-                md.CreatedUtc = fi.CreationTimeUtc;
-                md.LastAccessUtc = fi.LastAccessTimeUtc;
-                md.LastUpdateUtc = fi.LastWriteTimeUtc;
-
-                if (!MatchesFilter(md, filter, StringComparison.OrdinalIgnoreCase)) continue;
-
-                yield return md;
-            }
-
-            yield break;
+            return InstrumentEnumerate(() => EnumerateInternal(filter));
         }
 
         /// <inheritdoc />
-        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+        public override IAsyncEnumerable<BlobMetadata> EnumerateAsync(
             EnumerationFilter filter = null,
-            [EnumeratorCancellation] CancellationToken token = default)
+            CancellationToken token = default)
         {
-            filter = CloneFilter(filter);
-            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
-            else Log("beginning enumeration using prefix " + filter.Prefix);
-
-            IEnumerable<string> files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
-
-            foreach (string file in files)
-            {
-                if (token.IsCancellationRequested) break;
-
-                FileInfo fi = new FileInfo(file);
-
-                string filename = file;
-                if (filename.StartsWith(_DiskSettings.Directory)) filename = file.Substring(_DiskSettings.Directory.Length);
-                if (!String.IsNullOrEmpty(filename)) filename = filename.Replace("\\", "/");
-                while (!String.IsNullOrEmpty(filename) && filename.StartsWith("/")) filename = filename.Substring(1);
-
-                BlobMetadata md = new BlobMetadata();
-                md.Key = filename;
-
-                md.ContentLength = fi.Length;
-                md.CreatedUtc = fi.CreationTimeUtc;
-                md.LastAccessUtc = fi.LastAccessTimeUtc;
-                md.LastUpdateUtc = fi.LastWriteTimeUtc;
-
-                if (!MatchesFilter(md, filter, StringComparison.OrdinalIgnoreCase)) continue;
-
-                yield return md;
-            }
-
-            yield break;
+            return InstrumentEnumerateAsync(t => EnumerateInternalAsync(filter, t), token);
         }
 
         /// <inheritdoc />
-        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        public override Task<EmptyResult> EmptyAsync(CancellationToken token = default)
         {
-            EmptyResult result = await base.EmptyAsync(token).ConfigureAwait(false);
-
-            foreach (string directory in Directory.EnumerateDirectories(_DiskSettings.Directory, "*", SearchOption.AllDirectories).OrderByDescending(d => d.Length))
+            return InstrumentAsync(BlobjectTelemetryNames.OperationEmpty, null, async () =>
             {
-                if (token.IsCancellationRequested) break;
-                if (Directory.Exists(directory)) Directory.Delete(directory);
-            }
+                EmptyResult result = await base.EmptyAsync(token).ConfigureAwait(false);
 
-            return result;
+                foreach (string directory in Directory.EnumerateDirectories(_DiskSettings.Directory, "*", SearchOption.AllDirectories).OrderByDescending(d => d.Length))
+                {
+                    if (token.IsCancellationRequested) break;
+                    if (Directory.Exists(directory)) Directory.Delete(directory);
+                }
+
+                return result;
+            });
+        }
+
+        #endregion
+
+        #region Protected-Methods
+
+        /// <inheritdoc />
+        protected override string TelemetryProvider
+        {
+            get
+            {
+                return BlobjectTelemetryNames.ProviderDisk;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryContainer
+        {
+            get
+            {
+                return _DiskSettings != null ? _DiskSettings.Directory : null;
+            }
         }
 
         #endregion
 
         #region Private-Methods
+
+        private IEnumerable<BlobMetadata> EnumerateInternal(EnumerationFilter filter)
+        {
+            filter = CloneFilter(filter);
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
+
+            IEnumerable<string> files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
+
+            foreach (string file in files)
+            {
+                BlobMetadata md = BuildMetadata(file);
+                if (!MatchesFilter(md, filter, StringComparison.OrdinalIgnoreCase)) continue;
+                yield return md;
+            }
+        }
+
+        private async IAsyncEnumerable<BlobMetadata> EnumerateInternalAsync(
+            EnumerationFilter filter,
+            [EnumeratorCancellation] CancellationToken token)
+        {
+            filter = CloneFilter(filter);
+            if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
+            else Log("beginning enumeration using prefix " + filter.Prefix);
+
+            IEnumerable<string> files = Directory.EnumerateFiles(_DiskSettings.Directory, "*", SearchOption.AllDirectories);
+
+            foreach (string file in files)
+            {
+                if (token.IsCancellationRequested) break;
+
+                BlobMetadata md = BuildMetadata(file);
+                if (!MatchesFilter(md, filter, StringComparison.OrdinalIgnoreCase)) continue;
+                yield return md;
+            }
+        }
+
+        private BlobMetadata BuildMetadata(string file)
+        {
+            FileInfo fi = new FileInfo(file);
+
+            string filename = file;
+            if (filename.StartsWith(_DiskSettings.Directory)) filename = file.Substring(_DiskSettings.Directory.Length);
+            if (!String.IsNullOrEmpty(filename)) filename = filename.Replace("\\", "/");
+            while (!String.IsNullOrEmpty(filename) && filename.StartsWith("/")) filename = filename.Substring(1);
+
+            BlobMetadata md = new BlobMetadata();
+            md.Key = filename;
+            md.ContentLength = fi.Length;
+            md.CreatedUtc = fi.CreationTimeUtc;
+            md.LastAccessUtc = fi.LastAccessTimeUtc;
+            md.LastUpdateUtc = fi.LastWriteTimeUtc;
+            return md;
+        }
 
         private void Log(string msg)
         {

@@ -51,6 +51,7 @@ namespace Blobject.NFS
                 throw new NotSupportedException("NFS version '" + nfsSettings.Version.ToString() + "' is not supported; only NFS version 3 is supported.");
 
             _NfsSettings = nfsSettings;
+            RecordTelemetryPoolCapacity(1);
         }
 
         #endregion
@@ -70,6 +71,7 @@ namespace Blobject.NFS
                 Log("disposing");
                 Task.Run(() => CloseConnectionAsync()).GetAwaiter().GetResult();
                 _ConnectionLock.Dispose();
+                RecordTelemetryPoolCapacity(-1);
             }
 
             _Disposed = true;
@@ -96,30 +98,34 @@ namespace Blobject.NFS
             await CloseConnectionAsync().ConfigureAwait(false);
             _ConnectionLock.Dispose();
             _Disposed = true;
+            RecordTelemetryPoolCapacity(-1);
             GC.SuppressFinalize(this);
         }
 
         /// <inheritdoc />
-        public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
+        public override Task<bool> ValidateConnectivity(CancellationToken token = default)
         {
-            try
+            return InstrumentAsync(BlobjectTelemetryNames.OperationValidateConnectivity, null, async () =>
             {
-                await ExecuteAsync(session => session.Metadata.GetAttributesAsync("/", token), token).ConfigureAwait(false);
-                return true;
-            }
-            catch (OperationCanceledException) when (token.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (ObjectDisposedException)
-            {
-                throw;
-            }
-            catch (Exception e)
-            {
-                Log("connectivity validation failed: " + e.Message);
-                return false;
-            }
+                try
+                {
+                    await ExecuteAsync(session => session.Metadata.GetAttributesAsync("/", token), token).ConfigureAwait(false);
+                    return true;
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (ObjectDisposedException)
+                {
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    Log("connectivity validation failed: " + e.Message);
+                    return false;
+                }
+            });
         }
 
         /// <summary>
@@ -127,76 +133,94 @@ namespace Blobject.NFS
         /// </summary>
         /// <param name="token">Cancellation token.</param>
         /// <returns>List of export paths.</returns>
-        public async Task<List<string>> ListShares(CancellationToken token = default)
+        public Task<List<string>> ListShares(CancellationToken token = default)
         {
-            IReadOnlyList<OpenNfsExportV3Entry> exports = await ExecuteAsync(async session =>
+            return InstrumentAsync(BlobjectTelemetryNames.OperationListContainers, null, async () =>
             {
-                return await _Client.Exports.ListExportsV3Async(token).ConfigureAwait(false);
-            }, token).ConfigureAwait(false);
-
-            List<string> ret = new List<string>();
-            if (exports != null)
-            {
-                foreach (OpenNfsExportV3Entry export in exports)
+                IReadOnlyList<OpenNfsExportV3Entry> exports = await ExecuteAsync(async session =>
                 {
-                    if (export != null && !String.IsNullOrEmpty(export.ExportPath)) ret.Add(export.ExportPath);
-                }
-            }
+                    return await _Client.Exports.ListExportsV3Async(token).ConfigureAwait(false);
+                }, token).ConfigureAwait(false);
 
-            return ret;
+                List<string> ret = new List<string>();
+                if (exports != null)
+                {
+                    foreach (OpenNfsExportV3Entry export in exports)
+                    {
+                        if (export != null && !String.IsNullOrEmpty(export.ExportPath)) ret.Add(export.ExportPath);
+                    }
+                }
+
+                return ret;
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
-            string path = KeyToPath(key, out _);
-
-            return await ExecuteAsync(async session =>
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGet, key, async () =>
             {
-                try
+                string path = KeyToPath(key, out _);
+
+                byte[] data = await ExecuteAsync(async session =>
                 {
-                    return await session.Files.ReadAllBytesAsync(path, token).ConfigureAwait(false);
-                }
-                catch (OpenNfsV3StatusException e) when (e.Status == OpenNfsV3Status.IsDirectory || e.Status == OpenNfsV3Status.InvalidArgument)
+                    try
+                    {
+                        return await session.Files.ReadAllBytesAsync(path, token).ConfigureAwait(false);
+                    }
+                    catch (OpenNfsV3StatusException e) when (e.Status == OpenNfsV3Status.IsDirectory || e.Status == OpenNfsV3Status.InvalidArgument)
+                    {
+                        // servers report reading a directory as either ISDIR or INVAL
+                        OpenNfsV3Attributes attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
+                        if (attributes.FileType == OpenNfsV3FileType.Directory) return Array.Empty<byte>();
+                        throw;
+                    }
+                }, token, key).ConfigureAwait(false);
+
+                if (data != null) SetTelemetryBytes(data.Length);
+                return data;
+            });
+        }
+
+        /// <inheritdoc />
+        public override Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetStream, key, async () =>
+            {
+                string path = KeyToPath(key, out _);
+
+                BlobData blob = await ExecuteAsync(async session =>
                 {
-                    // servers report reading a directory as either ISDIR or INVAL
                     OpenNfsV3Attributes attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
-                    if (attributes.FileType == OpenNfsV3FileType.Directory) return Array.Empty<byte>();
-                    throw;
-                }
-            }, token, key).ConfigureAwait(false);
-        }
+                    if (attributes.FileType == OpenNfsV3FileType.Directory) return new BlobData(0, new MemoryStream(Array.Empty<byte>()));
 
-        /// <inheritdoc />
-        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
-        {
-            string path = KeyToPath(key, out _);
+                    Stream stream = await session.Files.OpenReadAsync(path, token).ConfigureAwait(false);
+                    return new BlobData(stream.Length, stream);
+                }, token, key).ConfigureAwait(false);
 
-            return await ExecuteAsync(async session =>
-            {
-                OpenNfsV3Attributes attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
-                if (attributes.FileType == OpenNfsV3FileType.Directory) return new BlobData(0, new MemoryStream(Array.Empty<byte>()));
-
-                Stream stream = await session.Files.OpenReadAsync(path, token).ConfigureAwait(false);
-                return new BlobData(stream.Length, stream);
-            }, token, key).ConfigureAwait(false);
+                if (blob != null) SetTelemetryBytes(blob.ContentLength);
+                return blob;
+            });
         }
 
         /// <inheritdoc />
         /// <remarks>NFSv3 does not record a creation time, so <see cref="BlobMetadata.CreatedUtc"/> is not populated.</remarks>
-        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
-            string path = KeyToPath(key, out bool isFolderKey);
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetMetadata, key, async () =>
+            {
+                string path = KeyToPath(key, out bool isFolderKey);
 
-            OpenNfsV3Attributes attributes = await ExecuteAsync(
-                session => session.Metadata.GetAttributesAsync(path, token),
-                token,
-                key).ConfigureAwait(false);
+                OpenNfsV3Attributes attributes = await ExecuteAsync(
+                    session => session.Metadata.GetAttributesAsync(path, token),
+                    token,
+                    key).ConfigureAwait(false);
 
-            bool isFolder = attributes.FileType == OpenNfsV3FileType.Directory;
-            if (isFolderKey && !isFolder) throw new KeyNotFoundException("The requested object was not found.");
+                bool isFolder = attributes.FileType == OpenNfsV3FileType.Directory;
+                if (isFolderKey && !isFolder) throw new KeyNotFoundException("The requested object was not found.");
 
-            return BuildMetadata(isFolder ? path + "/" : path, attributes, isFolder);
+                return BuildMetadata(isFolder ? path + "/" : path, attributes, isFolder);
+            });
         }
 
         /// <inheritdoc />
@@ -207,43 +231,51 @@ namespace Blobject.NFS
         }
 
         /// <inheritdoc />
-        public override async Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, byte[] data, CancellationToken token = default)
         {
-            if (data == null) data = Array.Empty<byte>();
-            string path = KeyToPath(key, out bool isFolderKey);
-
-            if (isFolderKey)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationWrite, key, async () =>
             {
-                await CreateFolderAsync(path, token).ConfigureAwait(false);
-                return;
-            }
+                if (data == null) data = Array.Empty<byte>();
+                string path = KeyToPath(key, out bool isFolderKey);
 
-            await WriteFileAsync(path, session => session.Files.WriteAllBytesAsync(path, data, Stability, token), token).ConfigureAwait(false);
+                if (isFolderKey)
+                {
+                    await CreateFolderAsync(path, token).ConfigureAwait(false);
+                    return;
+                }
+
+                await WriteFileAsync(path, session => session.Files.WriteAllBytesAsync(path, data, Stability, token), token).ConfigureAwait(false);
+                SetTelemetryBytes(data.Length);
+            });
         }
 
         /// <inheritdoc />
-        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
-            if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
-            if (stream == null)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationWrite, key, async () =>
             {
-                if (contentLength > 0) throw new ArgumentNullException(nameof(stream));
-                stream = new MemoryStream(Array.Empty<byte>());
-            }
+                if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
+                if (stream == null)
+                {
+                    if (contentLength > 0) throw new ArgumentNullException(nameof(stream));
+                    stream = new MemoryStream(Array.Empty<byte>());
+                }
 
-            if (!stream.CanRead) throw new ArgumentException("The supplied stream is not readable.", nameof(stream));
+                if (!stream.CanRead) throw new ArgumentException("The supplied stream is not readable.", nameof(stream));
 
-            string path = KeyToPath(key, out bool isFolderKey);
+                string path = KeyToPath(key, out bool isFolderKey);
 
-            if (isFolderKey)
-            {
-                await CreateFolderAsync(path, token).ConfigureAwait(false);
-                return;
-            }
+                if (isFolderKey)
+                {
+                    await CreateFolderAsync(path, token).ConfigureAwait(false);
+                    return;
+                }
 
-            // The stream can only be consumed once, so this write is not retried after a connection failure.
-            Stream source = new LengthLimitedReadStream(stream, contentLength);
-            await WriteFileAsync(path, session => session.Files.WriteAsync(path, source, null, Stability, token), token, retryOnConnectionFailure: false).ConfigureAwait(false);
+                // The stream can only be consumed once, so this write is not retried after a connection failure.
+                Stream source = new LengthLimitedReadStream(stream, contentLength);
+                await WriteFileAsync(path, session => session.Files.WriteAsync(path, source, null, Stability, token), token, retryOnConnectionFailure: false).ConfigureAwait(false);
+                SetTelemetryBytes(contentLength);
+            });
         }
 
         /// <inheritdoc />
@@ -254,45 +286,48 @@ namespace Blobject.NFS
 
         /// <inheritdoc />
         /// <remarks>Deleting a key that does not exist succeeds.  Deleting a folder requires the folder to be empty.</remarks>
-        public override async Task DeleteAsync(string key, CancellationToken token = default)
+        public override Task DeleteAsync(string key, CancellationToken token = default)
         {
-            string path = KeyToPath(key, out bool isFolderKey);
-
-            // the not-empty failure is returned rather than thrown inside ExecuteAsync, where an IOException means a failed connection
-            OpenNfsV3StatusException notEmpty = await ExecuteAsync<OpenNfsV3StatusException>(async session =>
+            return InstrumentAsync(BlobjectTelemetryNames.OperationDelete, key, async () =>
             {
-                OpenNfsV3Attributes attributes;
+                string path = KeyToPath(key, out bool isFolderKey);
 
-                try
+                // the not-empty failure is returned rather than thrown inside ExecuteAsync, where an IOException means a failed connection
+                OpenNfsV3StatusException notEmpty = await ExecuteAsync<OpenNfsV3StatusException>(async session =>
                 {
-                    attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
-                }
-                catch (OpenNfsV3StatusException e) when (IsNotFound(e.Status))
-                {
+                    OpenNfsV3Attributes attributes;
+
+                    try
+                    {
+                        attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
+                    }
+                    catch (OpenNfsV3StatusException e) when (IsNotFound(e.Status))
+                    {
+                        return null;
+                    }
+
+                    bool isFolder = attributes.FileType == OpenNfsV3FileType.Directory;
+                    if (isFolderKey && !isFolder) return null;
+
+                    try
+                    {
+                        if (isFolder) await session.Directories.DeleteDirectoryAsync(path, token).ConfigureAwait(false);
+                        else await session.Directories.DeleteFileAsync(path, token).ConfigureAwait(false);
+                    }
+                    catch (OpenNfsV3StatusException e) when (IsNotFound(e.Status))
+                    {
+                        // deleted concurrently
+                    }
+                    catch (OpenNfsV3StatusException e) when (e.Status == OpenNfsV3Status.NotEmpty || e.Status == OpenNfsV3Status.AlreadyExists)
+                    {
+                        return e;
+                    }
+
                     return null;
-                }
+                }, token).ConfigureAwait(false);
 
-                bool isFolder = attributes.FileType == OpenNfsV3FileType.Directory;
-                if (isFolderKey && !isFolder) return null;
-
-                try
-                {
-                    if (isFolder) await session.Directories.DeleteDirectoryAsync(path, token).ConfigureAwait(false);
-                    else await session.Directories.DeleteFileAsync(path, token).ConfigureAwait(false);
-                }
-                catch (OpenNfsV3StatusException e) when (IsNotFound(e.Status))
-                {
-                    // deleted concurrently
-                }
-                catch (OpenNfsV3StatusException e) when (e.Status == OpenNfsV3Status.NotEmpty || e.Status == OpenNfsV3Status.AlreadyExists)
-                {
-                    return e;
-                }
-
-                return null;
-            }, token).ConfigureAwait(false);
-
-            if (notEmpty != null) throw new IOException("The folder '" + key + "' is not empty.", notEmpty);
+                if (notEmpty != null) throw new IOException("The folder '" + key + "' is not empty.", notEmpty);
+            });
         }
 
         /// <inheritdoc />
@@ -302,25 +337,28 @@ namespace Blobject.NFS
         }
 
         /// <inheritdoc />
-        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        public override Task<bool> ExistsAsync(string key, CancellationToken token = default)
         {
-            string path = KeyToPath(key, out bool isFolderKey);
-
-            return await ExecuteAsync(async session =>
+            return InstrumentAsync(BlobjectTelemetryNames.OperationExists, key, async () =>
             {
-                try
-                {
-                    if (!isFolderKey) return await session.Metadata.ExistsAsync(path, token).ConfigureAwait(false);
+                string path = KeyToPath(key, out bool isFolderKey);
 
-                    OpenNfsV3Attributes attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
-                    return attributes.FileType == OpenNfsV3FileType.Directory;
-                }
-                catch (OpenNfsV3StatusException e) when (IsNotFound(e.Status))
+                return await ExecuteAsync(async session =>
                 {
-                    // some servers (e.g. unfs3) report a lookup through a file as STALE rather than NOTDIR
-                    return false;
-                }
-            }, token).ConfigureAwait(false);
+                    try
+                    {
+                        if (!isFolderKey) return await session.Metadata.ExistsAsync(path, token).ConfigureAwait(false);
+
+                        OpenNfsV3Attributes attributes = await session.Metadata.GetAttributesAsync(path, token).ConfigureAwait(false);
+                        return attributes.FileType == OpenNfsV3FileType.Directory;
+                    }
+                    catch (OpenNfsV3StatusException e) when (IsNotFound(e.Status))
+                    {
+                        // some servers (e.g. unfs3) report a lookup through a file as STALE rather than NOTDIR
+                        return false;
+                    }
+                }, token).ConfigureAwait(false);
+            });
         }
 
         /// <inheritdoc />
@@ -341,7 +379,92 @@ namespace Blobject.NFS
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
         {
-            IAsyncEnumerator<BlobMetadata> enumerator = EnumerateAsync(filter).GetAsyncEnumerator();
+            return InstrumentEnumerate(() => EnumerateInternal(filter));
+        }
+
+        /// <inheritdoc />
+        public override IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null,
+            CancellationToken token = default)
+        {
+            return InstrumentEnumerateAsync(t => EnumerateInternalAsync(filter, t), token);
+        }
+
+        /// <summary>
+        /// Delete all files and folders in the export.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Empty result.</returns>
+        public override Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationEmpty, null, async () =>
+            {
+                EmptyResult er = new EmptyResult();
+                List<BlobMetadata> files = new List<BlobMetadata>();
+                List<BlobMetadata> folders = new List<BlobMetadata>();
+
+                await CollectTreeAsync("", files, folders, token).ConfigureAwait(false);
+
+                object syncLock = new object();
+
+                await ForEachConcurrentAsync(files, async md =>
+                {
+                    await DeleteAsync(md.Key, token).ConfigureAwait(false);
+                    lock (syncLock) er.Blobs.Add(md);
+                }, BlobjectTelemetryNames.OperationEmpty, token).ConfigureAwait(false);
+
+                foreach (BlobMetadata folder in folders.OrderByDescending(f => f.Key.Length))
+                {
+                    token.ThrowIfCancellationRequested();
+                    await DeleteAsync(folder.Key, token).ConfigureAwait(false);
+                    er.Blobs.Add(folder);
+                    RecordTelemetryItem(true);
+                }
+
+                return er;
+            });
+        }
+
+        #endregion
+
+        #region Protected-Methods
+
+        /// <inheritdoc />
+        protected override string TelemetryProvider
+        {
+            get
+            {
+                return BlobjectTelemetryNames.ProviderNfs;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryContainer
+        {
+            get
+            {
+                NfsSettings settings = _NfsSettings;
+                return settings != null ? settings.Share : null;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryServerAddress
+        {
+            get
+            {
+                NfsSettings settings = _NfsSettings;
+                return settings != null ? settings.Hostname : null;
+            }
+        }
+
+        #endregion
+
+        #region Private-Methods
+
+        private IEnumerable<BlobMetadata> EnumerateInternal(EnumerationFilter filter)
+        {
+            IAsyncEnumerator<BlobMetadata> enumerator = EnumerateInternalAsync(filter, CancellationToken.None).GetAsyncEnumerator();
 
             try
             {
@@ -356,10 +479,9 @@ namespace Blobject.NFS
             }
         }
 
-        /// <inheritdoc />
-        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
-            EnumerationFilter filter = null,
-            [EnumeratorCancellation] CancellationToken token = default)
+        private async IAsyncEnumerable<BlobMetadata> EnumerateInternalAsync(
+            EnumerationFilter filter,
+            [EnumeratorCancellation] CancellationToken token)
         {
             filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -378,60 +500,6 @@ namespace Blobject.NFS
                 yield return md;
             }
         }
-
-        /// <summary>
-        /// Delete all files and folders in the export.
-        /// </summary>
-        /// <param name="token">Cancellation token.</param>
-        /// <returns>Empty result.</returns>
-        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
-        {
-            EmptyResult er = new EmptyResult();
-            List<BlobMetadata> files = new List<BlobMetadata>();
-            List<BlobMetadata> folders = new List<BlobMetadata>();
-
-            await CollectTreeAsync("", files, folders, token).ConfigureAwait(false);
-
-            object syncLock = new object();
-
-            using (SemaphoreSlim semaphore = new SemaphoreSlim(MaxConcurrency))
-            {
-                List<Task> tasks = new List<Task>();
-
-                foreach (BlobMetadata md in files)
-                {
-                    await semaphore.WaitAsync(token).ConfigureAwait(false);
-
-                    tasks.Add(Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await DeleteAsync(md.Key, token).ConfigureAwait(false);
-                            lock (syncLock) er.Blobs.Add(md);
-                        }
-                        finally
-                        {
-                            semaphore.Release();
-                        }
-                    }, token));
-                }
-
-                await Task.WhenAll(tasks).ConfigureAwait(false);
-            }
-
-            foreach (BlobMetadata folder in folders.OrderByDescending(f => f.Key.Length))
-            {
-                token.ThrowIfCancellationRequested();
-                await DeleteAsync(folder.Key, token).ConfigureAwait(false);
-                er.Blobs.Add(folder);
-            }
-
-            return er;
-        }
-
-        #endregion
-
-        #region Private-Methods
 
         private OpenNfsWriteStability Stability
         {
@@ -475,6 +543,8 @@ namespace Blobject.NFS
                 ThrowIfDisposed();
                 if (_Session != null && _Client != null && _Client.State == OpenNfsClientState.Open) return _Session;
 
+                // a connection that dropped (e.g. server restart) is replaced here rather than failing an operation
+                if (_Session != null || _Client != null) RecordTelemetryConnectionReset(null);
                 await CloseConnectionCoreAsync().ConfigureAwait(false);
 
                 Log("connecting to " + _NfsSettings.Hostname + ":" + _NfsSettings.Port + " export " + _NfsSettings.Share);
@@ -503,8 +573,11 @@ namespace Blobject.NFS
 
                 try
                 {
-                    await newClient.ConnectAsync(token).ConfigureAwait(false);
-                    OpenNfsMountSession newSession = await newClient.MountAsync(_NfsSettings.Share, token).ConfigureAwait(false);
+                    OpenNfsMountSession newSession = await InstrumentConnectAsync(async () =>
+                    {
+                        await newClient.ConnectAsync(token).ConfigureAwait(false);
+                        return await newClient.MountAsync(_NfsSettings.Share, token).ConfigureAwait(false);
+                    }).ConfigureAwait(false);
                     _Client = newClient;
                     _Session = newSession;
                     return newSession;
@@ -556,6 +629,7 @@ namespace Blobject.NFS
             {
                 try { if (client.State == OpenNfsClientState.Open) await client.DisconnectAsync(CancellationToken.None).ConfigureAwait(false); } catch { }
                 try { await client.DisposeAsync().ConfigureAwait(false); } catch { }
+                RecordTelemetryConnectionClosed();
             }
         }
 
@@ -600,8 +674,10 @@ namespace Blobject.NFS
                 catch (Exception e) when (IsConnectionFailure(e) && !token.IsCancellationRequested)
                 {
                     Log("connection failure, resetting connection: " + e.Message);
+                    RecordTelemetryConnectionReset(e);
                     await InvalidateConnectionAsync(session).ConfigureAwait(false);
                     if (!retryOnConnectionFailure || attempt > 1) throw;
+                    RecordTelemetryRetry();
                 }
             }
         }

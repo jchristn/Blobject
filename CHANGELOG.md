@@ -2,6 +2,24 @@
 
 ## Current Version
 
+v6.1.x
+
+### All packages v6.1.0
+
+- Added built-in telemetry: metrics through the `System.Diagnostics.Metrics.Meter` named `Blobject` and traces through the `System.Diagnostics.ActivitySource` named `Blobject`.  The library has no exporter or SDK dependency; hosts subscribe to the names (OpenTelemetry `AddMeter`/`AddSource`, Radiant `Sources.AddMeter`/`AddActivitySource`).  Refer to TELEMETRY.md
+- Every public storage operation (`ValidateConnectivity`, list buckets/containers/shares, `GetAsync`, `GetStreamAsync`, `GetMetadataAsync`, `WriteAsync`, `DeleteAsync`, `ExistsAsync`, `Enumerate`/`EnumerateAsync`, `WriteManyAsync`, `DeleteManyAsync`, `EmptyAsync`) emits a `<provider> <operation>` span and records `blobject.operation.duration`, `blobject.operation.active`, `blobject.operation.errors` (by `error.type`), and `blobject.io.bytes`, with `success`, `not_found`, `cancelled`, or `error` outcomes
+- Bulk operations record per-item outcomes (`blobject.bulk.items`), the time items wait for a concurrency slot (`blobject.bulk.queue.duration`), and slots in use and capacity; native S3 and Azure batch deletes get a `delete_batch` span per request
+- CIFS and NFS record connection establishment (`<provider> connect` span, `blobject.connection.duration`), open connections, pool capacity, connection resets (including connections found dropped after a server restart, `error.type=connection_lost`), and retries
+- `BlobCopy` records a `blobject copy` job span with `stage:read`/`stage:write` child spans, job and per-stage (`enumerate`, `read`, `write`) duration histograms and counters, objects and bytes copied, and a last-success timestamp gauge
+- `blobject.build.info` gauge labeled with the library version
+- New `BlobjectTelemetry` settings: `Enabled` (default true) and `RecordKeys` (default false; object keys are never metric labels)
+- New `BlobjectTelemetryNames` constants for every meter, instrument, attribute, and label value
+- New protected helpers on `BlobClientBase` (`InstrumentAsync`, `InstrumentEnumerateAsync`, `ForEachConcurrentAsync`, `TelemetryProvider`, and others) so custom providers can emit the same telemetry
+- `Blobject.Core` adds a `System.Diagnostics.DiagnosticSource` 10.0.12 dependency for `netstandard2.1` only; `net8.0` and `net10.0` use the in-box version
+- Instrumentation is best-effort: telemetry failures, including exceptions thrown by listeners, never affect storage operations
+
+## Previous Versions
+
 v6.0.x
 
 ### Blobject.CIFS v6.0.0
@@ -74,8 +92,6 @@ v6.0.x
 - New contract cases `NonSeekableShortContentLength` and `NegativeContentLengthRejected`; the default suite now has 108 cases
 - Verified against Google Cloud Storage, Azurite, MinIO, and Less3 in addition to the CIFS and NFS servers
 - Updated test dependencies: `Microsoft.NET.Test.Sdk` 18.10.1, `NUnit` 5.0.0, `NUnit3TestAdapter` 6.3.0, `SerializationHelper` 2.1.0
-
-## Previous Versions
 
 v5.1.x
 

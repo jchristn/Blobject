@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Test.Shared;
 using Test.Shared.FileShare;
+using Test.Shared.Telemetry;
 using Touchstone.Cli;
 using Touchstone.Core;
 
@@ -12,7 +13,7 @@ if (args.Any(arg => arg == "--help" || arg == "-h" || arg == "/?"))
     Console.WriteLine("  dotnet run --project src/Test.Automated -- [options]");
     Console.WriteLine("");
     Console.WriteLine("Common:");
-    Console.WriteLine("  --provider disk|s3|s3lite|azure|gcp|cifs|nfs|fileshare|<managed target>");
+    Console.WriteLine("  --provider disk|s3|s3lite|azure|gcp|cifs|nfs|fileshare|telemetry|<managed target>");
     Console.WriteLine("  --results <path>");
     Console.WriteLine("  --cleanup true|false");
     Console.WriteLine("  --prefix <prefix>");
@@ -20,6 +21,9 @@ if (args.Any(arg => arg == "--help" || arg == "-h" || arg == "/?"))
     Console.WriteLine("  --include-stress true|false");
     Console.WriteLine("  --disk-directory <path>");
     Console.WriteLine("  --filter <text>       Run only cases whose SuiteId.CaseId contains the text (case-insensitive)");
+    Console.WriteLine("");
+    Console.WriteLine("Telemetry:");
+    Console.WriteLine("  --provider telemetry  Runs the telemetry suites (spans and metrics, in-process; no external services)");
     Console.WriteLine("");
     Console.WriteLine("Managed CIFS/NFS servers (started and removed automatically):");
     Console.WriteLine("  --provider fileshare [--fileshare-targets all|cifs|nfs|inprocess|docker|<target>[,<target>...]]");
@@ -57,7 +61,11 @@ if (args.Any(arg => arg == "--help" || arg == "-h" || arg == "/?"))
 BlobProviderOptions options = BlobProviderOptions.FromArgs(args, out string resultsPath);
 IReadOnlyList<TestSuiteDescriptor> suites;
 
-if (String.Equals(options.Provider, "fileshare", StringComparison.OrdinalIgnoreCase))
+if (String.Equals(options.Provider, "telemetry", StringComparison.OrdinalIgnoreCase))
+{
+    suites = TelemetrySuites.All;
+}
+else if (String.Equals(options.Provider, "fileshare", StringComparison.OrdinalIgnoreCase))
 {
     suites = FileShareSuites.BuildAll(options);
 }

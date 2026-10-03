@@ -108,17 +108,20 @@ namespace Blobject.AmazonS3
         }
 
         /// <inheritdoc />
-        public override async Task<bool> ValidateConnectivity(CancellationToken token = default)
+        public override Task<bool> ValidateConnectivity(CancellationToken token = default)
         {
-            try
+            return InstrumentAsync(BlobjectTelemetryNames.OperationValidateConnectivity, null, async () =>
             {
-                List<string> buckets = await ListBuckets(token).ConfigureAwait(false);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+                try
+                {
+                    List<string> buckets = await ListBuckets(token).ConfigureAwait(false);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            });
         }
 
         /// <summary>
@@ -126,94 +129,113 @@ namespace Blobject.AmazonS3
         /// </summary>
         /// <param name="token">Cancellation token.</param>
         /// <returns>List of bucket names.</returns>
-        public async Task<List<string>> ListBuckets(CancellationToken token = default)
+        public Task<List<string>> ListBuckets(CancellationToken token = default)
         {
-            ListBucketsRequest lbr = new ListBucketsRequest();
-            List<string> ret = new List<string>();
-
-            ListBucketsResponse response = await _S3Client.ListBucketsAsync(lbr, token).ConfigureAwait(false);
-            if (response != null && response.Buckets != null)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationListContainers, null, async () =>
             {
-                foreach (var bucket in response.Buckets)
-                {
-                    ret.Add(bucket.BucketName);
-                }
-            }
+                ListBucketsRequest lbr = new ListBucketsRequest();
+                List<string> ret = new List<string>();
 
-            return ret;
+                ListBucketsResponse response = await _S3Client.ListBucketsAsync(lbr, token).ConfigureAwait(false);
+                if (response != null && response.Buckets != null)
+                {
+                    foreach (S3Bucket bucket in response.Buckets)
+                    {
+                        ret.Add(bucket.BucketName);
+                    }
+                }
+
+                return ret;
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<byte[]> GetAsync(string key, CancellationToken token = default)
+        public override Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-
-            GetObjectRequest request = new GetObjectRequest
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGet, key, async () =>
             {
-                BucketName = _AwsSettings.Bucket,
-                Key = key,
-            };
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            using (GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false))
-            {
-                if (response == null || response.HttpStatusCode != System.Net.HttpStatusCode.OK)
+                GetObjectRequest request = new GetObjectRequest
                 {
-                    throw new IOException("Unable to read object.");
-                }
+                    BucketName = _AwsSettings.Bucket,
+                    Key = key,
+                };
 
-                if (response.ContentLength < 1) return Array.Empty<byte>();
-                return await ReadStreamFullyAsync(response.ResponseStream, token).ConfigureAwait(false);
-            }
+                using (GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false))
+                {
+                    if (response == null || response.HttpStatusCode != System.Net.HttpStatusCode.OK)
+                    {
+                        throw new IOException("Unable to read object.");
+                    }
+
+                    if (response.ContentLength < 1) return Array.Empty<byte>();
+                    byte[] data = await ReadStreamFullyAsync(response.ResponseStream, token).ConfigureAwait(false);
+                    SetTelemetryBytes(data.Length);
+                    return data;
+                }
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
+        public override Task<BlobData> GetStreamAsync(string key, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-
-            GetObjectRequest request = new GetObjectRequest
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetStream, key, async () =>
             {
-                BucketName = _AwsSettings.Bucket,
-                Key = key,
-            };
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false);
+                GetObjectRequest request = new GetObjectRequest
+                {
+                    BucketName = _AwsSettings.Bucket,
+                    Key = key,
+                };
 
-            if (response.ContentLength > 0)
-                return new BlobData(response.ContentLength, response.ResponseStream, response);
-            else
-                return new BlobData(0, new MemoryStream(Array.Empty<byte>()), response);
+                GetObjectResponse response = await _S3Client.GetObjectAsync(request, token).ConfigureAwait(false);
+
+                if (response.ContentLength > 0)
+                {
+                    SetTelemetryBytes(response.ContentLength);
+                    return new BlobData(response.ContentLength, response.ResponseStream, response);
+                }
+                else
+                {
+                    return new BlobData(0, new MemoryStream(Array.Empty<byte>()), response);
+                }
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
+        public override Task<BlobMetadata> GetMetadataAsync(string key, CancellationToken token = default)
         {
-            GetObjectMetadataRequest request = new GetObjectMetadataRequest();
-            request.BucketName = _AwsSettings.Bucket;
-            request.Key = key;
-
-            GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request, token).ConfigureAwait(false);
-
-            if (response != null && response.HttpStatusCode == System.Net.HttpStatusCode.OK)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationGetMetadata, key, async () =>
             {
-                BlobMetadata md = new BlobMetadata();
-                md.Key = key;
-                md.ContentLength = response.ContentLength;
-                md.ContentType = response.Headers.ContentType;
-                md.ETag = response.ETag;
-                md.CreatedUtc = response.LastModified;
+                GetObjectMetadataRequest request = new GetObjectMetadataRequest();
+                request.BucketName = _AwsSettings.Bucket;
+                request.Key = key;
 
-                if (!String.IsNullOrEmpty(md.ETag))
+                GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request, token).ConfigureAwait(false);
+
+                if (response != null && response.HttpStatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
-                }
+                    BlobMetadata md = new BlobMetadata();
+                    md.Key = key;
+                    md.ContentLength = response.ContentLength;
+                    md.ContentType = response.Headers.ContentType;
+                    md.ETag = response.ETag;
+                    md.CreatedUtc = response.LastModified;
 
-                return md;
-            }
-            else
-            {
-                throw new KeyNotFoundException("The requested object was not found.");
-            }
+                    if (!String.IsNullOrEmpty(md.ETag))
+                    {
+                        while (md.ETag.Contains("\"")) md.ETag = md.ETag.Replace("\"", "");
+                    }
+
+                    return md;
+                }
+                else
+                {
+                    throw new KeyNotFoundException("The requested object was not found.");
+                }
+            });
         }
 
         /// <inheritdoc />
@@ -247,43 +269,47 @@ namespace Blobject.AmazonS3
         }
 
         /// <inheritdoc />
-        public override async Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
+        public override Task WriteAsync(string key, string contentType, long contentLength, Stream stream, CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
-            if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
-            if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
-            if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
-
-            PutObjectRequest request = new PutObjectRequest();
-
-            if (stream == null || contentLength == 0)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationWrite, key, async () =>
             {
-                request.BucketName = _AwsSettings.Bucket;
-                request.Key = key;
-                request.ContentType = contentType;
-                request.UseChunkEncoding = false;
-                request.InputStream = new MemoryStream(Array.Empty<byte>());
-            }
-            else
-            {
-                request.BucketName = _AwsSettings.Bucket;
-                request.Key = key;
-                request.ContentType = contentType;
-                request.UseChunkEncoding = false;
+                if (String.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+                if (contentLength < 0) throw new ArgumentOutOfRangeException(nameof(contentLength));
+                if (stream == null && contentLength > 0) throw new ArgumentNullException(nameof(stream));
+                if (String.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
 
-                if (stream.CanSeek && stream.Length - stream.Position == contentLength)
+                PutObjectRequest request = new PutObjectRequest();
+
+                if (stream == null || contentLength == 0)
                 {
-                    request.InputStream = stream;
+                    request.BucketName = _AwsSettings.Bucket;
+                    request.Key = key;
+                    request.ContentType = contentType;
+                    request.UseChunkEncoding = false;
+                    request.InputStream = new MemoryStream(Array.Empty<byte>());
                 }
                 else
                 {
-                    // upload exactly contentLength bytes; the stream may hold more
-                    request.InputStream = new LengthLimitedReadStream(stream, contentLength);
-                    request.Headers.ContentLength = contentLength;
-                }
-            }
+                    request.BucketName = _AwsSettings.Bucket;
+                    request.Key = key;
+                    request.ContentType = contentType;
+                    request.UseChunkEncoding = false;
 
-            await _S3Client.PutObjectAsync(request, token).ConfigureAwait(false);
+                    if (stream.CanSeek && stream.Length - stream.Position == contentLength)
+                    {
+                        request.InputStream = stream;
+                    }
+                    else
+                    {
+                        // upload exactly contentLength bytes; the stream may hold more
+                        request.InputStream = new LengthLimitedReadStream(stream, contentLength);
+                        request.Headers.ContentLength = contentLength;
+                    }
+                }
+
+                await _S3Client.PutObjectAsync(request, token).ConfigureAwait(false);
+                SetTelemetryBytes(stream == null ? 0 : contentLength);
+            });
         }
 
         /// <inheritdoc />
@@ -293,107 +319,122 @@ namespace Blobject.AmazonS3
         }
 
         /// <inheritdoc />
-        public override async Task DeleteAsync(string key, CancellationToken token = default)
+        public override Task DeleteAsync(string key, CancellationToken token = default)
         {
-            DeleteObjectRequest request = new DeleteObjectRequest
+            return InstrumentAsync(BlobjectTelemetryNames.OperationDelete, key, async () =>
             {
-                BucketName = _AwsSettings.Bucket,
-                Key = key
-            };
+                DeleteObjectRequest request = new DeleteObjectRequest
+                {
+                    BucketName = _AwsSettings.Bucket,
+                    Key = key
+                };
 
-            await _S3Client.DeleteObjectAsync(request, token).ConfigureAwait(false);
+                await _S3Client.DeleteObjectAsync(request, token).ConfigureAwait(false);
+            });
         }
 
         /// <inheritdoc />
-        public override async Task<DeleteManyResult> DeleteManyAsync(IEnumerable<string> keys, CancellationToken token = default)
+        public override Task<DeleteManyResult> DeleteManyAsync(IEnumerable<string> keys, CancellationToken token = default)
         {
-            if (keys == null) throw new ArgumentNullException(nameof(keys));
-
-            DeleteManyResult result = new DeleteManyResult();
-            List<string> keyList = keys.Where(k => !String.IsNullOrEmpty(k)).Distinct().ToList();
-            if (keyList.Count < 1) return result;
-
-            // S3 DeleteObjects supports up to 1000 keys per request.
-            const int batchSize = 1000;
-
-            for (int offset = 0; offset < keyList.Count; offset += batchSize)
+            return InstrumentAsync(BlobjectTelemetryNames.OperationDeleteMany, null, async () =>
             {
-                token.ThrowIfCancellationRequested();
+                if (keys == null) throw new ArgumentNullException(nameof(keys));
 
-                List<string> chunk = keyList.GetRange(offset, Math.Min(batchSize, keyList.Count - offset));
-
-                DeleteObjectsRequest request = new DeleteObjectsRequest
+                DeleteManyResult result = new DeleteManyResult();
+                List<string> keyList = keys.Where(k => !String.IsNullOrEmpty(k)).Distinct().ToList();
+                if (keyList.Count < 1)
                 {
-                    BucketName = _AwsSettings.Bucket
+                    SetTelemetryItems(0, 0);
+                    return result;
+                }
+
+                // S3 DeleteObjects supports up to 1000 keys per request.
+                const int batchSize = 1000;
+
+                for (int offset = 0; offset < keyList.Count; offset += batchSize)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    List<string> chunk = keyList.GetRange(offset, Math.Min(batchSize, keyList.Count - offset));
+
+                    DeleteObjectsRequest request = new DeleteObjectsRequest
+                    {
+                        BucketName = _AwsSettings.Bucket
+                    };
+
+                    foreach (string key in chunk) request.AddKey(key);
+
+                    DeleteObjectsResponse response;
+
+                    try
+                    {
+                        response = await InstrumentAsync(BlobjectTelemetryNames.OperationDeleteBatch, null, () =>
+                            _S3Client.DeleteObjectsAsync(request, token)).ConfigureAwait(false);
+                    }
+                    catch (DeleteObjectsException dex)
+                    {
+                        // Partial failure: the response carries both the deleted objects and the errors.
+                        response = dex.Response;
+                    }
+
+                    if (response.DeletedObjects != null)
+                    {
+                        foreach (DeletedObject deleted in response.DeletedObjects)
+                        {
+                            result.Results.Add(new DeleteResult(deleted.Key, true));
+                        }
+                    }
+
+                    if (response.DeleteErrors != null)
+                    {
+                        foreach (DeleteError deleteError in response.DeleteErrors)
+                        {
+                            // S3 reports deleting a missing key as success, but some S3-compatible servers return NoSuchKey;
+                            // a missing key counts as deleted, matching DeleteAsync
+                            if (String.Equals(deleteError.Code, "NoSuchKey", StringComparison.OrdinalIgnoreCase))
+                            {
+                                result.Results.Add(new DeleteResult(deleteError.Key, true));
+                                continue;
+                            }
+
+                            result.Results.Add(new DeleteResult(
+                                deleteError.Key,
+                                false,
+                                (deleteError.Code + " " + deleteError.Message).Trim()));
+                        }
+                    }
+                }
+
+                SetTelemetryItems(result.Results.Count(r => r.Success), result.Results.Count(r => !r.Success));
+                return result;
+            });
+        }
+
+        /// <inheritdoc />
+        public override Task<bool> ExistsAsync(string key, CancellationToken token = default)
+        {
+            return InstrumentAsync(BlobjectTelemetryNames.OperationExists, key, async () =>
+            {
+                GetObjectMetadataRequest request = new GetObjectMetadataRequest
+                {
+                    BucketName = _AwsSettings.Bucket,
+                    Key = key
                 };
-
-                foreach (string key in chunk) request.AddKey(key);
-
-                DeleteObjectsResponse response;
 
                 try
                 {
-                    response = await _S3Client.DeleteObjectsAsync(request, token).ConfigureAwait(false);
+                    GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request, token).ConfigureAwait(false);
+                    return true;
                 }
-                catch (DeleteObjectsException dex)
+                catch (Amazon.S3.AmazonS3Exception ex)
                 {
-                    // Partial failure: the response carries both the deleted objects and the errors.
-                    response = dex.Response;
+                    if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                        return false;
+
+                    // status wasn't not found, so throw the exception
+                    throw;
                 }
-
-                if (response.DeletedObjects != null)
-                {
-                    foreach (DeletedObject deleted in response.DeletedObjects)
-                    {
-                        result.Results.Add(new DeleteResult(deleted.Key, true));
-                    }
-                }
-
-                if (response.DeleteErrors != null)
-                {
-                    foreach (DeleteError deleteError in response.DeleteErrors)
-                    {
-                        // S3 reports deleting a missing key as success, but some S3-compatible servers return NoSuchKey;
-                        // a missing key counts as deleted, matching DeleteAsync
-                        if (String.Equals(deleteError.Code, "NoSuchKey", StringComparison.OrdinalIgnoreCase))
-                        {
-                            result.Results.Add(new DeleteResult(deleteError.Key, true));
-                            continue;
-                        }
-
-                        result.Results.Add(new DeleteResult(
-                            deleteError.Key,
-                            false,
-                            (deleteError.Code + " " + deleteError.Message).Trim()));
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        /// <inheritdoc />
-        public override async Task<bool> ExistsAsync(string key, CancellationToken token = default)
-        {
-            GetObjectMetadataRequest request = new GetObjectMetadataRequest
-            {
-                BucketName = _AwsSettings.Bucket,
-                Key = key
-            };
-
-            try
-            {
-                GetObjectMetadataResponse response = await _S3Client.GetObjectMetadataAsync(request, token).ConfigureAwait(false);
-                return true;
-            }
-            catch (Amazon.S3.AmazonS3Exception ex)
-            {
-                if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    return false;
-
-                // status wasn't not found, so throw the exception
-                throw;
-            }
+            });
         }
 
         /// <inheritdoc />
@@ -422,6 +463,78 @@ namespace Blobject.AmazonS3
 
         /// <inheritdoc />
         public override IEnumerable<BlobMetadata> Enumerate(EnumerationFilter filter = null)
+        {
+            return InstrumentEnumerate(() => EnumerateInternal(filter));
+        }
+
+        /// <inheritdoc />
+        public override IAsyncEnumerable<BlobMetadata> EnumerateAsync(
+            EnumerationFilter filter = null,
+            CancellationToken token = default)
+        {
+            return InstrumentEnumerateAsync(t => EnumerateInternalAsync(filter, t), token);
+        }
+
+        /// <inheritdoc />
+        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
+        {
+            return await base.EmptyAsync(token).ConfigureAwait(false);
+        }
+
+        #endregion
+
+        #region Protected-Methods
+
+        /// <inheritdoc />
+        protected override string TelemetryProvider
+        {
+            get
+            {
+                return BlobjectTelemetryNames.ProviderAmazonS3;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryContainer
+        {
+            get
+            {
+                AwsSettings settings = _AwsSettings;
+                return settings != null ? settings.Bucket : null;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string TelemetryServerAddress
+        {
+            get
+            {
+                AwsSettings settings = _AwsSettings;
+                if (settings == null || String.IsNullOrEmpty(settings.Endpoint)) return null;
+
+                Uri uri;
+                if (Uri.TryCreate(settings.Endpoint, UriKind.Absolute, out uri)) return uri.Host;
+                return null;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override bool IsTelemetryNotFound(Exception e)
+        {
+            if (base.IsTelemetryNotFound(e)) return true;
+
+            AmazonS3Exception s3e = e as AmazonS3Exception;
+            if (s3e == null) return false;
+
+            return s3e.StatusCode == System.Net.HttpStatusCode.NotFound
+                || String.Equals(s3e.ErrorCode, "NoSuchKey", StringComparison.OrdinalIgnoreCase);
+        }
+
+        #endregion
+
+        #region Private-Methods
+
+        private IEnumerable<BlobMetadata> EnumerateInternal(EnumerationFilter filter)
         {
             filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -470,10 +583,9 @@ namespace Blobject.AmazonS3
             yield break;
         }
 
-        /// <inheritdoc />
-        public override async IAsyncEnumerable<BlobMetadata> EnumerateAsync(
-            EnumerationFilter filter = null,
-            [EnumeratorCancellation] CancellationToken token = default)
+        private async IAsyncEnumerable<BlobMetadata> EnumerateInternalAsync(
+            EnumerationFilter filter,
+            [EnumeratorCancellation] CancellationToken token)
         {
             filter = CloneFilter(filter);
             if (String.IsNullOrEmpty(filter.Prefix)) Log("beginning enumeration");
@@ -524,16 +636,6 @@ namespace Blobject.AmazonS3
 
             yield break;
         }
-
-        /// <inheritdoc />
-        public override async Task<EmptyResult> EmptyAsync(CancellationToken token = default)
-        {
-            return await base.EmptyAsync(token).ConfigureAwait(false);
-        }
-
-        #endregion
-
-        #region Private-Methods
 
         private void Log(string msg)
         {
