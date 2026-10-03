@@ -2,6 +2,7 @@ namespace Test.Shared.FileShare
 {
     using System;
     using System.IO;
+    using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
     using OpenCIFS.Server;
@@ -99,6 +100,9 @@ namespace Test.Shared.FileShare
             ret.CifsPassword = Password;
             ret.CifsDomain = "WORKGROUP";
             ret.CifsShare = ShareName;
+
+            // OpenCIFS negotiates at most SMB 3.0.2, whose only cipher is AES-128-CCM; platforms without it (macOS) cannot encrypt.
+            ret.CifsPreferEncryption = ret.CifsPreferEncryption && AesCcm.IsSupported;
             return ret;
         }
 

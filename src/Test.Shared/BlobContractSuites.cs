@@ -233,6 +233,7 @@
                     CopyCase(options, suiteId, "CopyEmptyBlob", "BlobCopy copies empty blob", CopyEmptyBlob),
                     CopyCase(options, suiteId, "CopyNestedBlob", "BlobCopy copies nested blob", CopyNestedBlob),
                     CopyCase(options, suiteId, "CopyStatsBytes", "BlobCopy reports byte statistics", CopyStatsBytes),
+                    CopyCase(options, suiteId, "CopyStatsTime", "BlobCopy reports start, end, and elapsed time", CopyStatsTime),
                     CopyCase(options, suiteId, "CopyMissingPrefixZero", "BlobCopy with missing prefix writes zero blobs", CopyMissingPrefixZero),
                     CopyCase(options, suiteId, "CopyOverwritesExisting", "BlobCopy overwrites existing target", CopyOverwritesExisting),
                     CopyCase(options, suiteId, "CopyPreservesCaseKey", "BlobCopy preserves key casing", CopyPreservesCaseKey),
@@ -1232,6 +1233,20 @@
             CopyStatistics stats = await new BlobCopy(source, target).StartAsync(token: token).ConfigureAwait(false);
             AssertEqual(4L, stats.BytesRead, "bytes read");
             AssertEqual(4L, stats.BytesWritten, "bytes written");
+        }
+
+        private static async Task CopyStatsTime(BlobClientBase source, BlobClientBase target, BlobProviderOptions options, CancellationToken token)
+        {
+            await source.WriteAsync("time.txt", "text/plain", "time", token).ConfigureAwait(false);
+            DateTime before = DateTime.Now;
+            CopyStatistics stats = await new BlobCopy(source, target).StartAsync(token: token).ConfigureAwait(false);
+            DateTime after = DateTime.Now;
+            AssertTrue(stats.Time != null, "copy time");
+            AssertTrue(stats.Time.Start >= before && stats.Time.Start <= after, "copy start within call");
+            AssertTrue(stats.Time.End != null, "copy end set");
+            AssertTrue(stats.Time.End.Value >= stats.Time.Start && stats.Time.End.Value <= after, "copy end within call");
+            AssertTrue(stats.Time.TotalMs != null && stats.Time.TotalMs.Value >= 0, "copy total ms");
+            AssertTrue(stats.ToString().Contains("Total MS"), "copy statistics string includes time");
         }
 
         private static async Task CopyMissingPrefixZero(BlobClientBase source, BlobClientBase target, BlobProviderOptions options, CancellationToken token)

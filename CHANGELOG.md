@@ -4,6 +4,12 @@
 
 v6.1.x
 
+### All packages v6.1.2
+
+- Dependency updates: `Timestamps` 1.0.12 -> 1.0.13 (`Blobject.Core`)
+- New `CopyStatsTime` contract test verifies `CopyStatistics.Time` start, end, and elapsed values from `BlobCopy`
+- Test harness: the in-process OpenCIFS test server no longer requests SMB 3.x encryption on platforms without AES-CCM (macOS), matching the telemetry suites; the `nfs-unfs3` test image pins `linux/amd64` so it builds on arm64 hosts
+
 ### All packages v6.1.1
 
 - Dependency updates: `AWSSDK.S3` 4.0.103.4 -> 4.0.104.1, `Azure.Storage.Blobs` 12.29.2 -> 12.30.0, `Azure.Storage.Blobs.Batch` 12.26.1 -> 12.27.0, `OpenNFS.Client` 0.1.1 -> 0.2.0, `S3Lite` 1.2.3 -> 1.3.0

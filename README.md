@@ -50,6 +50,7 @@ Though this library is MIT licensed, it is dependent upon other libraries, some 
 - Refer to [TELEMETRY.md](https://github.com/jchristn/Blobject/blob/main/TELEMETRY.md) for the metric and span catalog, subscription examples, PromQL alerts, and dashboard queries
 - All packages move to v6.1.0
 - v6.1.1: dependency updates (`AWSSDK.S3` 4.0.104.1, `Azure.Storage.Blobs` 12.30.0, `Azure.Storage.Blobs.Batch` 12.27.0, `OpenNFS.Client` 0.2.0, `S3Lite` 1.3.0); `OpenNFS.Client` and `S3Lite` now emit their own spans, which nest under Blobject's operation spans
+- v6.1.2: dependency updates (`Timestamps` 1.0.13)
 
 ## New in v6.0.x
 
