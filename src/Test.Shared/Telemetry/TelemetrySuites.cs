@@ -81,7 +81,8 @@ namespace Test.Shared.Telemetry
                         Case(_Suite, "ActiveReturnsToZero", "in-flight operations return to zero", ActiveReturnsToZero),
                         Case(_Suite, "DisabledEmitsNothing", "BlobjectTelemetry.Enabled = false emits nothing", DisabledEmitsNothing),
                         Case(_Suite, "NoListenerDoesNotThrow", "operations succeed with no listener attached", NoListenerDoesNotThrow),
-                        Case(_Suite, "ThrowingListenerDoesNotBreak", "a throwing listener never breaks operations", ThrowingListenerDoesNotBreak)
+                        Case(_Suite, "ThrowingListenerDoesNotBreak", "a throwing listener never breaks operations", ThrowingListenerDoesNotBreak),
+                        Case(_Suite, "S3LiteSpansNest", "S3Lite SDK spans nest under Blobject S3 Lite operation spans", S3LiteSpansNest)
                     }),
                 new TestSuiteDescriptor(
                     suiteId: _FileShareSuite,
@@ -92,7 +93,8 @@ namespace Test.Shared.Telemetry
                         Case(_FileShareSuite, "NfsConnectionMetrics", "NFS emits connect spans, pool capacity, and open connections", NfsConnectionMetrics),
                         Case(_FileShareSuite, "CifsReconnectAfterRestart", "CIFS reconnect after a server restart is visible", CifsReconnectAfterRestart),
                         Case(_FileShareSuite, "CifsConnectFailure", "CIFS connection failure reports connect and operation errors", CifsConnectFailure),
-                        Case(_FileShareSuite, "NfsConnectFailure", "NFS connection failure reports connect and operation errors", NfsConnectFailure)
+                        Case(_FileShareSuite, "NfsConnectFailure", "NFS connection failure reports connect and operation errors", NfsConnectFailure),
+                        Case(_FileShareSuite, "OpenNfsClientSpansNest", "OpenNFS.Client spans nest under Blobject NFS operation spans", OpenNfsClientSpansNest)
                     })
             };
         }
@@ -894,6 +896,87 @@ namespace Test.Shared.Telemetry
             {
                 await ConnectFailure(client, "nfs", token).ConfigureAwait(false);
             }
+        }
+
+        private static async Task S3LiteSpansNest(CancellationToken token)
+        {
+            string endpoint = "http://127.0.0.1:" + DockerCli.GetFreeTcpPort() + "/";
+            Blobject.AmazonS3Lite.AwsSettings settings = new Blobject.AmazonS3Lite.AwsSettings(
+                endpoint, false, "access", "secret", "us-east-1", "bucket", endpoint + "{bucket}/{key}");
+            settings.RequestStyle = S3Lite.RequestStyleEnum.PathStyle;
+
+            Blobject.AmazonS3Lite.AmazonS3LiteBlobClient client = new Blobject.AmazonS3Lite.AmazonS3LiteBlobClient(settings);
+
+            using (TelemetryCollector collector = new TelemetryCollector())
+            using (DependencySpanCollector dependency = new DependencySpanCollector(S3Lite.S3LiteTelemetryNames.ActivitySourceName, collector.TraceId))
+            {
+                bool threw = false;
+                try { await client.GetAsync("any.txt", token).ConfigureAwait(false); }
+                catch (Exception e) when (!(e is OperationCanceledException) || !token.IsCancellationRequested) { threw = true; }
+                Require(threw, "operation fails without a server");
+
+                Activity get = collector.Span("aws_s3_lite get");
+                Require(get.Status == ActivityStatusCode.Error, "operation span error", collector);
+                RequireDependencySpansNest(collector, dependency, get, "S3Lite");
+            }
+        }
+
+        private static async Task OpenNfsClientSpansNest(CancellationToken token)
+        {
+            OpenNfsEphemeralServer server = await OpenNfsEphemeralServer.StartAsync(token).ConfigureAwait(false);
+
+            try
+            {
+                NfsSettings settings = BlobProviderFactory.CreateNfsSettings(server.ApplyTo(new BlobProviderOptions()));
+                string key = "telemetry-" + Guid.NewGuid().ToString("N") + ".txt";
+
+                using (TelemetryCollector collector = new TelemetryCollector())
+                using (DependencySpanCollector dependency = new DependencySpanCollector(OpenNFS.Telemetry.OpenNfsTelemetryNames.ClientActivitySourceName, collector.TraceId))
+                {
+                    await using (NfsBlobClient client = new NfsBlobClient(settings))
+                    {
+                        await client.WriteAsync(key, "text/plain", "hello", token).ConfigureAwait(false);
+                        byte[] data = await client.GetAsync(key, token).ConfigureAwait(false);
+                        await client.DeleteAsync(key, token).ConfigureAwait(false);
+                        Require(data.Length == 5, "round trip");
+                    }
+
+                    RequireDependencySpansNest(collector, dependency, collector.Span("nfs write"), "OpenNFS.Client");
+                    RequireDependencySpansNest(collector, dependency, collector.Span("nfs get"), "OpenNFS.Client");
+                }
+            }
+            finally
+            {
+                await server.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+
+        private static void RequireDependencySpansNest(TelemetryCollector collector, DependencySpanCollector dependency, Activity operation, string sourceName)
+        {
+            List<Activity> spans = dependency.Spans;
+            string describe = " | " + sourceName + " spans: [" + String.Join(", ", spans.Select(a => a.DisplayName)) + "]";
+
+            Require(spans.Any(), sourceName + " emitted spans in the operation's trace" + describe, collector);
+
+            Dictionary<ActivitySpanId, Activity> byId = new Dictionary<ActivitySpanId, Activity>();
+            foreach (Activity span in collector.Spans) byId[span.SpanId] = span;
+            foreach (Activity span in spans) byId[span.SpanId] = span;
+
+            bool underOperation = spans.Any(span =>
+            {
+                ActivitySpanId parent = span.ParentSpanId;
+                for (int depth = 0; depth < 32; depth++)
+                {
+                    if (parent == operation.SpanId) return true;
+                    Activity next;
+                    if (!byId.TryGetValue(parent, out next)) return false;
+                    parent = next.ParentSpanId;
+                }
+
+                return false;
+            });
+
+            Require(underOperation, sourceName + " spans nest under '" + operation.DisplayName + "'" + describe, collector);
         }
 
         private static async Task ConnectFailure(BlobClientBase client, string provider, CancellationToken token)

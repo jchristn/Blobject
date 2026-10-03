@@ -4,6 +4,13 @@
 
 v6.1.x
 
+### All packages v6.1.1
+
+- Dependency updates: `AWSSDK.S3` 4.0.103.4 -> 4.0.104.1, `Azure.Storage.Blobs` 12.29.2 -> 12.30.0, `Azure.Storage.Blobs.Batch` 12.26.1 -> 12.27.0, `OpenNFS.Client` 0.1.1 -> 0.2.0, `S3Lite` 1.2.3 -> 1.3.0
+- `OpenNFS.Client` 0.2.0 and `S3Lite` 1.3.0 add their own metrics and traces (`Meter`/`ActivitySource` named `OpenNFS.Client` and `S3Lite`); their spans nest under Blobject's `nfs <operation>` and `aws_s3_lite <operation>` spans.  Refer to TELEMETRY.md
+- Test dependencies updated: `OpenNFS.Server` 0.2.0, `Touchstone.*` 0.2.0
+- New telemetry test cases verify that `S3Lite` and `OpenNFS.Client` spans nest under the Blobject operation span that issued them
+
 ### All packages v6.1.0
 
 - Added built-in telemetry: metrics through the `System.Diagnostics.Metrics.Meter` named `Blobject` and traces through the `System.Diagnostics.ActivitySource` named `Blobject`.  The library has no exporter or SDK dependency; hosts subscribe to the names (OpenTelemetry `AddMeter`/`AddSource`, Radiant `Sources.AddMeter`/`AddActivitySource`).  Refer to TELEMETRY.md

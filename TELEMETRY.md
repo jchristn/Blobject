@@ -60,7 +60,14 @@ A `MeterListener` and an `ActivityListener` filtered to `"Blobject"` receive eve
 
 Blobject spans are children of whatever `Activity.Current` is when you call Blobject. Inside an ASP.NET Core or Watson request handler, storage calls nest under the request span with no extra code. W3C context also flows into the background work Blobject starts: `WriteManyAsync`, `DeleteManyAsync`, and `EmptyAsync` run items on the thread pool, and each item's span is still a child of the bulk operation's span.
 
-Blobject talks to storage through the AWS, Azure, Google, OpenCIFS, and OpenNFS SDKs. Any outbound HTTP spans or `traceparent` headers those SDKs produce come from the SDKs and from `System.Net.Http` instrumentation in your host, not from Blobject.
+Blobject talks to storage through the AWS, Azure, Google, OpenCIFS, OpenNFS, and S3Lite SDKs. Any outbound HTTP spans or `traceparent` headers those SDKs produce come from the SDKs and from `System.Net.Http` instrumentation in your host, not from Blobject.
+
+From 6.1.1, `Blobject.NFS` uses OpenNFS.Client 0.2.0 and `Blobject.AmazonS3Lite` uses S3Lite 1.3.0, both of which emit their own metrics and traces. Subscribe to them alongside `Blobject` to see protocol-level detail beneath each Blobject span: the SDK spans are children of the `nfs <operation>` or `aws_s3_lite <operation>` span that issued them (or of `nfs connect` when a connection is being established).
+
+| SDK            | Meter            | ActivitySource   |
+|----------------|------------------|------------------|
+| OpenNFS.Client | `OpenNFS.Client` | `OpenNFS.Client` |
+| S3Lite         | `S3Lite`         | `S3Lite`         |
 
 ## Configuration
 

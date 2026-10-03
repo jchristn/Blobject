@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>6.1.0</Version>
+		<Version>6.1.1</Version>
 		<LangVersion>8.0</LangVersion>
 		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -13,7 +13,7 @@
 		<RepositoryUrl>https://github.com/jchristn/Blobject</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
 		<PackageLicenseUrl></PackageLicenseUrl>
-		<PackageReleaseNotes>6.1.0: emits Blobject metrics and traces (Meter and ActivitySource "Blobject") for every operation; see TELEMETRY.md.</PackageReleaseNotes>
+		<PackageReleaseNotes>6.1.1: dependency updates. 6.1.0: emits Blobject metrics and traces (Meter and ActivitySource "Blobject") for every operation; see TELEMETRY.md.</PackageReleaseNotes>
 		<PackageIconUrl></PackageIconUrl>
 		<PackageTags>blob azure storage s3 object rest minio less3 ceph view cifs nfs google cloud gcp</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
